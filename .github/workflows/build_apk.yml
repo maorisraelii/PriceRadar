@@ -36,7 +36,7 @@ jobs:
           mkdir -p www
           cp index.html manifest.json sw.js icon-192.png icon-512.png www/
           
-          cat << 'EOF' > package.json
+          cat << 'EOF_PKG' > package.json
           {
             "name": "priceradar-app",
             "version": "1.0.0",
@@ -50,24 +50,29 @@ jobs:
               "@capacitor/cli": "^6.0.0"
             }
           }
-          EOF
+          EOF_PKG
 
-          cat << 'EOF' > capacitor.config.json
+          cat << 'EOF_CAP' > capacitor.config.json
           {
             "appId": "com.priceradar.app",
             "appName": "PriceRadar",
             "webDir": "www",
             "server": {
               "androidScheme": "https"
+            },
+            "plugins": {
+              "CapacitorHttp": {
+                "enabled": true
+              }
             }
           }
-          EOF
+          EOF_CAP
 
           npm install --no-audit --no-fund
           npx cap add android
           npx cap copy android
 
-          # הוספת הרשאות התראות פוש לאנדרואיד 13+ ב-AndroidManifest.xml
+          # הוספת הרשאות התראות פוש וגישת רשת ישירה לאנדרואיד ב-AndroidManifest.xml
           python3 -c "
           import os
           p = 'android/app/src/main/AndroidManifest.xml'
@@ -79,6 +84,98 @@ jobs:
                   open(p, 'w', encoding='utf-8').write(m)
                   print('Added POST_NOTIFICATIONS to AndroidManifest.xml')
           "
+
+          # הזרקת גשר WebView נייטיבי (AndroidNativeScraper) לעקיפת Cloudflare ורינדור SPA ישירות מהטלפון
+          cat << 'EOF_JAVA' > android/app/src/main/java/com/priceradar/app/MainActivity.java
+          package com.priceradar.app;
+
+          import android.os.Bundle;
+          import android.os.Handler;
+          import android.os.Looper;
+          import android.webkit.JavascriptInterface;
+          import android.webkit.WebSettings;
+          import android.webkit.WebView;
+          import android.webkit.WebViewClient;
+          import com.getcapacitor.BridgeActivity;
+          import org.json.JSONObject;
+
+          public class MainActivity extends BridgeActivity {
+              private WebView scraperWebView;
+
+              @Override
+              public void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  try {
+                      WebView mainWv = this.getBridge().getWebView();
+                      mainWv.addJavascriptInterface(new NativeScraperBridge(mainWv), "AndroidNativeScraper");
+                  } catch (Exception e) {
+                      e.printStackTrace();
+                  }
+              }
+
+              public class NativeScraperBridge {
+                  private final WebView hostWebView;
+                  private final Handler mainHandler = new Handler(Looper.getMainLooper());
+
+                  public NativeScraperBridge(WebView host) {
+                      this.hostWebView = host;
+                  }
+
+                  @JavascriptInterface
+                  public void scrapeUrl(final String targetUrl, final String callbackId) {
+                      mainHandler.post(() -> {
+                          try {
+                              if (scraperWebView != null) {
+                                  scraperWebView.destroy();
+                              }
+                              scraperWebView = new WebView(MainActivity.this);
+                              WebSettings s = scraperWebView.getSettings();
+                              s.setJavaScriptEnabled(true);
+                              s.setDomStorageEnabled(true);
+                              s.setUserAgentString("Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36");
+                              scraperWebView.setWebViewClient(new WebViewClient() {
+                                  private boolean delivered = false;
+                                  @Override
+                                  public void onPageFinished(WebView view, String url) {
+                                      mainHandler.postDelayed(() -> {
+                                          if (delivered) return;
+                                          view.evaluateJavascript("(function(){ return document.documentElement ? document.documentElement.outerHTML : ''; })();", value -> {
+                                              if (delivered) return;
+                                              if (value != null && value.contains("Just a moment")) {
+                                                  mainHandler.postDelayed(() -> {
+                                                      if (delivered) return;
+                                                      delivered = true;
+                                                      view.evaluateJavascript("(function(){ return document.documentElement ? document.documentElement.outerHTML : ''; })();", val2 -> {
+                                                          sendResult(callbackId, val2);
+                                                      });
+                                                  }, 2500);
+                                              } else {
+                                                  delivered = true;
+                                                  sendResult(callbackId, value);
+                                              }
+                                          });
+                                      }, 1600);
+                                  }
+                              });
+                              scraperWebView.loadUrl(targetUrl);
+                          } catch (Exception e) {
+                              sendResult(callbackId, "\"\"");
+                          }
+                      });
+                  }
+
+                  private void sendResult(final String callbackId, final String rawJsString) {
+                      mainHandler.post(() -> {
+                          try {
+                              String safeId = JSONObject.quote(callbackId);
+                              String payload = (rawJsString == null || rawJsString.equals("null")) ? "\"\"" : rawJsString;
+                              hostWebView.evaluateJavascript("window.__resolveNativeScrape && window.__resolveNativeScrape(" + safeId + ", " + payload + ");", null);
+                          } catch (Exception ignored) {}
+                      });
+                  }
+              }
+          }
+          EOF_JAVA
 
       - name: Copy App Launcher Icons
         run: |
@@ -107,5 +204,5 @@ jobs:
         with:
           tag_name: v1.0.0
           name: "PriceRadar v1.0.0 (Official Release)"
-          body: "הורדה ישירה של קובץ האפליקציה הרשמי לאנדרואיד (PriceRadar.apk). כולל תמיכה מלאה בהתראות פוש!"
+          body: "הורדה ישירה של קובץ האפליקציה הרשמי לאנדרואיד (PriceRadar.apk). כולל סורק WebView נייטיבי לעקיפת חסימות בוטים (KSP ועוד) והתראות פוש!"
           files: PriceRadar.apk
