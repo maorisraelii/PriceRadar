@@ -69,6 +69,14 @@ def send_fcm_notification(fcm_token: str, title: str, body: str, url: str = ""):
 
 
 
+def check_amazon_free_shipping(html: str) -> bool:
+    if not html:
+        return False
+    clean = re.sub(r"[\u200E\u200F\u202A-\u202E]", "", html)
+    pattern = r"(?:FREE Shipping|משלוח חינם|זכאי למשלוח חינם).*(?:to Israel|לישראל|מעל\s*\$?49|49\$)|qualif(?:y|ies) for FREE Shipping to Israel|eligible for FREE Shipping to Israel"
+    return bool(re.search(pattern, clean, re.I))
+
+
 def extract_ksp_uin(url: str) -> str:
     m = re.search(r"ksp\.co\.il/(?:web/|mob/)?item/(\d+)", url or "", re.I)
     return m.group(1) if m else ""
@@ -342,7 +350,42 @@ def process_profile(page, data: dict, chat_id: str, now_il: datetime, fcm_token:
     today_iso = now_il.strftime("%Y-%m-%d")
 
     for prod in products:
+        raw_url = prod.get("url", "")
         new_price = check_product_live(page, prod)
+
+        # Check Amazon Free Shipping to Israel change:
+        if "amazon." in raw_url.lower():
+            try:
+                page_content = page.content()
+                is_free_ship = check_amazon_free_shipping(page_content)
+                was_free_ship = bool(prod.get("freeShippingEligible"))
+                prod["freeShippingEligible"] = is_free_ship
+
+                if not was_free_ship and is_free_ship and prod.get("trackFreeShipping") is not False:
+                    curr_p = new_price or prod.get("currentPrice") or 0
+                    fs_text = (
+                        f"✈️ בשורה מעולה! משלוח חינם לישראל באמזון!\n\n"
+                        f"🛍️ מוצר: {prod.get('title')}\n"
+                        f"📦 המוצר זכאי כעת למשלוח חינם לישראל בקנייה מעל $49!\n"
+                        f"💰 מחיר נוכחי: {curr_p} ₪\n\n"
+                        f"🛒 להזמנה מהירה:\n{prod.get('url')}"
+                    )
+                    send_telegram(fs_text, chat_id)
+                    if fcm_token:
+                        send_fcm_notification(fcm_token, f"✈️ משלוח חינם לישראל באמזון! {prod.get('title')}", "המוצר זכאי כעת למשלוח חינם לישראל בקנייה מעל 49$!", prod.get('url'))
+                    alerts = data.get("alerts") or []
+                    alerts.insert(0, {
+                        "id": f"fs_{int(now_il.timestamp())}",
+                        "type": "drop",
+                        "timestamp": f"{time_str} {date_str}",
+                        "title": f"✈️ נכנס למשלוח חינם לישראל מעל 49$! {prod.get('title')}",
+                        "messagePlain": f"המוצר זכאי כעת למשלוח חינם לישראל בקנייה מעל 49$!",
+                        "telegramText": fs_text,
+                        "url": prod.get("url")
+                    })
+                    data["alerts"] = alerts[:100]
+            except Exception as e:
+                print("Amazon free shipping check notice:", e)
         if new_price is None or new_price <= 0:
             continue
 
