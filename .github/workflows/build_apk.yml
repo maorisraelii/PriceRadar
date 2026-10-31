@@ -16,27 +16,56 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
       - name: Set up Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Install Capacitor & Initialize Android Project
+      - name: Set up Android SDK & Accept Licenses
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Prepare Web Assets & Capacitor Configuration
         run: |
           mkdir -p www
           cp index.html manifest.json sw.js icon-192.png icon-512.png www/
-          npm init -y
-          npm install @capacitor/core @capacitor/cli @capacitor/android
-          npx cap init "PriceRadar" "com.priceradar.app" --web-dir www
-          npx cap add android
+          
+          cat << 'EOF' > package.json
+          {
+            "name": "priceradar-app",
+            "version": "1.0.0",
+            "private": true,
+            "dependencies": {
+              "@capacitor/core": "^6.0.0",
+              "@capacitor/android": "^6.0.0"
+            },
+            "devDependencies": {
+              "@capacitor/cli": "^6.0.0"
+            }
+          }
+          EOF
 
-      - name: Set App Icon in Android Project
+          cat << 'EOF' > capacitor.config.json
+          {
+            "appId": "com.priceradar.app",
+            "appName": "PriceRadar",
+            "webDir": "www",
+            "server": {
+              "androidScheme": "https"
+            }
+          }
+          EOF
+
+          npm install --no-audit --no-fund
+          npx cap add android
+          npx cap copy android
+
+      - name: Copy App Launcher Icons
         run: |
           python3 -c "
           import os, shutil
@@ -48,11 +77,11 @@ jobs:
                   shutil.copy('icon-512.png', f'{folder}/ic_launcher_round.png')
           "
 
-      - name: Build APK with Gradle
+      - name: Build Debug APK with Gradle
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --no-daemon
 
       - name: Upload APK as Workflow Artifact
         uses: actions/upload-artifact@v4
