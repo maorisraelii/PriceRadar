@@ -1,6 +1,68 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
+  <script>
+    window.__APP_VERSION__ = "2.2.0";
+    window.__BUILD_TIMESTAMP__ = 1761924500;
+
+    // =========================================================================
+    // OVER-THE-AIR (OTA) LIVE UPDATE ENGINE FROM GITHUB
+    // Allows the installed Android APK to update automatically on every git push
+    // without ever re-downloading or reinstalling an APK file.
+    // =========================================================================
+    (function bootstrapCachedLiveUpdate() {
+      try {
+        const cachedHtml = localStorage.getItem('pr_live_ota_html');
+        const cachedTs = Number(localStorage.getItem('pr_live_ota_ts') || 0);
+        if (cachedHtml && cachedTs > window.__BUILD_TIMESTAMP__ && !sessionStorage.getItem('pr_running_cached')) {
+          sessionStorage.setItem('pr_running_cached', 'true');
+          document.open();
+          document.write(cachedHtml);
+          document.close();
+        }
+      } catch (e) {}
+    })();
+
+    async function checkGitHubLiveUpdateBackground() {
+      try {
+        const GITHUB_REPO = 'maorisraelii/PriceRadar';
+        const rawUrl = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/index.html?_t=` + Date.now();
+        const res = await fetch(rawUrl, { cache: 'no-store' });
+        if (!res.ok) return;
+        const remoteHtml = await res.text();
+        const m = remoteHtml.match(/window\.__BUILD_TIMESTAMP__\s*=\s*(\d+)/);
+        const remoteTs = m ? Number(m[1]) : 0;
+        const currentActiveTs = Number(localStorage.getItem('pr_live_ota_ts') || window.__BUILD_TIMESTAMP__);
+
+        if (remoteTs > currentActiveTs) {
+          console.log(`[PriceRadar OTA] New version found on GitHub (${remoteTs} > ${currentActiveTs}). Caching and applying...`);
+          localStorage.setItem('pr_live_ota_html', remoteHtml);
+          localStorage.setItem('pr_live_ota_ts', String(remoteTs));
+          sessionStorage.removeItem('pr_running_cached');
+          if (typeof showToast === 'function') {
+            showToast('🚀 עודכן אוטומטית מ-GitHub!', 'הקוד החדש נטען בהצלחה ללא צורך בהתקנת APK.', 'success');
+          }
+          setTimeout(() => {
+            document.open();
+            document.write(remoteHtml);
+            document.close();
+          }, 800);
+        }
+      } catch (err) {}
+    }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('DOMContentLoaded', () => {
+        setTimeout(checkGitHubLiveUpdateBackground, 1200);
+      });
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          checkGitHubLiveUpdateBackground();
+        }
+      });
+    }
+  </script>
+
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>PriceRadar — אפליקציית מעקב מחירים חכמה</title>

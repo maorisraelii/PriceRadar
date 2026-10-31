@@ -1,6 +1,31 @@
+<div align="center">
+
 # 🛍️ PriceRadar IL
 
 ### Autonomous Universal E-Commerce Price Tracker & Android App
+
+<p align="center">
+<strong>מערכת מעקב מחירים חכמה ואוטונומית לכל אתרי הסחר בישראל ובעולם • זיהוי וריאציות מוצר (מידות / משקלים) • ניטור ענן 24/7 ללא צורך בשרת • התראות ירידת מחיר ודו"ח יומי ישירות לטלגרם</strong>
+</p>
+
+<p align="center">
+<a href="https://android.com"><img src="https://img.shields.io/badge/Platform-Android%20%7C%20PWA-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Platform: Android" /></a>
+<a href="https://github.com/actions"><img src="https://img.shields.io/badge/CI%2FCD-GitHub%20Actions%2024%2F7-2088FF?style=for-the-badge&logo=githubactions&logoColor=white" alt="GitHub Actions" /></a>
+<a href="https://supabase.com"><img src="https://img.shields.io/badge/Backend-Supabase%20PostgreSQL-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase" /></a>
+<a href="https://playwright.dev"><img src="https://img.shields.io/badge/Scraper-Playwright%20Chromium-45ba4b?style=for-the-badge&logo=playwright&logoColor=white" alt="Playwright" /></a>
+<a href="https://telegram.org"><img src="https://img.shields.io/badge/Alerts-Telegram%20Bot%20API-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white" alt="Telegram" /></a>
+<a href="https://tailwindcss.com"><img src="https://img.shields.io/badge/UI-Liquid%20Glassmorphism-ec4899?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="Tailwind CSS" /></a>
+</p>
+
+<p align="center">
+<a href="#-למשתמשי-האפליקציה-הורדת-apk-והתקנה-מהירה"><b>📥 הורדת APK למכשיר</b></a> •
+<a href="#-תאימות-מנוע-הסריקה-חנויות-נתמכות"><b>🛒 חנויות נתמכות</b></a> •
+<a href="#-ארכיטקטורת-מערכת"><b>🏗️ ארכיטקטורה</b></a> •
+<a href="#-מדריך-הקמה-עצמאית-self-hosting"><b>⚙️ מדריך הקמה (Self-Hosting)</b></a> •
+<a href="#-פרטיות-ואבטחה-rls--zero-pii"><b>🛡️ פרטיות ואבטחה</b></a>
+</p>
+
+</div>
 
 ## 📱 למשתמשי האפליקציה: הורדת APK והתקנה מהירה
 
@@ -67,7 +92,6 @@
                                               │    ✈️ Telegram Bot Alerts     │
                                               │  Instant Drops • Daily Digest │
                                               └───────────────────────────────┘
-
 
 ```
 
