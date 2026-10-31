@@ -143,6 +143,21 @@ def check_product_live(browser_page, product: dict):
         except Exception:
             pass
 
+    # Optimized loader for KSP & Client-Side SPA stores
+    if "ksp.co.il" in parsed_url.netloc:
+        try:
+            browser_page.goto(url, wait_until="domcontentloaded", timeout=30000)
+            try:
+                browser_page.wait_for_selector("text=₪, [class*='price'], .price", timeout=8000)
+            except Exception:
+                browser_page.wait_for_timeout(4000)
+            html = browser_page.content()
+            price = extract_price_from_html(html, url, selected_variant)
+            if price:
+                return price
+        except Exception as exc:
+            print(f"Error checking KSP live: {exc}")
+
     try:
         browser_page.goto(url, wait_until="domcontentloaded", timeout=25000)
         browser_page.wait_for_timeout(2000)

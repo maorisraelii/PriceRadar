@@ -1300,8 +1300,13 @@
     // =========================================================================
     function cleanTrackingUrl(rawUrl) {
       try {
-        const u = new URL(rawUrl.trim());
+        const trimmed = rawUrl.trim();
+        const u = new URL(trimmed);
         ['srsltid', 'fbclid', 'gclid', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'aff_id'].forEach(p => u.searchParams.delete(p));
+        // Normalize mobile KSP links to standard web format
+        if (u.hostname.includes('ksp.co.il') && u.pathname.startsWith('/mob/item/')) {
+          u.pathname = u.pathname.replace('/mob/item/', '/item/');
+        }
         return u.toString();
       } catch (e) {
         return rawUrl.trim();
@@ -1594,6 +1599,26 @@
             { id: 'nc503-std', label: 'דגם NC503 יבואן רשמי', price: 999, inStock: true }
           ],
           sourceMethod: 'זוהה המוצר הראשי בדף טרקלין חשמל'
+        };
+      }
+
+      // KSP Support (handles /item/12345, /web/item/12345, /mob/item/12345 and product URLs)
+      if (decoded.includes('ksp.co.il')) {
+        const uinMatch = decoded.match(/item[\/=](\d+)/i) || decoded.match(/\/(\d{4,8})(?:[\/?#]|$)/);
+        const uin = uinMatch ? uinMatch[1] : '';
+        const kspImg = uin ? `https://ksp.co.il/shop/items/${uin}.jpg` : FALLBACK_IMAGES.ninja;
+        let itemTitle = extractTitleFromUrlSlug(rawUrl);
+        if (!itemTitle || itemTitle.includes('ksp') || itemTitle.includes('item')) {
+          itemTitle = uin ? `מוצר KSP (מק״ט: ${uin})` : 'מוצר KSP';
+        }
+        return {
+          title: itemTitle,
+          price: '',
+          image: kspImg,
+          SelectedVariant: uin ? `מק״ט ${uin}` : '',
+          variations: uin ? [{ id: uin, label: `מק״ט ${uin}`, price: 0, inStock: true }] : [],
+          sourceMethod: uin ? `זוהה מוצר KSP (מק״ט ${uin})` : 'זוהתה חנות KSP',
+          category: 'electronics'
         };
       }
 
