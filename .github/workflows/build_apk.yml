@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Android APK & Publish Release
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  build-apk:
+  build-and-release:
     runs-on: ubuntu-latest
 
     steps:
@@ -17,7 +17,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -26,10 +26,10 @@ jobs:
         run: |
           yes | sdkmanager --licenses || true
 
-      - name: Set up Node.js
+      - name: Set up Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Prepare Web Assets & Capacitor Configuration
         run: |
@@ -84,9 +84,14 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
 
-      - name: Upload APK as Workflow Artifact
-        uses: actions/upload-artifact@v4
+      - name: Prepare Clean Release File
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk PriceRadar.apk
+
+      - name: Publish Direct GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: PriceRadar-Debug-APK
-          path: android/app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
+          tag_name: v1.0.0
+          name: "PriceRadar v1.0.0 (Official Release)"
+          body: "הורדה ישירה של קובץ האפליקציה הרשמי לאנדרואיד (PriceRadar.apk). פשוט להוריד ולהתקין!"
+          files: PriceRadar.apk
