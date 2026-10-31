@@ -1,0 +1,13 @@
+{
+  "appId": "com.priceradar.app",
+  "appName": "PriceRadar",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
+}
