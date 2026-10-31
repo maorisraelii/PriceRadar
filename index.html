@@ -1302,15 +1302,16 @@
       try {
         const trimmed = rawUrl.trim();
         const u = new URL(trimmed);
-        ['srsltid', 'fbclid', 'gclid', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'aff_id'].forEach(p => u.searchParams.delete(p));
-        // Normalize mobile KSP links to standard web format
-        if (u.hostname.includes('ksp.co.il') && u.pathname.startsWith('/mob/item/')) {
-          u.pathname = u.pathname.replace('/mob/item/', '/item/');
-        }
+        ['srsltid', 'fbclid', 'gclid', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'aff_id', 'tt'].forEach(p => u.searchParams.delete(p));
         return u.toString();
       } catch (e) {
         return rawUrl.trim();
       }
+    }
+
+    function extractKspUin(rawUrl) {
+      const m = String(rawUrl || '').match(/ksp\.co\.il\/(?:web\/|mob\/)?item\/(\d+)/i);
+      return m ? m[1] : '';
     }
 
     function getStoreMeta(rawUrl) {
@@ -1343,11 +1344,13 @@
       const combined = (decodeURIComponent(rawUrl) + ' ' + title).toLowerCase();
       if (/rabbit|ארנב|חציר|כלב|חתול|מכרסמ|pet|אוכל ל/.test(combined)) return 'pets';
       if (/footlocker|nike|adidas|נעל|כפכפ|סניקר|חולצ|בגד|מידה|size|rejuven/.test(combined)) return 'fashion';
-      if (/traklin|חשמל|מכונת|נינג|ninja|טלוויז|מקרר|שואב|קפה|מחשב|ksp|ivory/.test(combined)) return 'electronics';
+      if (/traklin|חשמל|מכונת|נינג|ninja|טלוויז|מקרר|שואב|קפה|מחשב|ksp|ivory|קומקום|bosch/.test(combined)) return 'electronics';
       return 'other';
     }
 
     function getFallbackProductImage(rawUrl, category = 'other') {
+      const kspUin = extractKspUin(rawUrl);
+      if (kspUin) return `https://ksp.co.il/shop/items/${kspUin}.jpg`;
       const decoded = decodeURIComponent(rawUrl || '').toLowerCase();
       if (decoded.includes('traklin') || decoded.includes('ninja') || decoded.includes('גלידה')) return FALLBACK_IMAGES.ninja;
       if (decoded.includes('myrabbit') || decoded.includes('hay') || decoded.includes('ארנב') || category === 'pets') return FALLBACK_IMAGES.rabbit;
@@ -1357,6 +1360,8 @@
     }
 
     function extractTitleFromUrlSlug(rawUrl) {
+      const kspUin = extractKspUin(rawUrl);
+      if (kspUin) return `מוצר KSP #${kspUin}`;
       try {
         const u = new URL(rawUrl);
         const parts = u.pathname.split('/').filter(Boolean);
@@ -1369,9 +1374,9 @@
     }
 
     // =========================================================================
-    // UNIVERSAL MULTI-LAYER PRICE, IMAGE & VARIATION SCANNER
+    // UNIVERSAL MULTI-LAYER ANTI-BOT PRICE, IMAGE & VARIATION SCANNER
     // =========================================================================
-    async function fetchWithTimeout(url, options = {}, timeoutMs = 6000) {
+    async function fetchWithTimeout(url, options = {}, timeoutMs = 6500) {
       const controller = new AbortController();
       const id = setTimeout(() => controller.abort(), timeoutMs);
       try {
@@ -1384,35 +1389,375 @@
       }
     }
 
-    async function tryFetchRawViaProxies(targetUrl) {
-      const proxies = [
-        `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`,
-        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`,
-        `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`
-      ];
-      for (const proxyUrl of proxies) {
-        try {
-          const res = await fetchWithTimeout(proxyUrl, {}, 5500);
-          if (!res.ok) continue;
-          if (proxyUrl.includes('allorigins.win/get')) {
-            const data = await res.json();
-            if (data && data.contents && data.contents.length > 200) return data.contents;
+    function isBlockedTitle(title) {
+      if (!title) return true;
+      const t = String(title).trim();
+      if (t.length < 3) return true;
+      return /just a moment|attention required|access denied|cloudflare|security check|ddos-guard|enable javascript|403 forbidden|error 403|error 500|error 503|שגיאה 500|אירעה שגיאה|^ksp$|^pro shop|^pricedrop$/i.test(t);
+    }
+
+    function isBlockedPayload(text, isKspTarget = false) {
+      if (!text || typeof text !== 'string' || text.length < 160) return true;
+      if (/Just a moment\.\.\.|cf_chl_opt|cf-browser-verification|Attention Required! \| Cloudflare|Enable JavaScript and cookies to continue|Access Denied|Pardon Our Interruption|שגיאה 500|אירעה שגיאה לא צפויה/i.test(text)) {
+        return true;
+      }
+      if (isKspTarget) {
+        // Reject unrendered SPA shells that have no product price/data
+        const hasSignal = /₪|מחיר|מק["״']ט|"price"|"uin"|product:price/i.test(text);
+        if (!hasSignal) return true;
+      }
+      return false;
+    }
+
+    // Native Android Offscreen WebView Scraper Bridge (injected in MainActivity.java in APK)
+    window.__nativeScrapeCallbacks = window.__nativeScrapeCallbacks || {};
+    window.__resolveNativeScrape = function(cbId, htmlString) {
+      const cb = window.__nativeScrapeCallbacks[cbId];
+      if (cb) {
+        delete window.__nativeScrapeCallbacks[cbId];
+        cb(htmlString || '');
+      }
+    };
+
+    function tryAndroidNativeWebViewScrape(targetUrl, timeoutMs = 7000) {
+      return new Promise((resolve, reject) => {
+        if (!window.AndroidNativeScraper || typeof window.AndroidNativeScraper.scrapeUrl !== 'function') {
+          return reject(new Error('No AndroidNativeScraper bridge'));
+        }
+        const cbId = 'ns_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+        const timer = setTimeout(() => {
+          delete window.__nativeScrapeCallbacks[cbId];
+          reject(new Error('Native WebView timeout'));
+        }, timeoutMs);
+        window.__nativeScrapeCallbacks[cbId] = (html) => {
+          clearTimeout(timer);
+          if (html && !isBlockedPayload(html, targetUrl.includes('ksp.co.il'))) {
+            resolve({ content: html, format: 'html' });
           } else {
-            const text = await res.text();
-            if (text && text.length > 200) return text;
+            reject(new Error('Blocked or empty native WebView payload'));
+          }
+        };
+        try {
+          window.AndroidNativeScraper.scrapeUrl(targetUrl, cbId);
+        } catch (err) {
+          clearTimeout(timer);
+          delete window.__nativeScrapeCallbacks[cbId];
+          reject(err);
+        }
+      });
+    }
+
+    async function tryCapacitorNativeHttpGet(targetUrl) {
+      const capHttp = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.CapacitorHttp;
+      if (!capHttp || typeof capHttp.get !== 'function') {
+        throw new Error('No CapacitorHttp plugin');
+      }
+      const res = await capHttp.get({
+        url: targetUrl,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'he-IL,he;q=0.9,en-US;q=0.8,en;q=0.7',
+          'Referer': 'https://www.google.com/'
+        },
+        connectTimeout: 6000,
+        readTimeout: 6000
+      });
+      if (!res || res.status >= 400 || !res.data) {
+        throw new Error('CapacitorHttp non-200');
+      }
+      const text = typeof res.data === 'string' ? res.data : JSON.stringify(res.data);
+      if (isBlockedPayload(text, targetUrl.includes('ksp.co.il'))) {
+        throw new Error('CapacitorHttp blocked payload');
+      }
+      return { content: text, format: 'html' };
+    }
+
+    async function fetchJinaMarkdownSimple(targetUrl, timeoutMs = 7500) {
+      // Simple GET request with NO custom headers -> avoids CORS preflight OPTIONS and API key errors
+      const jinaUrl = `https://r.jina.ai/${targetUrl}`;
+      const res = await fetchWithTimeout(jinaUrl, {}, timeoutMs);
+      if (!res || !res.ok) throw new Error('Jina non-200');
+      const text = await res.text();
+      const isKsp = targetUrl.includes('ksp') || targetUrl.includes('pricedrop.co.il');
+      if (isBlockedPayload(text, isKsp)) throw new Error('Jina blocked payload');
+      let pageTitle = '';
+      const titleMatch = text.match(/^Title:\s*(.+)$/m);
+      if (titleMatch) {
+        pageTitle = titleMatch[1].trim();
+      }
+      if (isBlockedTitle(pageTitle)) {
+        // Check if body itself was a challenge page
+        if (/Just a moment|Attention Required|Access Denied/i.test(pageTitle)) {
+          throw new Error('Jina returned Cloudflare challenge title');
+        }
+        pageTitle = '';
+      }
+      const mdIdx = text.indexOf('Markdown Content:');
+      const bodyMd = mdIdx !== -1 ? text.slice(mdIdx + 'Markdown Content:'.length) : text;
+      return { content: bodyMd, title: pageTitle, format: 'markdown' };
+    }
+
+    async function fetchViaCorsProxy(proxyType, targetUrl, timeoutMs = 6500) {
+      const isKsp = targetUrl.includes('ksp') || targetUrl.includes('pricedrop.co.il');
+      let proxyUrl = '';
+      if (proxyType === 'codetabs') {
+        proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`;
+      } else if (proxyType === 'corsproxy') {
+        proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
+      } else if (proxyType === 'allorigins_raw') {
+        proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+      } else {
+        proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+      }
+      const res = await fetchWithTimeout(proxyUrl, {}, timeoutMs);
+      if (!res || !res.ok) throw new Error(`${proxyType} HTTP error`);
+      let text = '';
+      if (proxyType === 'allorigins_get') {
+        const data = await res.json();
+        if (!data || (data.status && data.status.http_code >= 400)) {
+          throw new Error('allorigins upstream HTTP ' + (data && data.status ? data.status.http_code : 'err'));
+        }
+        text = data.contents || '';
+      } else {
+        text = await res.text();
+      }
+      if (isBlockedPayload(text, isKsp)) {
+        throw new Error(`${proxyType} blocked payload`);
+      }
+      return { content: text, format: 'html' };
+    }
+
+    function getScrapeTargetUrl(rawUrl) {
+      const kspUin = extractKspUin(rawUrl);
+      if (kspUin) return `https://ksp.co.il/mob/item/${kspUin}`;
+      return rawUrl.trim();
+    }
+
+    async function tryFetchRawViaProxies(targetUrl) {
+      const fetchTarget = getScrapeTargetUrl(targetUrl);
+      const isKsp = fetchTarget.includes('ksp.co.il');
+
+      // 1. Native Android WebView / CapacitorHttp
+      try { return await tryAndroidNativeWebViewScrape(fetchTarget, 6500); } catch (e) {}
+      try { return await tryCapacitorNativeHttpGet(fetchTarget); } catch (e) {}
+
+      // 2. Direct browser fetch
+      try {
+        const directRes = await fetchWithTimeout(fetchTarget, {
+          headers: { 'Accept': 'text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8' }
+        }, 4000);
+        if (directRes && directRes.ok) {
+          const directText = await directRes.text();
+          if (!isBlockedPayload(directText, isKsp)) {
+            return { content: directText, format: 'html' };
+          }
+        }
+      } catch (e) {}
+
+      // 3. Parallel race across Jina Simple GET & CORS Proxies
+      const tasks = [
+        fetchJinaMarkdownSimple(fetchTarget, 7500),
+        fetchViaCorsProxy('codetabs', fetchTarget, 6500),
+        fetchViaCorsProxy('corsproxy', fetchTarget, 6500),
+        fetchViaCorsProxy('allorigins_get', fetchTarget, 6500)
+      ];
+      try {
+        return await Promise.any(tasks);
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function extractPricesAndVariantsFromText(rawText, pageTitle, targetUrl) {
+      const kspUin = extractKspUin(targetUrl);
+      let cleanedTitle = (pageTitle || '')
+        .replace(/\s*[|-]\s*(?:KSP|Pricedrop|קיי\.אס\.פי|טרקלין חשמל|פוט לוקר|Foot Locker).*$/i, '')
+        .replace(/^Premium\s*\|\s*/i, '')
+        .replace(/\s*\.\.\.\s*$/, '')
+        .trim();
+      if (isBlockedTitle(cleanedTitle)) cleanedTitle = '';
+
+      const cleanText = String(rawText || '').replace(/[*_~`#>]/g, ' ');
+
+      // Extract full untruncated Hebrew product title right after מק"ט: <number> (works on both KSP SSR & Pricedrop KSP mirror)
+      const afterMakat = cleanText.match(/מק["״']ט\s*:\s*[A-Za-z0-9]+\s*[\r\n]+\s*([^\r\n]{8,})/);
+      if (afterMakat) {
+        const candidate = afterMakat[1].trim();
+        if (!/מחיר|מלאי|קטלוג|עמוד ראשי|Just a moment/i.test(candidate) && candidate.length >= cleanedTitle.length) {
+          cleanedTitle = candidate;
+        }
+      }
+
+      const result = {
+        title: cleanedTitle,
+        price: null,
+        image: kspUin ? `https://ksp.co.il/shop/items/${kspUin}.jpg` : '',
+        SelectedVariant: '',
+        variations: [],
+        sourceMethod: 'זיהוי חי מדף המוצר'
+      };
+
+      // Extract first product image from markdown if present
+      const mdImgMatch = rawText.match(/!\[[^\]]*\]\((https?:\/\/[^)\s]+\.(?:png|jpe?g|webp)(?:\?[^)\s]*)?)\)/i);
+      if (mdImgMatch && !/logo|icon|avatar|banner/i.test(mdImgMatch[1])) {
+        result.image = mdImgMatch[1];
+      }
+
+      // 0. Check KSP JSON API payload if rawText is JSON from /m_action/api/item/
+      if (rawText.trim().startsWith('{') && kspUin) {
+        try {
+          const j = JSON.parse(rawText);
+          const d = (j && j.result && j.result.data) || j.data || j;
+          if (d && (d.price || d.regular_price)) {
+            const regP = Number(d.price || d.regular_price);
+            const eilatP = Number(d.eilatPrice || d.eilat_price || Math.round(regP / 1.18));
+            if (d.name && !isBlockedTitle(d.name)) result.title = String(d.name).trim();
+            if (d.img || d.image) result.image = String(d.img || d.image);
+            result.price = regP;
+            result.variations = [
+              { id: 'reg', label: 'מחיר רגיל', price: regP, inStock: true },
+              { id: 'eilat', label: 'מחיר אילת', price: eilatP, inStock: true }
+            ];
+            result.SelectedVariant = 'מחיר רגיל';
+            result.sourceMethod = 'זיהוי חי מ-KSP';
+            return result;
           }
         } catch (e) {}
       }
-      return null;
+
+      // 1. Check Pricedrop KSP Mirror pattern ("₪369 מחיר נוכחי" or "מחיר נוכחי 369₪")
+      const pdMatch1 = cleanText.match(/₪\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*מחיר\s+(?:נוכחי|אחרון)/);
+      const pdMatch2 = cleanText.match(/מחיר\s+(?:נוכחי|אחרון)\s*[:\s\r\n]*?(?:₪\s*)?(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*₪?/);
+      if (pdMatch1 || pdMatch2) {
+        const regP = Number(((pdMatch1 && pdMatch1[1]) || (pdMatch2 && pdMatch2[1])).replace(/,/g, ''));
+        if (regP > 5) {
+          const eilatP = Math.round(regP / 1.18);
+          result.price = regP;
+          result.variations = [
+            { id: 'reg', label: 'מחיר רגיל', price: regP, inStock: true },
+            { id: 'eilat', label: 'מחיר אילת', price: eilatP, inStock: true }
+          ];
+          result.SelectedVariant = 'מחיר רגיל';
+          result.sourceMethod = 'זיהוי מחיר חי מ-KSP';
+          return result;
+        }
+      }
+
+      // Remove related products & shipping sections so we never grab shipping/related prices
+      let mainText = cleanText;
+      const cutMarkers = [
+        'אפשרות איסוף ומשלוח',
+        'הטבות והצעות משלימות',
+        'לקוחות שהתעניינו במוצר זה',
+        'מוצרים נוספים שיכולים להתאים',
+        'מוצרים קשורים',
+        'YOU MAY ALSO LIKE'
+      ];
+      for (const marker of cutMarkers) {
+        const idx = mainText.indexOf(marker);
+        if (idx > 40) {
+          mainText = mainText.slice(0, idx);
+        }
+      }
+
+      // 2. Explicit "מחיר:" + "מחיר אילת:" pattern (used on KSP SSR & Israeli electronics stores)
+      const regPriceMatch = mainText.match(/מחיר\s*:\s*(?:(?:₪|ש["״']ח|ILS)\s*)?(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)/i);
+      const eilatPriceMatch = mainText.match(/מחיר\s+אילת\s*:\s*(?:(?:₪|ש["״']ח|ILS)\s*)?(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)/i);
+      if (regPriceMatch) {
+        const regP = Number(regPriceMatch[1].replace(/,/g, ''));
+        if (regP > 5) {
+          result.price = regP;
+          result.variations.push({ id: 'reg', label: 'מחיר רגיל', price: regP, inStock: true });
+          result.SelectedVariant = 'מחיר רגיל';
+          result.sourceMethod = 'חילוץ מחיר חי מדף המוצר';
+        }
+      }
+      if (eilatPriceMatch) {
+        const eilatP = Number(eilatPriceMatch[1].replace(/,/g, ''));
+        if (eilatP > 5) {
+          result.variations.push({ id: 'eilat', label: 'מחיר אילת', price: eilatP, inStock: true });
+        }
+      } else if (kspUin && result.price) {
+        result.variations.push({ id: 'eilat', label: 'מחיר אילת', price: Math.round(result.price / 1.18), inStock: true });
+      }
+
+      // 3. Check size/option price pairs in text (e.g., "40 - 269.90 ₪" or "2 ק"ג - 120 ₪")
+      const optionPairs = [...mainText.matchAll(/(\b\d{2}(?:\.5)?|\d+\s*ק["״']ג)\s*-\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*₪/g)];
+      if (optionPairs.length > 1 && result.variations.length === 0) {
+        optionPairs.forEach((m, i) => {
+          const lbl = m[1].trim();
+          const pr = Number(m[2].replace(/,/g, ''));
+          if (pr > 5) {
+            result.variations.push({ id: `opt_${i}`, label: lbl, price: pr, inStock: true });
+          }
+        });
+        if (result.variations.length > 0 && !result.price) {
+          result.price = result.variations[0].price;
+          result.SelectedVariant = result.variations[0].label;
+        }
+      }
+
+      // 4. Check WooCommerce style price range (e.g. "₪120 – ₪195")
+      if (!result.price) {
+        const rangeMatch = mainText.match(/₪\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*[–-]\s*₪\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)/);
+        if (rangeMatch) {
+          const lowP = Number(rangeMatch[1].replace(/,/g, ''));
+          const highP = Number(rangeMatch[2].replace(/,/g, ''));
+          if (lowP > 5 && highP >= lowP) {
+            result.price = lowP;
+            result.variations = [
+              { id: 'opt_low', label: 'אפשרות בסיסית', price: lowP, inStock: true },
+              { id: 'opt_high', label: 'אפשרות מורחבת', price: highP, inStock: true }
+            ];
+            result.SelectedVariant = result.variations[0].label;
+          }
+        }
+      }
+
+      // 5. Fallback: Find main product price (ignoring shipping/minimum order/coupons)
+      if (!result.price) {
+        const lines = mainText.split(/[\r\n]+/);
+        for (const line of lines) {
+          if (/משלוח|איסוף|מינימום|מקסימום|קופון|בקנייה מעל|תוספת|החלפה|החזרה/.test(line)) continue;
+          const m = line.match(/(?:מחיר מבצע|מחיר)?\s*(?:₪\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)|(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*₪)/);
+          if (m) {
+            const val = Number((m[1] || m[2]).replace(/,/g, ''));
+            if (val > 15 && val < 100000) {
+              result.price = val;
+              if (kspUin && result.variations.length === 0) {
+                result.variations = [
+                  { id: 'reg', label: 'מחיר רגיל', price: val, inStock: true },
+                  { id: 'eilat', label: 'מחיר אילת', price: Math.round(val / 1.18), inStock: true }
+                ];
+                result.SelectedVariant = 'מחיר רגיל';
+              }
+              break;
+            }
+          }
+        }
+      }
+
+      return result;
     }
 
     function parseHtmlForProductAndVariants(html, targetUrl) {
+      const kspUin = extractKspUin(targetUrl);
+      if (isBlockedPayload(html, Boolean(kspUin))) {
+        return { title: '', price: null, image: '', SelectedVariant: '', variations: [], sourceMethod: '' };
+      }
+
+      // Check if raw response is JSON (e.g. KSP /m_action/api/item/)
+      if (html.trim().startsWith('{')) {
+        return extractPricesAndVariantsFromText(html, '', targetUrl);
+      }
+
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
       const result = {
         title: '',
         price: null,
-        image: '',
+        image: kspUin ? `https://ksp.co.il/shop/items/${kspUin}.jpg` : '',
         SelectedVariant: '',
         variations: [],
         sourceMethod: ''
@@ -1425,13 +1770,23 @@
       const ogTitle = doc.querySelector('meta[property="og:title"]')?.getAttribute('content');
       const h1Text = doc.querySelector('h1')?.textContent?.trim();
       const docTitle = doc.querySelector('title')?.textContent?.trim();
-      result.title = (h1Text || ogTitle || docTitle || '').replace(/\s+/g, ' ').trim();
+      let candidateTitle = (h1Text || ogTitle || docTitle || '')
+        .replace(/\s*[|-]\s*(?:KSP|Pricedrop|קיי\.אס\.פי|טרקלין חשמל|פוט לוקר|Foot Locker).*$/i, '')
+        .replace(/^Premium\s*\|\s*/i, '')
+        .replace(/\s*\.\.\.\s*$/, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+      if (!isBlockedTitle(candidateTitle)) {
+        result.title = candidateTitle;
+      }
 
       const ogImage =
+        doc.querySelector('img[src*="media.ksp.co.il"]')?.getAttribute('src') ||
+        doc.querySelector('img[src*="ksp.co.il/shop/items"]')?.getAttribute('src') ||
         doc.querySelector('meta[property="og:image"]')?.getAttribute('content') ||
         doc.querySelector('meta[name="twitter:image"]')?.getAttribute('content') ||
         doc.querySelector('.woocommerce-product-gallery__image img')?.getAttribute('src') || '';
-      if (ogImage && ogImage.startsWith('http')) {
+      if (ogImage && ogImage.startsWith('http') && !/pricedrop.*logo|favicon/i.test(ogImage)) {
         result.image = ogImage;
       }
 
@@ -1472,8 +1827,8 @@
           items.forEach(item => {
             if (!item || typeof item !== 'object') return;
             if (String(item['@type'] || '').includes('Product')) {
-              if (!result.title && item.name) result.title = String(item.name).trim();
-              if (!result.image && item.image) {
+              if (!result.title && item.name && !isBlockedTitle(item.name)) result.title = String(item.name).trim();
+              if (item.image) {
                 const imgVal = Array.isArray(item.image) ? item.image[0] : (item.image.url || item.image);
                 if (typeof imgVal === 'string' && imgVal.startsWith('http')) result.image = imgVal;
               }
@@ -1494,7 +1849,7 @@
                     }
                     if (!result.price) {
                       result.price = p;
-                      result.sourceMethod = result.sourceMethod || 'זיהוי מחיר ותמונה מהדף';
+                      result.sourceMethod = result.sourceMethod || 'זיהוי מחיר ותמונה מהדף (Schema.org)';
                     }
                   }
                 });
@@ -1512,27 +1867,33 @@
           doc.querySelector('[itemprop="price"]')?.getAttribute('content');
         if (metaPrice && !isNaN(Number(metaPrice)) && Number(metaPrice) > 0) {
           result.price = Number(metaPrice);
-          result.sourceMethod = 'זיהוי מחיר מהדף';
+          result.sourceMethod = 'זיהוי מחיר מתגיות הדף';
         }
       }
 
-      // 5. Primary DOM Price Selector
-      if (!result.price) {
-        const cloned = doc.body ? doc.body.cloneNode(true) : null;
-        if (cloned) {
-          cloned.querySelectorAll('.related, .upsells, footer, nav, header').forEach(el => el.remove());
-          const priceEls = cloned.querySelectorAll('.price, .product-price, .sale-price, [class*="price"]');
-          for (const el of priceEls) {
-            const txt = el.textContent || '';
-            const m = txt.match(/(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*₪|₪\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)/);
-            if (m) {
-              const num = Number((m[1] || m[2]).replace(/,/g, ''));
-              if (num > 5 && num < 100000) {
-                result.price = num;
-                result.sourceMethod = 'זיהוי מחיר מהדף';
-                break;
-              }
-            }
+      // 5. Structured Text & DOM extraction (ensures block tags produce newlines in detached DOMParser trees)
+      if ((!result.price || kspUin) && doc.body) {
+        const cloned = doc.body.cloneNode(true);
+        cloned.querySelectorAll('script, style, noscript, .related, .upsells, footer, nav, header').forEach(el => el.remove());
+        cloned.querySelectorAll('div, p, li, tr, br, h1, h2, h3, h4, section, article').forEach(el => {
+          el.prepend(doc.createTextNode('\n'));
+          el.append(doc.createTextNode('\n'));
+        });
+        cloned.querySelectorAll('span, b, strong, td, th, a, label, ins').forEach(el => {
+          el.prepend(doc.createTextNode(' '));
+          el.append(doc.createTextNode(' '));
+        });
+        const bodyText = cloned.textContent || '';
+        const textExtracted = extractPricesAndVariantsFromText(bodyText, result.title, targetUrl);
+        if (textExtracted.title && (!result.title || textExtracted.title.length > result.title.length)) {
+          result.title = textExtracted.title;
+        }
+        if (textExtracted.price) {
+          result.price = textExtracted.price;
+          result.sourceMethod = textExtracted.sourceMethod;
+          if (result.variations.length === 0 && textExtracted.variations.length > 0) {
+            result.variations = textExtracted.variations;
+            result.SelectedVariant = textExtracted.SelectedVariant;
           }
         }
       }
@@ -1548,81 +1909,119 @@
       return result;
     }
 
-    function inspectUrlPatternsAndFallback(rawUrl) {
-      const decoded = decodeURIComponent(rawUrl);
-      let urlVariantId = '';
-      try { urlVariantId = new URL(rawUrl).searchParams.get('variant') || ''; } catch (e) {}
+    // Specialized Multi-Route KSP Extractor (defeats Cloudflare Bot Fight Mode dynamically without hardcoding)
+    async function extractKspProductLive(kspUin, originalUrl, updateStep) {
+      const kspMobUrl = `https://ksp.co.il/mob/item/${kspUin}`;
+      const pricedropUrl = `https://pricedrop.co.il/item/${kspUin}`;
+      const kspTranslateUrl = `https://ksp-co-il.translate.goog/mob/item/${kspUin}?_x_tr_sl=es&_x_tr_tl=iw&_x_tr_hl=iw&_x_tr_pto=wapp`;
+      const kspApiUrl = `https://ksp.co.il/m_action/api/item/${kspUin}`;
 
-      if (decoded.includes('footlocker.co.il/products/f307790011')) {
-        const variants = [
-          { id: '40', label: 'מידה 40 (7 US)', price: 269.90, inStock: true },
-          { id: '45558470639769', label: 'מידה 41 (8 US)', price: 269.90, inStock: true },
-          { id: '42.5', label: 'מידה 42.5 (9 US)', price: 269.90, inStock: true },
-          { id: '44', label: 'מידה 44 (10 US)', price: 269.90, inStock: true },
-          { id: '45', label: 'מידה 45 (11 US)', price: 269.90, inStock: true },
-          { id: '46', label: 'מידה 46 (12 US)', price: 269.90, inStock: true },
-          { id: '47.5', label: 'מידה 47.5 (13 US)', price: 269.90, inStock: true }
-        ];
-        const matched = variants.find(v => v.id === urlVariantId) || variants[1];
-        return {
-          title: 'כפכפי NIKE REACTX REJUVEN8 (דגם HV4479-801)',
-          price: matched.price,
-          image: FALLBACK_IMAGES.slides,
-          SelectedVariant: matched.label,
-          variations: variants,
-          sourceMethod: 'זוהו מידות המוצר והמידה שנבחרה בקישור'
-        };
-      }
+      let bestPartial = {
+        title: '',
+        price: null,
+        image: `https://ksp.co.il/shop/items/${kspUin}.jpg`,
+        SelectedVariant: '',
+        variations: [],
+        sourceMethod: ''
+      };
 
-      if (decoded.includes('myrabbit.co.il/product/green-oat-hay2kg')) {
-        const variants = [
-          { id: 'weight-2kg', label: 'משקל: 2 ק"ג', price: 120, inStock: true },
-          { id: 'weight-4kg', label: 'משקל: 4 ק"ג', price: 195, inStock: true }
-        ];
-        return {
-          title: 'חציר שיבולת שועל איכותית לארנבים – טרי (2–4 ק"ג)',
-          price: 120,
-          image: FALLBACK_IMAGES.rabbit,
-          SelectedVariant: 'משקל: 2 ק"ג',
-          variations: variants,
-          sourceMethod: 'זוהו 2 אפשרויות משקל בדף המוצר (120 ₪ / 195 ₪)'
-        };
-      }
-
-      if (decoded.includes('traklin.co.il') && (decoded.includes('nc503') || decoded.includes('מכונת_גלידה'))) {
-        return {
-          title: 'מכונת גלידה NINJA CREAMI DELUXE XL דגם NC503 נינג\'ה',
-          price: 999,
-          image: FALLBACK_IMAGES.ninja,
-          SelectedVariant: 'דגם NC503 יבואן רשמי',
-          variations: [
-            { id: 'nc503-std', label: 'דגם NC503 יבואן רשמי', price: 999, inStock: true }
-          ],
-          sourceMethod: 'זוהה המוצר הראשי בדף טרקלין חשמל'
-        };
-      }
-
-      // KSP Support (handles /item/12345, /web/item/12345, /mob/item/12345 and product URLs)
-      if (decoded.includes('ksp.co.il')) {
-        const uinMatch = decoded.match(/item[\/=](\d+)/i) || decoded.match(/\/(\d{4,8})(?:[\/?#]|$)/);
-        const uin = uinMatch ? uinMatch[1] : '';
-        const kspImg = uin ? `https://ksp.co.il/shop/items/${uin}.jpg` : FALLBACK_IMAGES.ninja;
-        let itemTitle = extractTitleFromUrlSlug(rawUrl);
-        if (!itemTitle || itemTitle.includes('ksp') || itemTitle.includes('item')) {
-          itemTitle = uin ? `מוצר KSP (מק״ט: ${uin})` : 'מוצר KSP';
+      const recordCandidate = (parsed) => {
+        if (!parsed) return null;
+        if (parsed.title && !isBlockedTitle(parsed.title)) {
+          if (!bestPartial.title || parsed.title.length > bestPartial.title.length) {
+            bestPartial.title = parsed.title;
+          }
         }
-        return {
-          title: itemTitle,
-          price: '',
-          image: kspImg,
-          SelectedVariant: uin ? `מק״ט ${uin}` : '',
-          variations: uin ? [{ id: uin, label: `מק״ט ${uin}`, price: 0, inStock: true }] : [],
-          sourceMethod: uin ? `זוהה מוצר KSP (מק״ט ${uin})` : 'זוהתה חנות KSP',
-          category: 'electronics'
-        };
+        if (parsed.image && parsed.image.startsWith('http')) {
+          bestPartial.image = parsed.image;
+        }
+        if (parsed.price && Number(parsed.price) > 5 && !isBlockedTitle(parsed.title || bestPartial.title)) {
+          if (!parsed.title) parsed.title = bestPartial.title;
+          if (!parsed.image) parsed.image = bestPartial.image;
+          return parsed;
+        }
+        return null;
+      };
+
+      const runFetchParse = async (fetcherPromise) => {
+        const raw = await fetcherPromise;
+        if (!raw || !raw.content) throw new Error('Empty payload');
+        const parsed = raw.format === 'html'
+          ? parseHtmlForProductAndVariants(raw.content, originalUrl)
+          : extractPricesAndVariantsFromText(raw.content, raw.title || '', originalUrl);
+        const complete = recordCandidate(parsed);
+        if (complete) return complete;
+        throw new Error('Incomplete parse');
+      };
+
+      // Stage 1: Try Android Native WebView & CapacitorHttp first (when running in APK on phone)
+      try {
+        const res = await Promise.any([
+          runFetchParse(tryAndroidNativeWebViewScrape(kspMobUrl, 6500)),
+          runFetchParse(tryCapacitorNativeHttpGet(kspMobUrl)),
+          runFetchParse(tryCapacitorNativeHttpGet(kspApiUrl)),
+          runFetchParse(tryCapacitorNativeHttpGet(pricedropUrl))
+        ]);
+        if (res && res.price) return res;
+      } catch (e) {}
+
+      // Stage 2: Parallel Race across KSP Mirror (pricedrop.co.il), Google Translate Crawler Proxy, and KSP Mobile SSR
+      if (updateStep) updateStep('עוקף הגנת בוטים של KSP ושולף מחיר חי...', 65);
+      try {
+        const raceTasks = [
+          runFetchParse(fetchJinaMarkdownSimple(pricedropUrl, 7500)),
+          runFetchParse(fetchViaCorsProxy('codetabs', pricedropUrl, 6500)),
+          runFetchParse(fetchViaCorsProxy('corsproxy', pricedropUrl, 6500)),
+          runFetchParse(fetchViaCorsProxy('allorigins_get', pricedropUrl, 6500)),
+          runFetchParse(fetchViaCorsProxy('allorigins_raw', pricedropUrl, 6500)),
+          runFetchParse(fetchJinaMarkdownSimple(kspMobUrl, 7500)),
+          runFetchParse(fetchJinaMarkdownSimple(kspTranslateUrl, 7500)),
+          runFetchParse(fetchViaCorsProxy('codetabs', kspTranslateUrl, 6500)),
+          runFetchParse(fetchViaCorsProxy('corsproxy', kspTranslateUrl, 6500)),
+          runFetchParse(fetchViaCorsProxy('allorigins_get', kspTranslateUrl, 6500)),
+          runFetchParse(fetchViaCorsProxy('codetabs', kspMobUrl, 6000)),
+          runFetchParse(fetchViaCorsProxy('corsproxy', kspMobUrl, 6000))
+        ];
+        const winner = await Promise.any(raceTasks);
+        if (winner && winner.price) return winner;
+      } catch (e) {}
+
+      // Stage 3: Two-Step Search Engine Index Resolver (queries search index for UIN -> Title -> Price snippet)
+      if (!bestPartial.price) {
+        if (updateStep) updateStep('מחלץ נתוני מוצר ומחיר מאינדקס החיפוש של KSP...', 85);
+        try {
+          const searchQ1 = encodeURIComponent(`"ksp.co.il" ${kspUin}`);
+          const ddgUrl1 = `https://html.duckduckgo.com/html/?q=${searchQ1}`;
+          const s1 = await Promise.any([
+            fetchJinaMarkdownSimple(ddgUrl1, 6500),
+            fetchViaCorsProxy('allorigins_get', ddgUrl1, 6000),
+            fetchViaCorsProxy('codetabs', ddgUrl1, 6000)
+          ]);
+          if (s1 && s1.content && !bestPartial.title) {
+            const titleInSearch = s1.content.match(/([^\r\n|\[\]]{10,90}?)\s*[-|]\s*KSP/i);
+            if (titleInSearch && !isBlockedTitle(titleInSearch[1])) {
+              bestPartial.title = titleInSearch[1].replace(/\*\*/g, '').trim();
+            }
+          }
+          if (bestPartial.title) {
+            const shortTitle = bestPartial.title.split(/\s+/).slice(0, 6).join(' ');
+            const searchQ2 = encodeURIComponent(`"${shortTitle}" KSP מחיר ₪`);
+            const ddgUrl2 = `https://html.duckduckgo.com/html/?q=${searchQ2}`;
+            const s2 = await Promise.any([
+              fetchJinaMarkdownSimple(ddgUrl2, 6500),
+              fetchViaCorsProxy('allorigins_get', ddgUrl2, 6000),
+              fetchViaCorsProxy('codetabs', ddgUrl2, 6000)
+            ]);
+            if (s2 && s2.content) {
+              const parsedSearch = extractPricesAndVariantsFromText(s2.content, bestPartial.title, originalUrl);
+              const complete = recordCandidate(parsedSearch);
+              if (complete) return complete;
+            }
+          }
+        } catch (e) {}
       }
 
-      return null;
+      return bestPartial.title || bestPartial.price ? bestPartial : null;
     }
 
     async function scanProductUrl(rawUrl) {
@@ -1641,25 +2040,29 @@
         if (progressBar) progressBar.style.width = `${pct}%`;
       };
 
-      updateStep('מתחבר לחנות ושולף תמונת מוצר ופרטים...', 30);
-      await new Promise(r => setTimeout(r, 300));
+      updateStep('מתחבר לחנות ושולף נתונים בזמן אמת...', 30);
 
       let urlVariantId = '';
       try { urlVariantId = new URL(rawUrl).searchParams.get('variant') || ''; } catch (e) {}
 
       let extracted = null;
+      const kspUin = extractKspUin(cleanedUrl);
 
-      // Check known tricky stores first or in combination with live fetch
-      const patternData = inspectUrlPatternsAndFallback(rawUrl);
+      // 1. Dedicated Multi-Route KSP Scanner (handles Cloudflare WAF on ksp.co.il)
+      if (kspUin) {
+        updateStep('מזהה מוצר KSP – מפעיל סורק עוקף חסימות בוטים...', 45);
+        extracted = await extractKspProductLive(kspUin, rawUrl, updateStep);
+      }
 
-      if (cleanedUrl.includes('/products/') && !patternData) {
-        updateStep('מזהה מידות ואפשרויות בדף המוצר...', 60);
+      // 2. If Shopify store (/products/...), try Shopify .json API first
+      if ((!extracted || !extracted.price) && cleanedUrl.includes('/products/')) {
+        updateStep('מזהה חנות Shopify – שולף מחירים ומידות מקובץ המוצר...', 55);
         try {
           const u = new URL(cleanedUrl);
           const baseProductPath = u.origin + u.pathname.replace(/\/$/, '') + '.json';
-          const rawJsonText = await tryFetchRawViaProxies(baseProductPath);
-          if (rawJsonText) {
-            const parsed = JSON.parse(rawJsonText);
+          const fetchedJson = await tryFetchRawViaProxies(baseProductPath);
+          if (fetchedJson && fetchedJson.content) {
+            const parsed = JSON.parse(fetchedJson.content);
             if (parsed && parsed.product) {
               const prod = parsed.product;
               const vars = (prod.variants || []).map(v => ({
@@ -1676,47 +2079,52 @@
                 image: imgSrc,
                 SelectedVariant: chosen ? chosen.label : '',
                 variations: vars,
-                sourceMethod: 'זוהו פרטי המוצר והמידות אוטומטית'
+                sourceMethod: 'זיהוי חי מ-Shopify API'
               };
             }
           }
         } catch (e) {}
       }
 
-      if (!extracted && !patternData) {
-        updateStep('קורא מחיר, תמונה ואפשרויות בחירה מהדף...', 75);
-        const html = await tryFetchRawViaProxies(cleanedUrl);
-        if (html) {
-          const parsedHtml = parseHtmlForProductAndVariants(html, rawUrl);
-          if (parsedHtml.title || parsedHtml.price || parsedHtml.variations.length > 0) {
-            extracted = parsedHtml;
+      // 3. Universal Live Page Fetch (Direct CapacitorHttp / Proxies / Jina SSR Reader)
+      if (!extracted || !extracted.price) {
+        updateStep('קורא מחיר, תמונה ואפשרויות בחירה ישירות מדף המוצר...', 75);
+        const fetched = await tryFetchRawViaProxies(cleanedUrl);
+        if (fetched && fetched.content) {
+          if (fetched.format === 'html') {
+            const parsedHtml = parseHtmlForProductAndVariants(fetched.content, rawUrl);
+            if ((parsedHtml.title && !isBlockedTitle(parsedHtml.title)) || parsedHtml.price || parsedHtml.variations.length > 0) {
+              extracted = parsedHtml;
+            }
+          } else {
+            const parsedMd = extractPricesAndVariantsFromText(fetched.content, fetched.title, rawUrl);
+            if ((parsedMd.title && !isBlockedTitle(parsedMd.title)) || parsedMd.price || parsedMd.variations.length > 0) {
+              extracted = parsedMd;
+            }
           }
         }
       }
 
-      if (patternData) {
-        extracted = patternData;
-      }
-
-      updateStep('המוצר זוהה בהצלחה!', 100);
+      updateStep('הסריקה הושלמה!', 100);
       await new Promise(r => setTimeout(r, 200));
       if (progressBox) progressBox.classList.add('hidden');
 
       const fallbackTitle = extractTitleFromUrlSlug(cleanedUrl);
+      const validTitle = (extracted && extracted.title && !isBlockedTitle(extracted.title)) ? extracted.title : fallbackTitle;
       const storeMeta = getStoreMeta(cleanedUrl);
-      const cat = guessCategoryFromUrl(cleanedUrl, extracted ? extracted.title : fallbackTitle);
+      const cat = guessCategoryFromUrl(cleanedUrl, validTitle);
       const chosenImage = (extracted && extracted.image) ? extracted.image : getFallbackProductImage(cleanedUrl, cat);
 
       return {
         url: cleanedUrl,
         store: storeMeta.name,
         storeFavicon: storeMeta.favicon,
-        title: (extracted && extracted.title) ? extracted.title : fallbackTitle,
+        title: validTitle,
         price: (extracted && extracted.price) ? extracted.price : '',
         image: chosenImage,
         SelectedVariant: (extracted && extracted.SelectedVariant) ? extracted.SelectedVariant : (urlVariantId ? `מידה / אפשרות #${urlVariantId}` : ''),
         variations: (extracted && Array.isArray(extracted.variations)) ? extracted.variations : [],
-        sourceMethod: (extracted && extracted.sourceMethod) ? extracted.sourceMethod : 'זיהוי קישור מהיר',
+        sourceMethod: (extracted && extracted.sourceMethod) ? extracted.sourceMethod : 'סריקת קישור ישירה',
         category: cat
       };
     }
@@ -1964,6 +2372,13 @@
 
       const scanned = await scanProductUrl(p.url);
       let newPrice = p.currentPrice;
+
+      if (scanned.title && !isBlockedTitle(scanned.title) && (/^\d+$|^מוצר KSP|Just a moment/i.test(p.title || ""))) {
+        p.title = scanned.title;
+      }
+      if (scanned.image && scanned.image.startsWith("http") && (!p.image || p.image.startsWith("data:"))) {
+        p.image = scanned.image;
+      }
 
       if (p.SelectedVariant && scanned.variations && scanned.variations.length > 0) {
         const matchedVar = scanned.variations.find(v => v.label === p.SelectedVariant);
