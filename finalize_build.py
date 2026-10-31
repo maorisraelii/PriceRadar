@@ -241,10 +241,38 @@ public class MainActivity extends BridgeActivity {
                 if (am != null) {
                     long interval = 15 * 60 * 1000;
                     am.setInexactRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + interval, interval, pi);
+                          context.sendBroadcast(i);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
             }
+        }
+
+        @JavascriptInterface
+        public void sendNativeNotification(final String title, final String message) {
+            mainHandler.post(() -> {
+                try {
+                    NotificationCompat.Builder b = new NotificationCompat.Builder(context, CHANNEL_ID)
+                        .setSmallIcon(context.getApplicationInfo().icon)
+                        .setContentTitle(title)
+                        .setContentText(message)
+                        .setPriority(NotificationCompat.PRIORITY_HIGH)
+                        .setDefaults(NotificationCompat.DEFAULT_ALL)
+                        .setAutoCancel(true);
+
+                    Intent tapIntent = new Intent(context, MainActivity.class);
+                    tapIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                    PendingIntent pi = PendingIntent.getActivity(context, (int) System.currentTimeMillis(), tapIntent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+                    b.setContentIntent(pi);
+
+                    NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+                    if (nm != null) {
+                        nm.notify((int) System.currentTimeMillis(), b.build());
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            });
         }
 
         @JavascriptInterface

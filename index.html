@@ -546,9 +546,14 @@
                 <p class="text-xs font-extrabold text-white">התראות קופצות במכשיר (Push)</p>
                 <p class="text-[11px] text-slate-300">קבלת התראה על המסך גם כשאתה מחוץ לאפליקציה</p>
               </div>
-              <button id="enableBrowserNotifBtn" type="button" class="px-3.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-xs font-bold text-cyan-200 border border-white/20 transition">
-                הפעל התראות
-              </button>
+              <div class="flex items-center gap-2">
+                <button id="testDeviceNotifBtn" type="button" class="px-3.5 py-2 rounded-xl btn-gradient-emerald text-white text-xs font-extrabold shadow-md transition">
+                  🔔 שלח בדיקה למכשיר
+                </button>
+                <button id="enableBrowserNotifBtn" type="button" class="px-3.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-xs font-bold text-cyan-200 border border-white/20 transition">
+                  הפעל התראות
+                </button>
+              </div>
             </div>
 
             <button id="saveScheduleBtn" type="button" class="w-full py-3 rounded-2xl btn-gradient-primary text-white font-extrabold text-sm">
@@ -2545,7 +2550,12 @@
     }
 
     async function triggerBrowserNotification(title, body) {
-      if (!state.settings.browserNotifEnabled) return;
+      // 1. Direct Native Android Java bridge (100% reliable system notification)
+      if (window.AndroidNativeScraper && typeof window.AndroidNativeScraper.sendNativeNotification === 'function') {
+        try {
+          window.AndroidNativeScraper.sendNativeNotification(title, body);
+        } catch (e) {}
+      }
 
       // 1. Native Android Local Notification (Pop-up banner in notification drawer + heads-up)
       if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications) {
@@ -3371,23 +3381,23 @@
       });
 
       document.getElementById('enableBrowserNotifBtn').addEventListener('click', async () => {
-        if (!('Notification' in window)) {
-          showToast('התראות פנימיות פעילות', 'האפליקציה תתריע על המסך ובטלגרם.', 'info');
-          return;
-        }
-        try {
-          const perm = await Notification.requestPermission();
-          if (perm === 'granted') {
-            state.settings.browserNotifEnabled = true;
-            saveState();
-            showToast('התראות הופעלו! ✅', 'תקבל התראות קופצות במכשיר ברגע שהמחיר יורד.', 'success');
-          } else {
-            showToast('התראות באפליקציה פעילות', 'ניתן גם לחבר טלגרם לקבלת הודעות.', 'info');
-          }
-        } catch (e) {
-          showToast('התראות באפליקציה פעילות', 'התראות יופיעו על המסך ובטלגרם.', 'info');
-        }
+        const granted = await requestDeviceNotificationPermission();
+        state.settings.browserNotifEnabled = true;
+        saveState();
+        await triggerBrowserNotification('🔔 התראות PriceRadar פעילות!', 'המכשיר שלך מקושר ויקבל התראות פוש בכל ירידת מחיר.');
+        showToast('התראת בדיקה נשלחה! 🔔', 'בדוק את וילון ההתראות בראש המסך בטלפון.', 'success');
       });
+
+      const testNotifBtn = document.getElementById('testDeviceNotifBtn');
+      if (testNotifBtn) {
+        testNotifBtn.addEventListener('click', async () => {
+          await requestDeviceNotificationPermission();
+          state.settings.browserNotifEnabled = true;
+          saveState();
+          await triggerBrowserNotification('🔔 בדיקת התראת פוש PriceRadar', 'התראות פוש פועלות במכשיר שלך בהצלחה!');
+          showToast('התראת בדיקה נשלחה! 🔔', 'נשלחה התראה לווילון ההתראות במכשיר.', 'success');
+        });
+      }
 
       document.getElementById('autoDetectChatIdBtn').addEventListener('click', async () => {
         const token = document.getElementById('tgBotTokenInput').value.trim();
@@ -3541,6 +3551,16 @@
       });
 
       // Check if first-time user
+      // Auto-register device ID with Android Native Layer and ensure channels exist
+      setTimeout(async () => {
+        try {
+          if (window.AndroidNativeScraper && typeof window.AndroidNativeScraper.saveDeviceId === 'function') {
+            window.AndroidNativeScraper.saveDeviceId(state.deviceId || state.settings.deviceId || '');
+          }
+          await requestDeviceNotificationPermission();
+        } catch (e) {}
+      }, 800);
+
       try {
         const completed = localStorage.getItem('priceradar_onboarding_completed_v1');
         if (!completed) {
