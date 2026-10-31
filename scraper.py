@@ -15,6 +15,39 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL", "").strip().rstrip("/")
 SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "").strip()
 
 
+def extract_ksp_uin(url: str) -> str:
+    m = re.search(r"ksp\.co\.il/(?:web/|mob/)?item/(\d+)", url or "", re.I)
+    return m.group(1) if m else ""
+
+
+def get_scrape_candidates(url: str) -> list[str]:
+    """Returns ordered scrape candidate URLs (including KSP anti-bot mirrors and SSR routes)."""
+    uin = extract_ksp_uin(url)
+    if uin:
+        return [
+            f"https://pricedrop.co.il/item/{uin}",
+            f"https://ksp.co.il/mob/item/{uin}",
+            f"https://ksp-co-il.translate.goog/mob/item/{uin}?_x_tr_sl=es&_x_tr_tl=iw&_x_tr_hl=iw&_x_tr_pto=wapp"
+        ]
+    return [url.strip()]
+
+
+def is_blocked_html(html: str) -> bool:
+    if not html or len(html) < 160:
+        return True
+    blocked_markers = [
+        "Just a moment...",
+        "cf_chl_opt",
+        "cf-browser-verification",
+        "Attention Required! | Cloudflare",
+        "Enable JavaScript and cookies to continue",
+        "Access Denied",
+        "שגיאה 500",
+        "אירעה שגיאה לא צפויה"
+    ]
+    return any(marker in html for marker in blocked_markers)
+
+
 def send_telegram(text: str, chat_id: str = ""):
     target_chat = (chat_id or TELEGRAM_CHAT_ID).strip()
     if not TELEGRAM_BOT_TOKEN or not target_chat:
@@ -62,10 +95,14 @@ def sync_telegram_bot_subscribers():
 
 
 def extract_price_from_html(html: str, url: str, selected_variant: str = ""):
+    if is_blocked_html(html):
+        return None
+
     soup = BeautifulSoup(html, "html.parser")
     parsed_url = urlparse(url)
     url_variant_id = parse_qs(parsed_url.query).get("variant", [""])[0]
 
+    # 1. WooCommerce data-product_variations
     form = soup.find(attrs={"data-product_variations": True})
     if form:
         try:
@@ -79,6 +116,7 @@ def extract_price_from_html(html: str, url: str, selected_variant: str = ""):
         except Exception:
             pass
 
+    # 2. Schema.org JSON-LD
     for scr in soup.find_all("script", type="application/ld+json"):
         try:
             data = json.loads(scr.string or "{}")
@@ -102,6 +140,7 @@ def extract_price_from_html(html: str, url: str, selected_variant: str = ""):
         except Exception:
             pass
 
+    # 3. OpenGraph Meta Price
     for prop in ["product:price:amount", "og:price:amount"]:
         meta = soup.find("meta", property=prop)
         if meta and meta.get("content"):
@@ -110,23 +149,52 @@ def extract_price_from_html(html: str, url: str, selected_variant: str = ""):
             except ValueError:
                 pass
 
-    for rel in soup.select(".related, .upsells, footer, nav, header"):
+    # 4. Clean text extraction (supports KSP Pricedrop mirror, KSP SSR /mob/item/, Eilat vs Regular price)
+    for rel in soup.select("script, style, .related, .upsells, footer, nav, header"):
         rel.decompose()
-    for el in soup.select(".price, .product-price, .sale-price, [class*='price']"):
-        txt = el.get_text(" ", strip=True)
-        m = re.search(r"(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*₪|₪\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)", txt)
+    full_text = soup.get_text("\n", strip=True)
+
+    # 4a. Check Pricedrop KSP mirror pattern ("₪369 מחיר נוכחי" or "מחיר נוכחי 369₪")
+    pd1 = re.search(r"₪\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*מחיר\s+(?:נוכחי|אחרון)", full_text)
+    pd2 = re.search(r"מחיר\s+(?:נוכחי|אחרון)\s*[:\s\r\n]*?(?:₪\s*)?(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*₪?", full_text)
+    if pd1 or pd2:
+        reg_val = float((pd1.group(1) if pd1 else pd2.group(1)).replace(",", ""))
+        if reg_val > 5:
+            return float(round(reg_val / 1.18)) if "אילת" in selected_variant else reg_val
+
+    for marker in ["אפשרות איסוף ומשלוח", "הטבות והצעות משלימות", "לקוחות שהתעניינו במוצר זה", "מוצרים נוספים שיכולים להתאים"]:
+        idx = full_text.find(marker)
+        if idx > 40:
+            full_text = full_text[:idx]
+
+    if "אילת" in selected_variant:
+        m_eilat = re.search(r"מחיר\s+אילת\s*:\s*[\r\n]*\s*(?:₪|ש[\"״']ח|ILS)?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)", full_text, re.I)
+        if m_eilat:
+            return float(m_eilat.group(1).replace(",", ""))
+
+    m_reg = re.search(r"מחיר\s*:\s*[\r\n]*\s*(?:₪|ש[\"״']ח|ILS)?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)", full_text, re.I)
+    if m_reg:
+        reg_val = float(m_reg.group(1).replace(",", ""))
+        if "אילת" in selected_variant:
+            return float(round(reg_val / 1.18))
+        return reg_val
+
+    for line in full_text.splitlines():
+        if re.search(r"משלוח|איסוף|מינימום|מקסימום|קופון|בקנייה מעל|תוספת", line):
+            continue
+        m = re.search(r"(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*₪|₪\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)", line)
         if m:
             val = float((m.group(1) or m.group(2)).replace(",", ""))
-            if 5 < val < 100000:
+            if 15 < val < 100000:
                 return val
 
     return None
 
 
 def check_product_live(browser_page, product: dict):
-    url = product.get("url", "")
+    raw_url = product.get("url", "")
     selected_variant = product.get("SelectedVariant") or ""
-    parsed_url = urlparse(url)
+    parsed_url = urlparse(raw_url)
     url_variant_id = parse_qs(parsed_url.query).get("variant", [""])[0]
 
     if "/products/" in parsed_url.path:
@@ -143,29 +211,18 @@ def check_product_live(browser_page, product: dict):
         except Exception:
             pass
 
-    # Optimized loader for KSP & Client-Side SPA stores
-    if "ksp.co.il" in parsed_url.netloc:
+    for candidate_url in get_scrape_candidates(raw_url):
         try:
-            browser_page.goto(url, wait_until="domcontentloaded", timeout=30000)
-            try:
-                browser_page.wait_for_selector("text=₪, [class*='price'], .price", timeout=8000)
-            except Exception:
-                browser_page.wait_for_timeout(4000)
+            browser_page.goto(candidate_url, wait_until="domcontentloaded", timeout=28000)
+            browser_page.wait_for_timeout(2200)
             html = browser_page.content()
-            price = extract_price_from_html(html, url, selected_variant)
-            if price:
+            price = extract_price_from_html(html, raw_url, selected_variant)
+            if price is not None and price > 0:
                 return price
         except Exception as exc:
-            print(f"Error checking KSP live: {exc}")
+            print(f"Error checking candidate {candidate_url}: {exc}")
 
-    try:
-        browser_page.goto(url, wait_until="domcontentloaded", timeout=25000)
-        browser_page.wait_for_timeout(2000)
-        html = browser_page.content()
-        return extract_price_from_html(html, url, selected_variant)
-    except Exception as exc:
-        print(f"Error checking {url}: {exc}")
-        return None
+    return None
 
 
 def process_profile(page, data: dict, chat_id: str, now_il: datetime):
@@ -251,11 +308,20 @@ def main():
     sync_telegram_bot_subscribers()
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        context = browser.new_context(user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36")
+        browser = p.chromium.launch(headless=True, args=[
+            "--disable-blink-features=AutomationControlled",
+            "--no-sandbox",
+            "--disable-dev-shm-usage"
+        ])
+        context = browser.new_context(
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+            viewport={"width": 1920, "height": 1080},
+            locale="he-IL",
+            timezone_id="Asia/Jerusalem"
+        )
         page = context.new_page()
+        page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
-        # Mode A: Multi-User Supabase Cloud
         if SUPABASE_URL and SUPABASE_SERVICE_KEY:
             try:
                 req = urllib.request.Request(f"{SUPABASE_URL}/rest/v1/user_profiles?select=*", headers={
@@ -278,8 +344,6 @@ def main():
                         urllib.request.urlopen(upd_req, timeout=15)
             except Exception as exc:
                 print("Supabase multi-user check error:", exc)
-
-        # Mode B: Local data.json fallback
         elif os.path.exists(DATA_FILE):
             with open(DATA_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
