@@ -1,0 +1,62 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install Capacitor & Initialize Android Project
+        run: |
+          mkdir -p www
+          cp index.html manifest.json sw.js icon-192.png icon-512.png www/
+          npm init -y
+          npm install @capacitor/core @capacitor/cli @capacitor/android
+          npx cap init "PriceRadar" "com.priceradar.app" --web-dir www
+          npx cap add android
+
+      - name: Set App Icon in Android Project
+        run: |
+          python3 -c "
+          import os, shutil
+          for density in ['hdpi', 'mdpi', 'xhdpi', 'xxhdpi', 'xxxhdpi']:
+              folder = f'android/app/src/main/res/mipmap-{density}'
+              os.makedirs(folder, exist_ok=True)
+              if os.path.exists('icon-512.png'):
+                  shutil.copy('icon-512.png', f'{folder}/ic_launcher.png')
+                  shutil.copy('icon-512.png', f'{folder}/ic_launcher_round.png')
+          "
+
+      - name: Build APK with Gradle
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK as Workflow Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PriceRadar-Debug-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
