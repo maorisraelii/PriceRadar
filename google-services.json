@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "973508981555",
+    "project_id": "priceradar-fe030",
+    "storage_bucket": "priceradar-fe030.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:973508981555:android:4610c3949756bfb99b0446",
+        "android_client_info": {
+          "package_name": "com.priceradar.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBFPS14CKa6NdUm_J2uRsh9jdQdIRv9p5M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
