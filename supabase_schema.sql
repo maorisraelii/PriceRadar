@@ -32,3 +32,6 @@ create policy "Isolated device update own profile"
     device_id = current_setting('request.headers', true)::json->>'x-device-id'
     and device_secret = current_setting('request.headers', true)::json->>'x-device-secret'
   );
+
+-- Optional column for Google FCM Push Token
+ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS fcm_token TEXT;

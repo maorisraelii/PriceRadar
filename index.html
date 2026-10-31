@@ -2,8 +2,8 @@
 <html lang="he" dir="rtl">
 <head>
   <script>
-    window.__APP_VERSION__ = "2.2.0";
-    window.__BUILD_TIMESTAMP__ = 1761924500;
+    window.__APP_VERSION__ = "2.3.0";
+    window.__BUILD_TIMESTAMP__ = 1761926000;
 
     // =========================================================================
     // OVER-THE-AIR (OTA) LIVE UPDATE ENGINE FROM GITHUB
@@ -1364,7 +1364,29 @@
       try {
         const trimmed = rawUrl.trim();
         const u = new URL(trimmed);
-        ['srsltid', 'fbclid', 'gclid', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'aff_id', 'tt'].forEach(p => u.searchParams.delete(p));
+        ['srsltid', 'fbclid', 'gclid', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'aff_id', 'tt', 'ref', 'ref_', 'crid', 'sprefix', 'keywords', 'spm', 'scm', 'pdp_npi'].forEach(p => u.searchParams.delete(p));
+
+        // Normalize Amazon product URLs to canonical /dp/ASIN
+        if (/amazon\.(?:com|co\.uk|de|fr|it|es|ca|co\.jp)/i.test(u.hostname)) {
+          const asinMatch = u.pathname.match(/(?:dp|gp\/product)\/([A-Z0-9]{10})/i);
+          if (asinMatch) {
+            return `https://${u.hostname}/dp/${asinMatch[1]}`;
+          }
+        }
+
+        // Normalize AliExpress product URLs to canonical /item/ID.html
+        if (/aliexpress\.(?:com|ru|us)/i.test(u.hostname)) {
+          const aliMatch = u.pathname.match(/\/item\/(\d+)\.html/i);
+          if (aliMatch) {
+            return `https://${u.hostname}/item/${aliMatch[1]}.html`;
+          }
+        }
+
+        // Normalize Machsanei Hashmal (payngo.co.il) URLs
+        if (/payngo\.co\.il/i.test(u.hostname)) {
+          return `${u.origin}${u.pathname}`;
+        }
+
         return u.toString();
       } catch (e) {
         return rawUrl.trim();
@@ -1379,18 +1401,28 @@
     function getStoreMeta(rawUrl) {
       try {
         const u = new URL(rawUrl);
-        const host = u.hostname.replace(/^www\./, '');
+        const host = u.hostname.replace(/^www\./, '').toLowerCase();
         const stores = {
           'traklin.co.il':    { name: 'טרקלין חשמל', emoji: '⚡', color: 'from-blue-500 to-indigo-600' },
           'myrabbit.co.il':   { name: 'הארנב שלי MyRabbit', emoji: '🐰', color: 'from-emerald-500 to-green-600' },
           'footlocker.co.il': { name: 'Foot Locker פוט לוקר', emoji: '👟', color: 'from-orange-500 to-red-600' },
           'ksp.co.il':        { name: 'KSP', emoji: '💻', color: 'from-red-500 to-rose-600' },
+          'payngo.co.il':      { name: 'מחסני חשמל PayNGo', emoji: '🔌', color: 'from-amber-500 to-yellow-600' },
           'ivory.co.il':      { name: 'אייבורי Ivory', emoji: '🖥️', color: 'from-amber-500 to-orange-600' },
           'terminalx.com':    { name: 'Terminal X', emoji: '👕', color: 'from-fuchsia-500 to-purple-600' },
           'amazon.com':       { name: 'Amazon', emoji: '📦', color: 'from-amber-400 to-yellow-600' },
-          'aliexpress.com':   { name: 'AliExpress', emoji: '🛒', color: 'from-red-500 to-orange-500' }
+          'aliexpress.com':   { name: 'AliExpress', emoji: '🛒', color: 'from-red-500 to-orange-500' },
+          'shein.com':        { name: 'SHEIN', emoji: '👗', color: 'from-pink-500 to-rose-600' },
+          'iherb.com':        { name: 'iHerb', emoji: '🌿', color: 'from-emerald-500 to-green-600' },
+          'zap.co.il':        { name: 'Zap השוואת מחירים', emoji: '🔍', color: 'from-blue-600 to-cyan-600' }
         };
-        const info = stores[host] || { name: host, emoji: '🏪', color: 'from-purple-500 to-indigo-600' };
+
+        let matchedKey = host;
+        if (host.endsWith('payngo.co.il')) matchedKey = 'payngo.co.il';
+        else if (host.endsWith('aliexpress.com')) matchedKey = 'aliexpress.com';
+        else if (host.includes('amazon.')) matchedKey = 'amazon.com';
+
+        const info = stores[matchedKey] || { name: host, emoji: '🏪', color: 'from-purple-500 to-indigo-600' };
         return {
           name: info.name,
           emoji: info.emoji,
@@ -1405,8 +1437,8 @@
     function guessCategoryFromUrl(rawUrl, title = '') {
       const combined = (decodeURIComponent(rawUrl) + ' ' + title).toLowerCase();
       if (/rabbit|ארנב|חציר|כלב|חתול|מכרסמ|pet|אוכל ל/.test(combined)) return 'pets';
-      if (/footlocker|nike|adidas|נעל|כפכפ|סניקר|חולצ|בגד|מידה|size|rejuven/.test(combined)) return 'fashion';
-      if (/traklin|חשמל|מכונת|נינג|ninja|טלוויז|מקרר|שואב|קפה|מחשב|ksp|ivory|קומקום|bosch/.test(combined)) return 'electronics';
+      if (/footlocker|nike|adidas|נעל|כפכפ|סניקר|חולצ|בגד|מידה|size|rejuven|shein|dress/.test(combined)) return 'fashion';
+      if (/traklin|חשמל|מכונת|נינג|ninja|טלוויז|מקרר|שואב|קפה|מחשב|ksp|ivory|payngo|קומקום|bosch|airpods|headphone|earphone|אלקטרה/.test(combined)) return 'electronics';
       return 'other';
     }
 
@@ -1414,7 +1446,7 @@
       const kspUin = extractKspUin(rawUrl);
       if (kspUin) return `https://ksp.co.il/shop/items/${kspUin}.jpg`;
       const decoded = decodeURIComponent(rawUrl || '').toLowerCase();
-      if (decoded.includes('traklin') || decoded.includes('ninja') || decoded.includes('גלידה')) return FALLBACK_IMAGES.ninja;
+      if (decoded.includes('traklin') || decoded.includes('ninja') || decoded.includes('גלידה') || decoded.includes('payngo')) return FALLBACK_IMAGES.ninja;
       if (decoded.includes('myrabbit') || decoded.includes('hay') || decoded.includes('ארנב') || category === 'pets') return FALLBACK_IMAGES.rabbit;
       if (decoded.includes('footlocker') || decoded.includes('f307790011') || category === 'fashion') return FALLBACK_IMAGES.slides;
       if (category === 'electronics' || category === 'home') return FALLBACK_IMAGES.ninja;
@@ -1455,16 +1487,15 @@
       if (!title) return true;
       const t = String(title).trim();
       if (t.length < 3) return true;
-      return /just a moment|attention required|access denied|cloudflare|security check|ddos-guard|enable javascript|403 forbidden|error 403|error 500|error 503|שגיאה 500|אירעה שגיאה|^ksp$|^pro shop|^pricedrop$/i.test(t);
+      return /just a moment|attention required|access denied|cloudflare|security check|ddos-guard|enable javascript|403 forbidden|error 403|error 500|error 503|שגיאה 500|אירעה שגיאה|^ksp$|^pro shop|^pricedrop$|robot check|captcha|punishpath|secverify/i.test(t);
     }
 
     function isBlockedPayload(text, isKspTarget = false) {
       if (!text || typeof text !== 'string' || text.length < 160) return true;
-      if (/Just a moment\.\.\.|cf_chl_opt|cf-browser-verification|Attention Required! \| Cloudflare|Enable JavaScript and cookies to continue|Access Denied|Pardon Our Interruption|שגיאה 500|אירעה שגיאה לא צפויה/i.test(text)) {
+      if (/Just a moment\.\.\.|cf_chl_opt|cf-browser-verification|Attention Required! \| Cloudflare|Enable JavaScript and cookies to continue|Access Denied|Pardon Our Interruption|שגיאה 500|אירעה שגיאה לא צפויה|Type the characters you see in this image|Enter the characters you see below|Sorry, we just need to make sure you're not a robot|punishpath|secverify/i.test(text)) {
         return true;
       }
       if (isKspTarget) {
-        // Reject unrendered SPA shells that have no product price/data
         const hasSignal = /₪|מחיר|מק["״']ט|"price"|"uin"|product:price/i.test(text);
         if (!hasSignal) return true;
       }
@@ -1536,7 +1567,6 @@
     }
 
     async function fetchJinaMarkdownSimple(targetUrl, timeoutMs = 7500) {
-      // Simple GET request with NO custom headers -> avoids CORS preflight OPTIONS and API key errors
       const jinaUrl = `https://r.jina.ai/${targetUrl}`;
       const res = await fetchWithTimeout(jinaUrl, {}, timeoutMs);
       if (!res || !res.ok) throw new Error('Jina non-200');
@@ -1549,9 +1579,8 @@
         pageTitle = titleMatch[1].trim();
       }
       if (isBlockedTitle(pageTitle)) {
-        // Check if body itself was a challenge page
-        if (/Just a moment|Attention Required|Access Denied/i.test(pageTitle)) {
-          throw new Error('Jina returned Cloudflare challenge title');
+        if (/Just a moment|Attention Required|Access Denied|Robot Check/i.test(pageTitle)) {
+          throw new Error('Jina returned challenge title');
         }
         pageTitle = '';
       }
@@ -1578,7 +1607,7 @@
       if (proxyType === 'allorigins_get') {
         const data = await res.json();
         if (!data || (data.status && data.status.http_code >= 400)) {
-          throw new Error('allorigins upstream HTTP ' + (data && data.status ? data.status.http_code : 'err'));
+          throw new Error('allorigins upstream HTTP error');
         }
         text = data.contents || '';
       } else {
@@ -1634,15 +1663,20 @@
     function extractPricesAndVariantsFromText(rawText, pageTitle, targetUrl) {
       const kspUin = extractKspUin(targetUrl);
       let cleanedTitle = (pageTitle || '')
-        .replace(/\s*[|-]\s*(?:KSP|Pricedrop|קיי\.אס\.פי|טרקלין חשמל|פוט לוקר|Foot Locker).*$/i, '')
+        .replace(/\s*[|-]\s*(?:KSP|Pricedrop|קיי\.אס\.פי|טרקלין חשמל|פוט לוקר|Foot Locker|מחסני חשמל|PayNGo|Amazon(?:\.com)?|AliExpress).*$/i, '')
+        .replace(/^מחסני חשמל\s*\|\s*/i, '')
+        .replace(/^Amazon\.com\s*:\s*/i, '')
         .replace(/^Premium\s*\|\s*/i, '')
         .replace(/\s*\.\.\.\s*$/, '')
         .trim();
       if (isBlockedTitle(cleanedTitle)) cleanedTitle = '';
 
-      const cleanText = String(rawText || '').replace(/[*_~`#>]/g, ' ');
+      // Strip Unicode direction formatting marks (RTL \u200F / LTR \u200E used by Machsanei Hashmal)
+      const cleanText = String(rawText || '')
+        .replace(/[\u200E\u200F\u202A-\u202E]/g, '')
+        .replace(/[*_~`#>]/g, ' ');
 
-      // Extract full untruncated Hebrew product title right after מק"ט: <number> (works on both KSP SSR & Pricedrop KSP mirror)
+      // Extract full untruncated Hebrew product title right after מק"ט: <number> (KSP & Machsanei Hashmal)
       const afterMakat = cleanText.match(/מק["״']ט\s*:\s*[A-Za-z0-9]+\s*[\r\n]+\s*([^\r\n]{8,})/);
       if (afterMakat) {
         const candidate = afterMakat[1].trim();
@@ -1662,11 +1696,11 @@
 
       // Extract first product image from markdown if present
       const mdImgMatch = rawText.match(/!\[[^\]]*\]\((https?:\/\/[^)\s]+\.(?:png|jpe?g|webp)(?:\?[^)\s]*)?)\)/i);
-      if (mdImgMatch && !/logo|icon|avatar|banner/i.test(mdImgMatch[1])) {
+      if (mdImgMatch && !/logo|icon|avatar|banner|flag/i.test(mdImgMatch[1])) {
         result.image = mdImgMatch[1];
       }
 
-      // 0. Check KSP JSON API payload if rawText is JSON from /m_action/api/item/
+      // 0. Check KSP JSON API payload if rawText is JSON
       if (rawText.trim().startsWith('{') && kspUin) {
         try {
           const j = JSON.parse(rawText);
@@ -1706,7 +1740,27 @@
         }
       }
 
-      // Remove related products & shipping sections so we never grab shipping/related prices
+      // 2. Machsanei Hashmal (payngo.co.il) pattern: "מחיר מיוחד: לרכישה עכשיו ב: 118 ₪", "קנו באילת ב: 100 ₪"
+      const payngoRegMatch = cleanText.match(/מחיר\s*(?:מיוחד)?\s*:\s*(?:לרכישה עכשיו ב\s*:\s*)?₪?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*₪?/);
+      const payngoEilatMatch = cleanText.match(/קנו באילת ב\s*:\s*₪?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*₪?/);
+      if (payngoRegMatch) {
+        const pReg = Number(payngoRegMatch[1].replace(/,/g, ''));
+        if (pReg > 5) {
+          result.price = pReg;
+          result.variations.push({ id: 'reg', label: 'מחיר רגיל', price: pReg, inStock: true });
+          result.SelectedVariant = 'מחיר רגיל';
+          result.sourceMethod = 'זיהוי מחיר מ-מחסני חשמל';
+          if (payngoEilatMatch) {
+            const pEilat = Number(payngoEilatMatch[1].replace(/,/g, ''));
+            if (pEilat > 5) {
+              result.variations.push({ id: 'eilat', label: 'מחיר אילת', price: pEilat, inStock: true });
+            }
+          }
+          return result;
+        }
+      }
+
+      // Cut related items and shipping sections
       let mainText = cleanText;
       const cutMarkers = [
         'אפשרות איסוף ומשלוח',
@@ -1714,7 +1768,10 @@
         'לקוחות שהתעניינו במוצר זה',
         'מוצרים נוספים שיכולים להתאים',
         'מוצרים קשורים',
-        'YOU MAY ALSO LIKE'
+        'מוצרים דומים',
+        'המוצרים החמים של העונה',
+        'YOU MAY ALSO LIKE',
+        'Customers who viewed this item also viewed'
       ];
       for (const marker of cutMarkers) {
         const idx = mainText.indexOf(marker);
@@ -1723,7 +1780,7 @@
         }
       }
 
-      // 2. Explicit "מחיר:" + "מחיר אילת:" pattern (used on KSP SSR & Israeli electronics stores)
+      // 3. Explicit "מחיר:" + "מחיר אילת:" pattern (KSP SSR & Israeli stores)
       const regPriceMatch = mainText.match(/מחיר\s*:\s*(?:(?:₪|ש["״']ח|ILS)\s*)?(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)/i);
       const eilatPriceMatch = mainText.match(/מחיר\s+אילת\s*:\s*(?:(?:₪|ש["״']ח|ILS)\s*)?(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)/i);
       if (regPriceMatch) {
@@ -1744,13 +1801,25 @@
         result.variations.push({ id: 'eilat', label: 'מחיר אילת', price: Math.round(result.price / 1.18), inStock: true });
       }
 
-      // 3. Check size/option price pairs in text (e.g., "40 - 269.90 ₪" or "2 ק"ג - 120 ₪")
-      const optionPairs = [...mainText.matchAll(/(\b\d{2}(?:\.5)?|\d+\s*ק["״']ג)\s*-\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*₪/g)];
+      // 4. Amazon & International Multi-Currency Price Pattern ($189.99, US $11.45, ₪118, €45.00, £32.00)
+      if (!result.price) {
+        const multiCurrencyMatch = mainText.match(/(?:Price|Deal Price|Our Price|מחיר|מחיר מבצע)?\s*[:\s]*?(?:(?:US\s*)?([₪$€£]|USD|ILS|EUR|ש["״']ח)\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)|(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(?:[₪$€£]|USD|ILS|EUR|ש["״']ח))/i);
+        if (multiCurrencyMatch) {
+          const val = Number((multiCurrencyMatch[2] || multiCurrencyMatch[3]).replace(/,/g, ''));
+          if (val > 0.5 && val < 500000) {
+            result.price = val;
+            result.sourceMethod = 'זיהוי מחיר מ-Amazon / חנות גלובלית';
+          }
+        }
+      }
+
+      // 5. Check size/option price pairs in text (e.g., "40 - 269.90 ₪" or "2 ק"ג - 120 ₪")
+      const optionPairs = [...mainText.matchAll(/(\b\d{2}(?:\.5)?|\d+\s*ק["״']ג)\s*-\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*[₪$€£]/g)];
       if (optionPairs.length > 1 && result.variations.length === 0) {
         optionPairs.forEach((m, i) => {
           const lbl = m[1].trim();
           const pr = Number(m[2].replace(/,/g, ''));
-          if (pr > 5) {
+          if (pr > 0.5) {
             result.variations.push({ id: `opt_${i}`, label: lbl, price: pr, inStock: true });
           }
         });
@@ -1760,13 +1829,13 @@
         }
       }
 
-      // 4. Check WooCommerce style price range (e.g. "₪120 – ₪195")
+      // 6. WooCommerce / Store Price Range (e.g. "₪120 – ₪195" or "$15 – $25")
       if (!result.price) {
-        const rangeMatch = mainText.match(/₪\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*[–-]\s*₪\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)/);
+        const rangeMatch = mainText.match(/[₪$€£]\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*[–-]\s*[₪$€£]?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)/);
         if (rangeMatch) {
           const lowP = Number(rangeMatch[1].replace(/,/g, ''));
           const highP = Number(rangeMatch[2].replace(/,/g, ''));
-          if (lowP > 5 && highP >= lowP) {
+          if (lowP > 0.5 && highP >= lowP) {
             result.price = lowP;
             result.variations = [
               { id: 'opt_low', label: 'אפשרות בסיסית', price: lowP, inStock: true },
@@ -1777,15 +1846,15 @@
         }
       }
 
-      // 5. Fallback: Find main product price (ignoring shipping/minimum order/coupons)
+      // 7. General Line-by-line fallback
       if (!result.price) {
         const lines = mainText.split(/[\r\n]+/);
         for (const line of lines) {
-          if (/משלוח|איסוף|מינימום|מקסימום|קופון|בקנייה מעל|תוספת|החלפה|החזרה/.test(line)) continue;
-          const m = line.match(/(?:מחיר מבצע|מחיר)?\s*(?:₪\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)|(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*₪)/);
+          if (/משלוח|איסוף|מינימום|מקסימום|קופון|בקנייה מעל|תוספת|החלפה|החזרה|shipping|delivery|shipping fee/i.test(line)) continue;
+          const m = line.match(/(?:מחיר מבצע|מחיר|Price)?\s*(?:[₪$€£]\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)|(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*[₪$€£])/i);
           if (m) {
             const val = Number((m[1] || m[2]).replace(/,/g, ''));
-            if (val > 15 && val < 100000) {
+            if (val > 2 && val < 500000) {
               result.price = val;
               if (kspUin && result.variations.length === 0) {
                 result.variations = [
@@ -1809,7 +1878,6 @@
         return { title: '', price: null, image: '', SelectedVariant: '', variations: [], sourceMethod: '' };
       }
 
-      // Check if raw response is JSON (e.g. KSP /m_action/api/item/)
       if (html.trim().startsWith('{')) {
         return extractPricesAndVariantsFromText(html, '', targetUrl);
       }
@@ -1828,12 +1896,18 @@
       let urlVariantId = '';
       try { urlVariantId = new URL(targetUrl).searchParams.get('variant') || ''; } catch (e) {}
 
-      // 1. Extract Title & Image from OG / Meta / Product IMG
+      // 1. Extract Title & Image (Amazon, Machsanei Hashmal, AliExpress, OpenGraph)
       const ogTitle = doc.querySelector('meta[property="og:title"]')?.getAttribute('content');
+      const amazonTitle = doc.querySelector('#productTitle')?.textContent?.trim() || doc.querySelector('#title')?.textContent?.trim();
+      const payngoTitle = doc.querySelector('.page-title .base')?.textContent?.trim() || doc.querySelector('h1.page-title')?.textContent?.trim();
+      const aliTitle = doc.querySelector('.product-title-text')?.textContent?.trim() || doc.querySelector('h1[data-pl="product-title"]')?.textContent?.trim();
       const h1Text = doc.querySelector('h1')?.textContent?.trim();
       const docTitle = doc.querySelector('title')?.textContent?.trim();
-      let candidateTitle = (h1Text || ogTitle || docTitle || '')
-        .replace(/\s*[|-]\s*(?:KSP|Pricedrop|קיי\.אס\.פי|טרקלין חשמל|פוט לוקר|Foot Locker).*$/i, '')
+
+      let candidateTitle = (amazonTitle || payngoTitle || aliTitle || h1Text || ogTitle || docTitle || '')
+        .replace(/\s*[|-]\s*(?:KSP|Pricedrop|קיי\.אס\.פי|טרקלין חשמל|פוט לוקר|Foot Locker|מחסני חשמל|PayNGo|Amazon(?:\.com)?|AliExpress).*$/i, '')
+        .replace(/^מחסני חשמל\s*\|\s*/i, '')
+        .replace(/^Amazon\.com\s*:\s*/i, '')
         .replace(/^Premium\s*\|\s*/i, '')
         .replace(/\s*\.\.\.\s*$/, '')
         .replace(/\s+/g, ' ')
@@ -1843,16 +1917,76 @@
       }
 
       const ogImage =
+        doc.querySelector('#landingImage')?.getAttribute('src') ||
+        doc.querySelector('#landingImage')?.getAttribute('data-old-hires') ||
         doc.querySelector('img[src*="media.ksp.co.il"]')?.getAttribute('src') ||
         doc.querySelector('img[src*="ksp.co.il/shop/items"]')?.getAttribute('src') ||
         doc.querySelector('meta[property="og:image"]')?.getAttribute('content') ||
         doc.querySelector('meta[name="twitter:image"]')?.getAttribute('content') ||
+        doc.querySelector('.magnifier-image')?.getAttribute('src') ||
         doc.querySelector('.woocommerce-product-gallery__image img')?.getAttribute('src') || '';
-      if (ogImage && ogImage.startsWith('http') && !/pricedrop.*logo|favicon/i.test(ogImage)) {
+      if (ogImage && ogImage.startsWith('http') && !/pricedrop.*logo|favicon|flag|blank/i.test(ogImage)) {
         result.image = ogImage;
       }
 
-      // 2. WooCommerce Variations JSON
+      // 2. Specific Amazon Selectors
+      const amazonPriceEl = doc.querySelector('.a-price:not(.a-text-price) .a-offscreen') ||
+                           doc.querySelector('#corePrice_feature_div .a-price .a-offscreen') ||
+                           doc.querySelector('#priceblock_ourprice') ||
+                           doc.querySelector('#priceblock_dealprice');
+      if (amazonPriceEl) {
+        const cleanAmzText = amazonPriceEl.textContent.replace(/[^0-9.]/g, '');
+        const amzPrice = Number(cleanAmzText);
+        if (amzPrice > 0.5) {
+          result.price = amzPrice;
+          result.sourceMethod = 'זיהוי מחיר מ-Amazon';
+        }
+      }
+
+      // 3. Specific Machsanei Hashmal (payngo.co.il) Selectors
+      const payngoPriceEl = doc.querySelector('[data-price-type="finalPrice"] .price') ||
+                            doc.querySelector('.special-price .price') ||
+                            doc.querySelector('.price-box .price');
+      if (payngoPriceEl) {
+        const cleanPayText = payngoPriceEl.textContent.replace(/[\u200E\u200F\u202A-\u202E]/g, '').replace(/[^0-9.]/g, '');
+        const payPrice = Number(cleanPayText);
+        if (payPrice > 5) {
+          result.price = payPrice;
+          result.variations = [{ id: 'reg', label: 'מחיר רגיל', price: payPrice, inStock: true }];
+          result.SelectedVariant = 'מחיר רגיל';
+          result.sourceMethod = 'זיהוי מחיר מ-מחסני חשמל';
+        }
+      }
+
+      // 4. Specific AliExpress Selectors & Script RunParams
+      const aliPriceEl = doc.querySelector('.product-price-current') || doc.querySelector('.uniform-banner-box-price');
+      if (aliPriceEl) {
+        const cleanAliText = aliPriceEl.textContent.replace(/[^0-9.]/g, '');
+        const aliPrice = Number(cleanAliText);
+        if (aliPrice > 0.5) {
+          result.price = aliPrice;
+          result.sourceMethod = 'זיהוי מחיר מ-AliExpress';
+        }
+      }
+      if (!result.price) {
+        const allScripts = doc.querySelectorAll('script');
+        for (const scr of allScripts) {
+          const txt = scr.textContent || '';
+          if (txt.includes('runParams') || txt.includes('actSkuPrice') || txt.includes('formatedActivityPrice')) {
+            const mPrice = txt.match(/(?:"actSkuPrice"|"formatedActivityPrice"|"formatedPrice"|"originalPrice"|"minPrice")\s*:\s*"?([0-9.,]+)"?/);
+            if (mPrice) {
+              const val = Number(mPrice[1].replace(/,/g, ''));
+              if (val > 0.5) {
+                result.price = val;
+                result.sourceMethod = 'זיהוי מחיר מ-AliExpress (runParams)';
+                break;
+              }
+            }
+          }
+        }
+      }
+
+      // 5. WooCommerce Variations JSON
       const variationForm = doc.querySelector('[data-product_variations]');
       if (variationForm) {
         try {
@@ -1880,7 +2014,7 @@
         } catch (e) {}
       }
 
-      // 3. Schema.org JSON-LD
+      // 6. Schema.org JSON-LD
       const ldScripts = doc.querySelectorAll('script[type="application/ld+json"]');
       ldScripts.forEach(scr => {
         try {
@@ -1921,7 +2055,7 @@
         } catch (e) {}
       });
 
-      // 4. OpenGraph Price Meta
+      // 7. OpenGraph Price Meta
       if (!result.price) {
         const metaPrice =
           doc.querySelector('meta[property="product:price:amount"]')?.getAttribute('content') ||
@@ -1933,8 +2067,8 @@
         }
       }
 
-      // 5. Structured Text & DOM extraction (ensures block tags produce newlines in detached DOMParser trees)
-      if ((!result.price || kspUin) && doc.body) {
+      // 8. Structured Text & DOM extraction (with RTL mark stripping)
+      if ((!result.price || kspUin || result.variations.length === 0) && doc.body) {
         const cloned = doc.body.cloneNode(true);
         cloned.querySelectorAll('script, style, noscript, .related, .upsells, footer, nav, header').forEach(el => el.remove());
         cloned.querySelectorAll('div, p, li, tr, br, h1, h2, h3, h4, section, article').forEach(el => {
@@ -1951,8 +2085,8 @@
           result.title = textExtracted.title;
         }
         if (textExtracted.price) {
-          result.price = textExtracted.price;
-          result.sourceMethod = textExtracted.sourceMethod;
+          if (!result.price) result.price = textExtracted.price;
+          if (!result.sourceMethod) result.sourceMethod = textExtracted.sourceMethod;
           if (result.variations.length === 0 && textExtracted.variations.length > 0) {
             result.variations = textExtracted.variations;
             result.SelectedVariant = textExtracted.SelectedVariant;
@@ -2190,7 +2324,6 @@
         category: cat
       };
     }
-
     // =========================================================================
     // PRODUCT MODAL & VARIATION SELECTION UI
     // =========================================================================
@@ -2307,15 +2440,60 @@
       // 1. If running inside native Android Capacitor APK
       if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications) {
         try {
+          // Create high-importance notification channel for Android 8.0+ (Oreo to Android 15)
+          await window.Capacitor.Plugins.LocalNotifications.createChannel({
+            id: 'price_radar_alerts',
+            name: 'התראות מחיר PriceRadar',
+            description: 'התראות מיידיות על ירידות מחיר ועדכוני מעקב',
+            importance: 5, // IMPORTANCE_HIGH (5) -> heads-up pop-down banner on top of screen!
+            visibility: 1, // VISIBILITY_PUBLIC
+            vibration: true,
+            sound: 'beep.wav'
+          });
+
+          // Request POST_NOTIFICATIONS runtime permission (Android 13+)
           const perm = await window.Capacitor.Plugins.LocalNotifications.requestPermissions();
           const granted = perm && (perm.display === 'granted' || perm.receive === 'granted');
           if (granted) {
             state.settings.browserNotifEnabled = true;
             saveState();
+            // Notify native Android layer of device ID for background price monitoring
+            if (window.AndroidNativeScraper && typeof window.AndroidNativeScraper.saveDeviceId === 'function') {
+              window.AndroidNativeScraper.saveDeviceId(state.deviceId || '');
+            }
+
+            // Register with Google FCM Push Notifications
+            if (window.Capacitor.Plugins.PushNotifications) {
+              try {
+                const PushNotifications = window.Capacitor.Plugins.PushNotifications;
+                const pushPerm = await PushNotifications.requestPermissions();
+                if (pushPerm && pushPerm.receive === 'granted') {
+                  await PushNotifications.register();
+                  PushNotifications.addListener('registration', async (t) => {
+                    if (t && t.value) {
+                      state.settings.fcmToken = t.value;
+                      saveState();
+                      if (typeof syncStateToCloud === 'function') syncStateToCloud();
+                    }
+                  });
+                  PushNotifications.addListener('pushNotificationReceived', (n) => {
+                    playNotificationSound('drop');
+                    if (typeof showToast === 'function') {
+                      showToast(n.title || '🔥 המחיר ירד!', n.body || '', 'drop');
+                    }
+                  });
+                }
+              } catch (fcmErr) {
+                console.warn('[FCM] setup notice:', fcmErr);
+              }
+            }
             return true;
           }
-        } catch (e) {}
+        } catch (e) {
+          console.warn('Capacitor LocalNotifications setup error:', e);
+        }
       }
+
       // 2. Standard Web Push Notification API
       if ('Notification' in window) {
         try {
@@ -2334,20 +2512,35 @@
     async function triggerBrowserNotification(title, body) {
       if (!state.settings.browserNotifEnabled) return;
 
-      // 1. Native Android Local Notification (Pop-up banner in notification drawer)
+      // 1. Native Android Local Notification (Pop-up banner in notification drawer + heads-up)
       if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications) {
         try {
+          // Ensure channel exists
+          try {
+            await window.Capacitor.Plugins.LocalNotifications.createChannel({
+              id: 'price_radar_alerts',
+              name: 'התראות מחיר PriceRadar',
+              description: 'התראות מיידיות על ירידות מחיר',
+              importance: 5,
+              visibility: 1,
+              vibration: true
+            });
+          } catch (e) {}
+
           await window.Capacitor.Plugins.LocalNotifications.schedule({
             notifications: [{
               title: title,
               body: body,
               id: Math.floor(Date.now() % 100000),
-              sound: 'beep.wav',
-              smallIcon: 'ic_launcher_round'
+              channelId: 'price_radar_alerts',
+              smallIcon: 'ic_launcher_round',
+              schedule: { at: new Date(Date.now() + 100) }
             }]
           });
           return;
-        } catch (e) {}
+        } catch (e) {
+          console.warn('Capacitor schedule error:', e);
+        }
       }
 
       // 2. Browser Web Notification fallback
@@ -2355,12 +2548,11 @@
         if ('Notification' in window && Notification.permission === 'granted') {
           new Notification(title, {
             body: body,
-            icon: 'data:image/jpeg;base64,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'
+            icon: 'icon-192.png'
           });
         }
       } catch (e) {}
     }
-
     // =========================================================================
     // ALERTS & DAILY REPORT ENGINE
     // =========================================================================
