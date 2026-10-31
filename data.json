@@ -1,0 +1,10 @@
+{
+  "products": [],
+  "alerts": [],
+  "settings": {
+    "dailyTime": "09:00",
+    "checkIntervalMinutes": 60,
+    "lastDailySentDate": ""
+  },
+  "updatedAt": ""
+}
