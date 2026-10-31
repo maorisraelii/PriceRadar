@@ -31,6 +31,19 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Calculate Dynamic App Version (+0.1 per build)
+        id: versioning
+        run: |
+          RUN_NUM="${{ github.run_number }}"
+          # מודל גרסאות דינמי שמעלה את הגרסה ב-0.1 בכל הרצה: v1.1.0, v1.2.0, v1.3.0...
+          VERSION_NAME="1.${RUN_NUM}.0"
+          VERSION_CODE=$((100 + RUN_NUM))
+          TAG_NAME="v${VERSION_NAME}"
+          echo "VERSION_NAME=${VERSION_NAME}" >> $GITHUB_ENV
+          echo "VERSION_CODE=${VERSION_CODE}" >> $GITHUB_ENV
+          echo "TAG_NAME=${TAG_NAME}" >> $GITHUB_ENV
+          echo "🚀 Calculated Dynamic Version: ${VERSION_NAME} (code: ${VERSION_CODE}, tag: ${TAG_NAME})"
+
       - name: Prepare Web Assets & Capacitor Configuration
         run: |
           mkdir -p www
@@ -39,12 +52,13 @@ jobs:
           cat << 'EOF_PKG' > package.json
           {
             "name": "priceradar-app",
-            "version": "1.0.0",
+            "version": "${{ env.VERSION_NAME }}",
             "private": true,
             "dependencies": {
               "@capacitor/core": "^6.0.0",
               "@capacitor/android": "^6.0.0",
-              "@capacitor/local-notifications": "^6.0.0"
+              "@capacitor/local-notifications": "^6.0.0",
+              "@capacitor/push-notifications": "^6.0.0"
             },
             "devDependencies": {
               "@capacitor/cli": "^6.0.0"
@@ -72,21 +86,287 @@ jobs:
           npx cap add android
           npx cap copy android
 
+          # עדכון גרסה דינמית ב-android/app/build.gradle וב-www/index.html
+          python3 -c "
+          import os, re, time
+          p_gradle = 'android/app/build.gradle'
+          if os.path.exists(p_gradle):
+              c = open(p_gradle, 'r', encoding='utf-8').read()
+              v_code = os.environ.get('VERSION_CODE', '101')
+              v_name = os.environ.get('VERSION_NAME', '1.1.0')
+              c = re.sub(r'versionCode\s+\d+', f'versionCode {v_code}', c)
+              c = re.sub(r'versionName\s+"[^"]+"', f'versionName "{v_name}"', c)
+              open(p_gradle, 'w', encoding='utf-8').write(c)
+              print(f'Configured build.gradle versionCode={v_code}, versionName={v_name}')
+
+          p_html = 'www/index.html'
+          if os.path.exists(p_html):
+              ch = open(p_html, 'r', encoding='utf-8').read()
+              v_name = os.environ.get('VERSION_NAME', '1.1.0')
+              ts = int(time.time())
+              ch = re.sub(r'window\.__APP_VERSION__\s*=\s*"[^"]+"', f'window.__APP_VERSION__ = "{v_name}"', ch)
+              ch = re.sub(r'window\.__BUILD_TIMESTAMP__\s*=\s*\d+', f'window.__BUILD_TIMESTAMP__ = {ts}', ch)
+              open(p_html, 'w', encoding='utf-8').write(ch)
+              print(f'Injected into www/index.html version={v_name}, timestamp={ts}')
+          "
+          # בדיקה והזרקת קובץ הגדרות Google FCM (google-services.json) אם הועלה לריפו
+          if [ -f "google-services.json" ]; then
+            echo "🔥 נמצא google-services.json! מחבר את Google FCM Push Notifications..."
+            cp google-services.json android/app/
+            python3 -c "
+            p = 'android/build.gradle'
+            c = open(p).read()
+            if 'com.google.gms:google-services' not in c:
+                c = c.replace('dependencies {', 'dependencies {\n        classpath \'com.google.gms:google-services:4.4.2\'')
+                open(p, 'w').write(c)
+                print('Added google-services classpath')
+            "
+            python3 -c "
+            p = 'android/app/build.gradle'
+            c = open(p).read()
+            if 'com.google.gms.google-services' not in c:
+                c = c + '\napply plugin: \'com.google.gms.google-services\'\n'
+                open(p, 'w').write(c)
+                print('Applied google-services plugin')
+            "
+          else
+            echo "ℹ️ לא נמצא google-services.json - האפליקציה תיבנה במצב LocalNotifications נייטיבי."
+          fi
+
+
           # הוספת הרשאות התראות פוש וגישת רשת ישירה לאנדרואיד ב-AndroidManifest.xml
           python3 -c "
           import os
           p = 'android/app/src/main/AndroidManifest.xml'
           if os.path.exists(p):
               m = open(p, 'r', encoding='utf-8').read()
-              perms = '\n    <uses-permission android:name=\"android.permission.POST_NOTIFICATIONS\" />\n    <uses-permission android:name=\"android.permission.VIBRATE\" />\n    <uses-permission android:name=\"android.permission.RECEIVE_BOOT_COMPLETED\" />\n'
+              perms = '\n    <uses-permission android:name=\"android.permission.POST_NOTIFICATIONS\" />\n    <uses-permission android:name=\"android.permission.VIBRATE\" />\n    <uses-permission android:name=\"android.permission.RECEIVE_BOOT_COMPLETED\" />\n    <uses-permission android:name=\"android.permission.WAKE_LOCK\" />\n    <uses-permission android:name=\"android.permission.SCHEDULE_EXACT_ALARM\" />\n'
               if 'POST_NOTIFICATIONS' not in m:
                   m = m.replace('</manifest>', perms + '</manifest>')
-                  open(p, 'w', encoding='utf-8').write(m)
+                  rcvr = '\n        <receiver android:name=".MainActivity$BackgroundAlertReceiver" android:exported="false" />\n'
+              if 'BackgroundAlertReceiver' not in m:
+                  m = m.replace('</application>', rcvr + '</application>')
+              open(p, 'w', encoding='utf-8').write(m)
                   print('Added POST_NOTIFICATIONS to AndroidManifest.xml')
           "
 
           # הזרקת גשר WebView נייטיבי (AndroidNativeScraper) לעקיפת Cloudflare ורינדור SPA ישירות מהטלפון
           cat << 'EOF_JAVA' > android/app/src/main/java/com/priceradar/app/MainActivity.java
+          package com.priceradar.app;
+
+          import android.app.AlarmManager;
+          import android.app.Notification;
+          import android.app.NotificationChannel;
+          import android.app.NotificationManager;
+          import android.app.PendingIntent;
+          import android.content.BroadcastReceiver;
+          import android.content.Context;
+          import android.content.Intent;
+          import android.content.SharedPreferences;
+          import android.os.Build;
+          import android.os.Bundle;
+          import android.os.Handler;
+          import android.os.Looper;
+          import android.webkit.JavascriptInterface;
+          import android.webkit.WebSettings;
+          import android.webkit.WebView;
+          import android.webkit.WebViewClient;
+          import androidx.core.app.NotificationCompat;
+          import com.getcapacitor.BridgeActivity;
+          import org.json.JSONArray;
+          import org.json.JSONObject;
+          import java.io.BufferedReader;
+          import java.io.InputStreamReader;
+          import java.net.HttpURLConnection;
+          import java.net.URL;
+
+          public class MainActivity extends BridgeActivity {
+              public static final String CHANNEL_ID = "price_radar_alerts";
+              private WebView scraperWebView;
+
+              @Override
+              public void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  createNotificationChannel();
+                  try {
+                      WebView mainWv = this.getBridge().getWebView();
+                      mainWv.addJavascriptInterface(new NativeScraperBridge(mainWv, this), "AndroidNativeScraper");
+                  } catch (Exception e) {
+                      e.printStackTrace();
+                  }
+              }
+
+              private void createNotificationChannel() {
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                      NotificationChannel channel = new NotificationChannel(
+                          CHANNEL_ID,
+                          "התראות מחיר PriceRadar",
+                          NotificationManager.IMPORTANCE_HIGH
+                      );
+                      channel.setDescription("התראות מיידיות על ירידות מחיר מחוץ לאפליקציה");
+                      channel.enableVibration(true);
+                      channel.enableLights(true);
+                      channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+                      NotificationManager nm = getSystemService(NotificationManager.class);
+                      if (nm != null) {
+                          nm.createNotificationChannel(channel);
+                      }
+                  }
+              }
+
+              public static class BackgroundAlertReceiver extends BroadcastReceiver {
+                  @Override
+                  public void onReceive(Context context, Intent intent) {
+                      new Thread(() -> {
+                          try {
+                              SharedPreferences sp = context.getSharedPreferences("PriceRadarPrefs", Context.MODE_PRIVATE);
+                              String deviceId = sp.getString("deviceId", "");
+                              if (deviceId == null || deviceId.isEmpty()) return;
+
+                              String sbUrl = "https://ljggqatmryzfvvveefiz.supabase.co/rest/v1/user_profiles?device_id=eq." + deviceId + "&select=payload";
+                              String sbKey = "sb_publishable_BEFtsujmDeFgYfUicT0aTA_e5H2f6bx";
+                              URL u = new URL(sbUrl);
+                              HttpURLConnection conn = (HttpURLConnection) u.openConnection();
+                              conn.setRequestMethod("GET");
+                              conn.setRequestProperty("apikey", sbKey);
+                              conn.setRequestProperty("Authorization", "Bearer " + sbKey);
+                              conn.setConnectTimeout(8000);
+                              conn.setReadTimeout(8000);
+
+                              if (conn.getResponseCode() == 200) {
+                                  BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                                  StringBuilder sb = new StringBuilder();
+                                  String line;
+                                  while ((line = reader.readLine()) != null) sb.append(line);
+                                  reader.close();
+
+                                  JSONArray arr = new JSONArray(sb.toString());
+                                  if (arr.length() > 0) {
+                                      JSONObject row = arr.getJSONObject(0);
+                                      JSONObject payload = row.optJSONObject("payload");
+                                      if (payload != null) {
+                                          JSONArray alerts = payload.optJSONArray("alerts");
+                                          if (alerts != null && alerts.length() > 0) {
+                                              JSONObject latest = alerts.getJSONObject(0);
+                                              String alertId = latest.optString("id");
+                                              String lastNotified = sp.getString("lastAlertId", "");
+
+                                              if (!alertId.isEmpty() && !alertId.equals(lastNotified)) {
+                                                  sp.edit().putString("lastAlertId", alertId).apply();
+                                                  String title = latest.optString("title", "🔥 המחיר ירד!");
+                                                  String msg = latest.optString("messagePlain", "נמצאה ירידת מחיר באחד המוצרים שלך");
+
+                                                  Intent tapIntent = new Intent(context, MainActivity.class);
+                                                  tapIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                                                  PendingIntent pi = PendingIntent.getActivity(context, 0, tapIntent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+
+                                                  NotificationCompat.Builder b = new NotificationCompat.Builder(context, CHANNEL_ID)
+                                                      .setSmallIcon(context.getApplicationInfo().icon)
+                                                      .setContentTitle(title)
+                                                      .setContentText(msg)
+                                                      .setPriority(NotificationCompat.PRIORITY_HIGH)
+                                                      .setDefaults(NotificationCompat.DEFAULT_ALL)
+                                                      .setAutoCancel(true)
+                                                      .setContentIntent(pi);
+
+                                                  NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+                                                  if (nm != null) {
+                                                      nm.notify(Math.abs(alertId.hashCode()), b.build());
+                                                  }
+                                              }
+                                          }
+                                      }
+                                  }
+                              }
+                          } catch (Exception ignored) {}
+                      }).start();
+                  }
+              }
+
+              public class NativeScraperBridge {
+                  private final WebView hostWebView;
+                  private final Context context;
+                  private final Handler mainHandler = new Handler(Looper.getMainLooper());
+
+                  public NativeScraperBridge(WebView host, Context ctx) {
+                      this.hostWebView = host;
+                      this.context = ctx;
+                  }
+
+                  @JavascriptInterface
+                  public void saveDeviceId(final String deviceId) {
+                      if (deviceId == null || deviceId.isEmpty()) return;
+                      SharedPreferences sp = context.getSharedPreferences("PriceRadarPrefs", Context.MODE_PRIVATE);
+                      sp.edit().putString("deviceId", deviceId).apply();
+
+                      // Schedule periodic background check via AlarmManager
+                      try {
+                          AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+                          Intent i = new Intent(context, BackgroundAlertReceiver.class);
+                          PendingIntent pi = PendingIntent.getBroadcast(context, 101, i, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+                          if (am != null) {
+                              long interval = 15 * 60 * 1000; // 15 minutes
+                              am.setInexactRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + interval, interval, pi);
+                          }
+                      } catch (Exception e) {
+                          e.printStackTrace();
+                      }
+                  }
+
+                  @JavascriptInterface
+                  public void scrapeUrl(final String targetUrl, final String callbackId) {
+                      mainHandler.post(() -> {
+                          try {
+                              if (scraperWebView != null) {
+                                  scraperWebView.destroy();
+                              }
+                              scraperWebView = new WebView(MainActivity.this);
+                              WebSettings s = scraperWebView.getSettings();
+                              s.setJavaScriptEnabled(true);
+                              s.setDomStorageEnabled(true);
+                              s.setUserAgentString("Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36");
+                              scraperWebView.setWebViewClient(new WebViewClient() {
+                                  private boolean delivered = false;
+                                  @Override
+                                  public void onPageFinished(WebView view, String url) {
+                                      mainHandler.postDelayed(() -> {
+                                          if (delivered) return;
+                                          view.evaluateJavascript("(function(){ return document.documentElement ? document.documentElement.outerHTML : ''; })();", value -> {
+                                              if (delivered) return;
+                                              if (value != null && value.contains("Just a moment")) {
+                                                  mainHandler.postDelayed(() -> {
+                                                      if (delivered) return;
+                                                      delivered = true;
+                                                      view.evaluateJavascript("(function(){ return document.documentElement ? document.documentElement.outerHTML : ''; })();", val2 -> {
+                                                          sendResult(callbackId, val2);
+                                                      });
+                                                  }, 2500);
+                                              } else {
+                                                  delivered = true;
+                                                  sendResult(callbackId, value);
+                                              }
+                                          });
+                                      }, 1600);
+                                  }
+                              });
+                              scraperWebView.loadUrl(targetUrl);
+                          } catch (Exception e) {
+                              sendResult(callbackId, "\"\"");
+                          }
+                      });
+                  }
+
+                  private void sendResult(final String callbackId, final String rawJsString) {
+                      mainHandler.post(() -> {
+                          try {
+                              String safeId = JSONObject.quote(callbackId);
+                              String payload = (rawJsString == null || rawJsString.equals("null")) ? "\"\"" : rawJsString;
+                              hostWebView.evaluateJavascript("window.__resolveNativeScrape && window.__resolveNativeScrape(" + safeId + ", " + payload + ");", null);
+                          } catch (Exception ignored) {}
+                      });
+                  }
+              }
+          }' > android/app/src/main/java/com/priceradar/app/MainActivity.java
           package com.priceradar.app;
 
           import android.os.Bundle;
@@ -202,7 +482,7 @@ jobs:
       - name: Publish Direct GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.0
-          name: "PriceRadar v1.0.0 (Official Release)"
-          body: "הורדה ישירה של קובץ האפליקציה הרשמי לאנדרואיד (PriceRadar.apk). כולל סורק WebView נייטיבי לעקיפת חסימות בוטים (KSP ועוד) והתראות פוש!"
+          tag_name: ${{ env.TAG_NAME }}
+          name: "PriceRadar ${{ env.TAG_NAME }} (Official Release)"
+          body: "הורדה ישירה של גרסה ${{ env.VERSION_NAME }} (Build ${{ env.VERSION_CODE }}). הגרסה עולה אוטומטית ב-0.1 בכל הרצת בנייה ומאפשרת התקנה חלקה מעל גרסאות ישנות!"
           files: PriceRadar.apk
