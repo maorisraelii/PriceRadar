@@ -914,7 +914,19 @@
             <input id="modalCurrentPrice" type="number" step="0.01" min="0.01" required class="w-full px-3.5 py-2.5 rounded-2xl liquid-glass-input text-base font-black text-emerald-300 outline-none" />
           </div>
           <div>
-            <label for="modalTargetPrice" class="block text-xs font-bold text-slate-200 mb-1">מחיר יעד (אופציונלי, ₪):</label>
+            <!-- Amazon Free Shipping over $49 Toggle -->
+        <div id="modalFreeShippingBox" class="p-3 rounded-2xl bg-cyan-950/40 border border-cyan-400/40 flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <span class="text-xl">✈️</span>
+            <div>
+              <p class="text-xs font-bold text-cyan-200">משלוח חינם לישראל מעל 49$ (Amazon)</p>
+              <p class="text-[10px] text-cyan-300/80">קבל התראה ברגע שהמוצר מצטרף למשלוח חינם, גם ללא ירידת מחיר</p>
+            </div>
+          </div>
+          <input id="modalTrackFreeShipping" type="checkbox" checked class="w-5 h-5 accent-cyan-400 cursor-pointer" />
+        </div>
+
+        <label for="modalTargetPrice" class="block text-xs font-bold text-slate-200 mb-1">מחיר יעד (אופציונלי, ₪):</label>
             <input id="modalTargetPrice" type="number" step="0.01" min="0" placeholder="התראה בכל ירידה" class="w-full px-3.5 py-2.5 rounded-2xl liquid-glass-input text-sm text-white outline-none" />
           </div>
         </div>
@@ -1391,6 +1403,12 @@
       } catch (e) {
         return rawUrl.trim();
       }
+    }
+
+    function checkAmazonFreeShippingToIsrael(rawText) {
+      if (!rawText) return false;
+      const clean = String(rawText).replace(/[\u200E\u200F\u202A-\u202E]/g, '');
+      return /(?:FREE Shipping|משלוח חינם|זכאי למשלוח חינם).*(?:to Israel|לישראל|מעל\s*\$?49|49\$)|qualif(?:y|ies) for FREE Shipping to Israel|eligible for FREE Shipping to Israel/i.test(clean);
     }
 
     function extractKspUin(rawUrl) {
@@ -2310,6 +2328,11 @@
       const storeMeta = getStoreMeta(cleanedUrl);
       const cat = guessCategoryFromUrl(cleanedUrl, validTitle);
       const chosenImage = (extracted && extracted.image) ? extracted.image : getFallbackProductImage(cleanedUrl, cat);
+      const isAmz = cleanedUrl.includes('amazon.');
+      const isFreeShip = isAmz && (
+        (extracted && extracted.freeShippingEligible) ||
+        (fetched && fetched.content && checkAmazonFreeShippingToIsrael(fetched.content))
+      );
 
       return {
         url: cleanedUrl,
@@ -2321,7 +2344,9 @@
         SelectedVariant: (extracted && extracted.SelectedVariant) ? extracted.SelectedVariant : (urlVariantId ? `מידה / אפשרות #${urlVariantId}` : ''),
         variations: (extracted && Array.isArray(extracted.variations)) ? extracted.variations : [],
         sourceMethod: (extracted && extracted.sourceMethod) ? extracted.sourceMethod : 'סריקת קישור ישירה',
-        category: cat
+        category: cat,
+        freeShippingEligible: Boolean(isFreeShip),
+        trackFreeShipping: isAmz
       };
     }
     // =========================================================================
@@ -2350,6 +2375,16 @@
       document.getElementById('modalProductUrl').value = data.url || '';
       document.getElementById('modalCurrentPrice').value = data.price !== undefined && data.price !== '' ? data.price : '';
       document.getElementById('modalTargetPrice').value = data.targetPrice || '';
+      const fsBox = document.getElementById('modalFreeShippingBox');
+      const fsCheck = document.getElementById('modalTrackFreeShipping');
+      const isAmazonProd = (data.url || '').includes('amazon.');
+      if (fsBox) {
+        fsBox.className = isAmazonProd ? 'p-3 rounded-2xl bg-cyan-950/40 border border-cyan-400/40 flex items-center justify-between' : 'hidden';
+      }
+      if (fsCheck) {
+        fsCheck.checked = data.trackFreeShipping !== false;
+      }
+      state.ui.pendingFreeShipping = data.freeShippingEligible || false;
       document.getElementById('modalSelectedVariantText').value = data.SelectedVariant || '';
       document.getElementById('modalCategorySelect').value = data.category || 'other';
 
@@ -2641,6 +2676,31 @@
         newPrice = Number(scanned.price);
       }
 
+      // Check Amazon Free Shipping to Israel change:
+      const wasFreeShip = Boolean(p.freeShippingEligible);
+      const isNowFreeShip = Boolean(scanned.freeShippingEligible);
+      p.freeShippingEligible = isNowFreeShip;
+
+      if (!wasFreeShip && isNowFreeShip && p.trackFreeShipping !== false && (p.url || '').includes('amazon.')) {
+        const fsMsg =
+          `✈️ בשורה מעולה! משלוח חינם לישראל באמזון!\n\n` +
+          `🛍️ מוצר: ${p.title}\n` +
+          `📦 זכאי כעת למשלוח חינם לישראל בקנייה מעל $49!\n` +
+          `💰 מחיר נוכחי: ${formatPrice(newPrice)}\n\n` +
+          `🛒 להזמנה מהירה:\n${p.url}`;
+
+        await recordAndDispatchAlert({
+          id: 'fs_' + Date.now(),
+          type: 'drop',
+          timestamp: formatTimeNow(),
+          title: `✈️ נכנס למשלוח חינם לישראל מעל 49$!`,
+          messagePlain: `המוצר "${p.title}" זכאי כעת למשלוח חינם לישראל באמזון בקנייה מעל 49$!`,
+          telegramText: fsMsg,
+          url: p.url,
+          image: p.image
+        });
+      }
+
       await applyNewPriceToProduct(p, newPrice, silent);
     }
 
@@ -2817,6 +2877,12 @@
           ? `<span class="px-3 py-1 rounded-full text-xs font-black bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md shadow-emerald-500/30">🔥 ירד ב-${formatPrice(Math.abs(diff))} (-${pct}%)</span>`
           : `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-white/10 text-slate-200 border border-white/15">מחיר יציב</span>`;
 
+        const freeShippingPill = p.freeShippingEligible
+          ? `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-cyan-500/20 border border-cyan-400/40 text-cyan-200 text-xs font-black shadow-sm shadow-cyan-500/20">
+               <span>✈️ חינם מעל 49$</span>
+             </span>`
+          : '';
+
         const variantPill = p.SelectedVariant
           ? `<button type="button" data-action="edit" data-id="${p.id}" class="prod-action-btn inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-gradient-to-r from-pink-500/25 to-purple-500/25 border border-pink-400/40 text-pink-100 text-xs font-extrabold hover:bg-pink-500/35 transition">
                <span>🎯 ${escapeHtml(p.SelectedVariant)}</span>
@@ -2850,7 +2916,8 @@
               <div class="space-y-2 flex-1 min-w-0">
                 <h3 class="text-base sm:text-lg font-black text-white leading-snug line-clamp-2">${escapeHtml(p.title)}</h3>
                 <div class="flex flex-wrap items-center gap-1.5">
-                  ${variantPill}
+                  ${freeShippingPill}
+              ${variantPill}
                   ${p.targetPrice ? `<span class="text-[11px] font-bold px-2.5 py-1 rounded-xl bg-amber-400/20 text-amber-200 border border-amber-300/30">יעד: ${formatPrice(p.targetPrice)}</span>` : ''}
                 </div>
               </div>
@@ -3140,6 +3207,8 @@
             p.currentPrice = price;
             if (price < p.lowestPrice) p.lowestPrice = price;
             p.targetPrice = targetPriceVal > 0 ? targetPriceVal : null;
+            p.trackFreeShipping = document.getElementById('modalTrackFreeShipping') ? document.getElementById('modalTrackFreeShipping').checked : true;
+            if (state.ui.pendingFreeShipping !== undefined) p.freeShippingEligible = state.ui.pendingFreeShipping;
             p.SelectedVariant = selectedVariant;
             p.category = category;
             p.variations = state.ui.pendingVariations.slice();
@@ -3158,6 +3227,8 @@
             currentPrice: price,
             lowestPrice: price,
             targetPrice: targetPriceVal > 0 ? targetPriceVal : null,
+            freeShippingEligible: state.ui.pendingFreeShipping || false,
+            trackFreeShipping: document.getElementById('modalTrackFreeShipping') ? document.getElementById('modalTrackFreeShipping').checked : true,
             SelectedVariant: selectedVariant,
             variations: state.ui.pendingVariations.slice(),
             category,
