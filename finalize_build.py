@@ -17,8 +17,28 @@ def main():
             c = f.read()
         c = re.sub(r"versionCode\s+\d+", f"versionCode {version_code}", c)
         c = re.sub(r'versionName\s+"[^"]+"', f'versionName "{version_name}"', c)
+        if "packagingOptions" not in c:
+            pkg_opts = """
+    packagingOptions {
+        resources {
+            excludes += ['META-INF/DEPENDENCIES', 'META-INF/LICENSE', 'META-INF/LICENSE.txt', 'META-INF/license.txt', 'META-INF/NOTICE', 'META-INF/NOTICE.txt', 'META-INF/notice.txt', 'META-INF/ASL2.0', 'META-INF/*.kotlin_module']
+        }
+    }
+"""
+            c = c.replace("android {", "android {" + pkg_opts, 1)
+
         with open(p_gradle, "w", encoding="utf-8") as f:
             f.write(c)
+
+        # Set Gradle JVM memory args to prevent OOM / hanging during mergeDebugJavaResource
+        p_props = "android/gradle.properties"
+        if os.path.exists(p_props):
+            with open(p_props, "r", encoding="utf-8") as pf:
+                props = pf.read()
+            if "org.gradle.jvmargs" not in props:
+                with open(p_props, "a", encoding="utf-8") as pf:
+                    pf.write("\norg.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=512m\n")
+                print("Configured gradle.properties with optimized memory limits")
         print(f"Configured {p_gradle} with versionCode={version_code}, versionName={version_name}")
 
     # 2. Update www/index.html version and timestamp
