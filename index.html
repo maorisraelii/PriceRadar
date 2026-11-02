@@ -2,8 +2,8 @@
 <html lang="he" dir="rtl">
 <head>
   <script>
-    window.__APP_VERSION__ = "2.5.0";
-    window.__BUILD_TIMESTAMP__ = 1762112000;
+    window.__APP_VERSION__ = "2.6.0";
+    window.__BUILD_TIMESTAMP__ = 1762115000;
 
     // =========================================================================
     // OVER-THE-AIR (OTA) LIVE UPDATE ENGINE FROM GITHUB
@@ -35,18 +35,28 @@
         const currentActiveTs = Number(localStorage.getItem('pr_live_ota_ts') || window.__BUILD_TIMESTAMP__);
 
         if (remoteTs > currentActiveTs) {
-          console.log(`[PriceRadar OTA] New version found on GitHub (${remoteTs} > ${currentActiveTs}). Caching and applying...`);
-          localStorage.setItem('pr_live_ota_html', remoteHtml);
-          localStorage.setItem('pr_live_ota_ts', String(remoteTs));
-          sessionStorage.removeItem('pr_running_cached');
-          if (typeof showToast === 'function') {
-            showToast('🚀 עודכן אוטומטית מ-GitHub!', 'הקוד החדש נטען בהצלחה ללא צורך בהתקנת APK.', 'success');
+          console.log(`[PriceRadar OTA] New version found on GitHub (${remoteTs} > ${currentActiveTs}). Caching for next launch...`);
+          // Preserve user state before writing large OTA HTML to avoid WebView localStorage quota eviction!
+          const userStateSnap = localStorage.getItem('priceradar_il_user_state_v1');
+          try {
+            localStorage.setItem('pr_live_ota_html', remoteHtml);
+            localStorage.setItem('pr_live_ota_ts', String(remoteTs));
+          } catch (quotaErr) {
+            localStorage.removeItem('pr_live_ota_html');
+            localStorage.removeItem('pr_live_ota_ts');
           }
-          setTimeout(() => {
-            document.open();
-            document.write(remoteHtml);
-            document.close();
-          }, 800);
+          if (userStateSnap && !localStorage.getItem('priceradar_il_user_state_v1')) {
+            try { localStorage.setItem('priceradar_il_user_state_v1', userStateSnap); } catch (e) {}
+          }
+          // Only auto-apply if user has not modified products in this session, to prevent interrupting active state
+          if (!window.__USER_MODIFIED_STATE__) {
+            sessionStorage.removeItem('pr_running_cached');
+            setTimeout(() => {
+              document.open();
+              document.write(remoteHtml);
+              document.close();
+            }, 600);
+          }
         }
       } catch (err) {}
     }
@@ -1085,8 +1095,20 @@
     const chartInstances = {};
 
     function loadState() {
+      let loadedFromStorage = false;
       try {
-        const raw = localStorage.getItem(STORAGE_KEY);
+        let raw = localStorage.getItem(STORAGE_KEY);
+        // Fallback to native Android SharedPreferences backup if WebView localStorage was not flushed before swipe-kill
+        if ((!raw || raw === '{}' || raw.indexOf('"products":[]') !== -1) &&
+            window.AndroidNativeScraper && typeof window.AndroidNativeScraper.loadFullStateBackup === 'function') {
+          try {
+            const nativeRaw = window.AndroidNativeScraper.loadFullStateBackup();
+            if (nativeRaw && nativeRaw.length > 10) {
+              raw = nativeRaw;
+              localStorage.setItem(STORAGE_KEY, nativeRaw);
+            }
+          } catch (e) {}
+        }
         if (raw) {
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed.products)) state.products = parsed.products;
@@ -1094,6 +1116,7 @@
           if (parsed.settings && typeof parsed.settings === 'object') {
             state.settings = Object.assign({}, state.settings, parsed.settings);
           }
+          loadedFromStorage = true;
         }
       } catch (err) {}
       if (!state.settings.deviceId) {
@@ -1111,6 +1134,18 @@
         state.settings.supabaseAnonKey = APP_CLOUD_CONFIG.supabaseAnonKey;
       }
       state.ui.nextCheckSeconds = (state.settings.checkIntervalMinutes || 60) * 60;
+      // Persist deviceId & deviceSecret immediately so they never regenerate on next launch!
+      try {
+        const serialized = JSON.stringify({
+          products: state.products,
+          alerts: state.alerts,
+          settings: state.settings
+        });
+        localStorage.setItem(STORAGE_KEY, serialized);
+        if (window.AndroidNativeScraper && typeof window.AndroidNativeScraper.saveFullStateBackup === 'function') {
+          window.AndroidNativeScraper.saveFullStateBackup(serialized);
+        }
+      } catch (e) {}
       syncNativeAndroidCredentials();
     }
 
@@ -1131,22 +1166,45 @@
     }
 
     let ghSyncTimer = null;
-    function saveState(skipCloudPush = false) {
+    function saveState(skipCloudPush = false, immediateCloudPush = false) {
+      window.__USER_MODIFIED_STATE__ = true;
+      const serialized = JSON.stringify({
+        products: state.products,
+        alerts: state.alerts,
+        settings: state.settings
+      });
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({
-          products: state.products,
-          alerts: state.alerts,
-          settings: state.settings
-        }));
-      } catch (err) {}
+        localStorage.setItem(STORAGE_KEY, serialized);
+      } catch (err) {
+        // Free up OTA cache if quota was exceeded so user's product list is NEVER lost
+        try {
+          localStorage.removeItem('pr_live_ota_html');
+          localStorage.setItem(STORAGE_KEY, serialized);
+        } catch (e2) {}
+      }
+      try {
+        if (window.AndroidNativeScraper && typeof window.AndroidNativeScraper.saveFullStateBackup === 'function') {
+          window.AndroidNativeScraper.saveFullStateBackup(serialized);
+        }
+      } catch (e) {}
       syncNativeAndroidCredentials();
       if (!skipCloudPush && ((state.settings.supabaseUrl && state.settings.supabaseAnonKey) || (state.settings.ghRepo && state.settings.ghToken))) {
         clearTimeout(ghSyncTimer);
-        ghSyncTimer = setTimeout(() => { pushStateToGithubCloud(true); }, 800);
+        if (immediateCloudPush) {
+          pushStateToGithubCloud(true);
+        } else {
+          ghSyncTimer = setTimeout(() => { pushStateToGithubCloud(true); }, 250);
+        }
       }
     }
 
     async function pullStateFromGithubCloud(silent = false) {
+      // If a local save is pending or in flight, push local state first so cloud never overwrites newer local products!
+      if (ghSyncTimer) {
+        clearTimeout(ghSyncTimer);
+        ghSyncTimer = null;
+        await pushStateToGithubCloud(true);
+      }
       const sbUrl = (state.settings.supabaseUrl || '').trim();
       const sbKey = (state.settings.supabaseAnonKey || '').trim();
       if (sbUrl && sbKey) {
@@ -1165,7 +1223,28 @@
             if (Array.isArray(rows) && rows.length > 0 && rows[0].payload) {
               const cloudData = rows[0].payload;
               const prevLatestAlertId = (state.alerts && state.alerts.length > 0) ? state.alerts[0].id : localStorage.getItem('pr_last_notified_alert_id');
-              if (Array.isArray(cloudData.products)) state.products = cloudData.products;
+              if (Array.isArray(cloudData.products)) {
+                if (cloudData.products.length === 0 && state.products.length > 0) {
+                  // Never let an empty cloud profile wipe out local products! Push local products to cloud instead.
+                  await pushStateToGithubCloud(true);
+                } else if (state.products.length > 0) {
+                  // Merge: update prices of existing products from cloud, and preserve any newly added local products not yet in cloud
+                  const cloudMap = new Map(cloudData.products.map(p => [p.id || p.url, p]));
+                  const merged = cloudData.products.slice();
+                  for (const localProd of state.products) {
+                    const key = localProd.id || localProd.url;
+                    if (!cloudMap.has(key)) {
+                      merged.unshift(localProd);
+                    }
+                  }
+                  state.products = merged;
+                  if (merged.length > cloudData.products.length) {
+                    pushStateToGithubCloud(true);
+                  }
+                } else {
+                  state.products = cloudData.products;
+                }
+              }
               if (Array.isArray(cloudData.alerts)) {
                 if (cloudData.alerts.length > 0) {
                   const newestAlert = cloudData.alerts[0];
@@ -1178,7 +1257,9 @@
                     } catch (e) {}
                   }
                 }
-                state.alerts = cloudData.alerts;
+                if (cloudData.alerts.length > 0 || state.alerts.length === 0) {
+                  state.alerts = cloudData.alerts;
+                }
               }
               saveState(true);
               renderAll();
@@ -3315,7 +3396,7 @@
           showToast('נוסף למעקב בהצלחה! 🎉', `${title}${selectedVariant ? ' (' + selectedVariant + ')' : ''} במעקב פעיל.`, 'success');
         }
 
-        saveState();
+        saveState(false, true);
         closeProductModal();
         renderAll();
       });
@@ -3353,9 +3434,10 @@
           openConfirmModal(
             'הסרת מוצר מהמעקב',
             `האם להסיר את "${prod.title}" מרשימת המעקב שלך?`,
-            () => {
+            async () => {
               state.products = state.products.filter(item => item.id !== id);
-              saveState();
+              saveState(true);
+              await pushStateToGithubCloud(true);
               renderAll();
               showToast('המוצר הוסר', 'המוצר נמחק מרשימת המעקב.', 'info');
             }
@@ -3545,10 +3627,11 @@
         openConfirmModal(
           'איפוס מלא של האפליקציה',
           'האם למחוק את כל המוצרים וההתראות ולהתחיל מרשימה ריקה?',
-          () => {
+          async () => {
             state.products = [];
             state.alerts = [];
-            saveState();
+            saveState(true);
+            await pushStateToGithubCloud(true);
             renderAll();
             showToast('האפליקציה אופסה ✨', 'רשימת המעקב ריקה ומוכנה.', 'info');
           }

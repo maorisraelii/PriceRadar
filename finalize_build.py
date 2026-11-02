@@ -551,6 +551,19 @@ public class MainActivity extends BridgeActivity {
         }
 
         @JavascriptInterface
+        public void saveFullStateBackup(final String stateJson) {
+            if (stateJson == null || stateJson.isEmpty()) return;
+            SharedPreferences sp = context.getSharedPreferences("PriceRadarPrefs", Context.MODE_PRIVATE);
+            sp.edit().putString("fullStateBackup", stateJson).commit();
+        }
+
+        @JavascriptInterface
+        public String loadFullStateBackup() {
+            SharedPreferences sp = context.getSharedPreferences("PriceRadarPrefs", Context.MODE_PRIVATE);
+            return sp.getString("fullStateBackup", "");
+        }
+
+        @JavascriptInterface
         public void saveDeviceId(final String deviceId) {
             saveDeviceCredentials(deviceId, "", 15);
         }
@@ -567,7 +580,7 @@ public class MainActivity extends BridgeActivity {
             if (intervalMinutes > 0) {
                 ed.putInt("checkIntervalMinutes", intervalMinutes);
             }
-            ed.apply();
+            ed.commit();
 
             scheduleNextBackgroundCheck(context, intervalMinutes > 0 ? intervalMinutes : 15);
             try {
