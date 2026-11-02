@@ -16,11 +16,31 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Java 17
+      - name: Set up Java 17 & Persistent Signing Keystore
         uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '17'
+
+      - name: Ensure Persistent Android Signing Keystore across all builds
+        run: |
+          if [ -f "priceradar-signing.keystore" ]; then
+            mkdir -p ~/.android
+            cp priceradar-signing.keystore ~/.android/debug.keystore
+            echo "Loaded persistent priceradar-signing.keystore -> ~/.android/debug.keystore"
+          else
+            mkdir -p ~/.android
+            keytool -genkeypair -v -keystore priceradar-signing.keystore \
+              -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 36500 \
+              -storepass android -keypass android \
+              -dname "CN=Android Debug,O=Android,C=US"
+            cp priceradar-signing.keystore ~/.android/debug.keystore
+            git config user.name "PriceRadar CI"
+            git config user.email "ci@priceradar.app"
+            git add priceradar-signing.keystore
+            git commit -m "ci: Persist Android signing keystore so APK updates never require uninstall" || true
+            git push origin HEAD:main || true
+          fi
 
       - name: Accept Android SDK Licenses
         run: |

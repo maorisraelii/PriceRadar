@@ -25,6 +25,16 @@ def main():
         c = re.sub(r'versionName\s+"[^"]+"', f'versionName "{version_name}"', c)
         if "packagingOptions" not in c:
             pkg_opts = """
+    signingConfigs {
+        debug {
+            if (file("../../priceradar-signing.keystore").exists()) {
+                storeFile file("../../priceradar-signing.keystore")
+                storePassword "android"
+                keyAlias "androiddebugkey"
+                keyPassword "android"
+            }
+        }
+    }
     packagingOptions {
         resources {
             excludes += ['META-INF/DEPENDENCIES', 'META-INF/LICENSE', 'META-INF/LICENSE.txt', 'META-INF/license.txt', 'META-INF/NOTICE', 'META-INF/NOTICE.txt', 'META-INF/notice.txt', 'META-INF/ASL2.0', 'META-INF/*.kotlin_module']
