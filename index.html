@@ -2,8 +2,8 @@
 <html lang="he" dir="rtl">
 <head>
   <script>
-    window.__APP_VERSION__ = "2.6.0";
-    window.__BUILD_TIMESTAMP__ = 1762115000;
+    window.__APP_VERSION__ = "2.7.0";
+    window.__BUILD_TIMESTAMP__ = 1762119000;
 
     // =========================================================================
     // OVER-THE-AIR (OTA) LIVE UPDATE ENGINE FROM GITHUB
@@ -554,14 +554,17 @@
               </select>
             </div>
 
-            <div class="flex items-center justify-between p-4 rounded-2xl liquid-glass-soft">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl liquid-glass-soft">
               <div>
-                <p class="text-xs font-extrabold text-white">התראות קופצות במכשיר (Push)</p>
-                <p class="text-[11px] text-slate-300">קבלת התראה על המסך גם כשאתה מחוץ לאפליקציה</p>
+                <p class="text-xs font-extrabold text-white">התראות קופצות במכשיר (Push 24/7)</p>
+                <p class="text-[11px] text-slate-300">קבלת התראה על המסך גם כשסוגרים את האפליקציה מהמולטיטאסקינג</p>
               </div>
-              <div class="flex items-center gap-2">
+              <div class="flex flex-wrap items-center gap-2">
                 <button id="testDeviceNotifBtn" type="button" class="px-3.5 py-2 rounded-xl btn-gradient-emerald text-white text-xs font-extrabold shadow-md transition">
                   🔔 שלח בדיקה למכשיר
+                </button>
+                <button id="testClosedNotifBtn" type="button" class="px-3.5 py-2 rounded-xl bg-amber-500/25 hover:bg-amber-500/40 text-amber-200 border border-amber-400/40 text-xs font-extrabold shadow-md transition">
+                  ⏱️ בדיקת התראה כשהאפליקציה סגורה (10 שניות)
                 </button>
                 <button id="enableBrowserNotifBtn" type="button" class="px-3.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-xs font-bold text-cyan-200 border border-white/20 transition">
                   הפעל התראות
@@ -3542,6 +3545,37 @@
           saveState();
           await triggerBrowserNotification('🔔 בדיקת התראת פוש PriceRadar', 'התראות פוש פועלות במכשיר שלך בהצלחה!');
           showToast('התראת בדיקה נשלחה! 🔔', 'נשלחה התראה לווילון ההתראות במכשיר.', 'success');
+        });
+      }
+
+      const testClosedBtn = document.getElementById('testClosedNotifBtn');
+      if (testClosedBtn) {
+        testClosedBtn.addEventListener('click', async () => {
+          await requestDeviceNotificationPermission();
+          state.settings.browserNotifEnabled = true;
+          saveState();
+          const title = '🔥 PriceRadar פועל גם כשהאפליקציה סגורה!';
+          const body = 'התראה זו נשלחה 10 שניות לאחר הלחיצה — גם כשהאפליקציה נסגרה מהמולטיטאסקינג!';
+          if (window.AndroidNativeScraper && typeof window.AndroidNativeScraper.scheduleDelayedNotification === 'function') {
+            window.AndroidNativeScraper.scheduleDelayedNotification(title, body, 10);
+          } else if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications) {
+            try {
+              await window.Capacitor.Plugins.LocalNotifications.schedule({
+                notifications: [{
+                  title: title,
+                  body: body,
+                  id: Math.floor(Date.now() % 100000),
+                  channelId: 'price_radar_alerts',
+                  smallIcon: 'ic_launcher',
+                  allowWhileIdle: true,
+                  schedule: { at: new Date(Date.now() + 10000), allowWhileIdle: true }
+                }]
+              });
+            } catch (e) {}
+          } else {
+            setTimeout(() => triggerBrowserNotification(title, body), 10000);
+          }
+          showToast('⏱️ סגור עכשיו את האפליקציה מהמולטיטאסקינג!', 'בעוד 10 שניות תקפוץ התראה במכשיר שלך גם כשהאפליקציה סגורה לגמרי.', 'info');
         });
       }
 

@@ -92,18 +92,22 @@ def main():
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 """
         if "POST_NOTIFICATIONS" not in m:
             m = m.replace("</manifest>", perms + "</manifest>")
         rcvr = """
         <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="price_radar_alerts" />
-        <service android:name=".MainActivity$TaskRemovedWatchdogService" android:enabled="true" android:exported="false" android:stopWithTask="false" />
+        <service android:name=".MainActivity$TaskRemovedWatchdogService" android:enabled="true" android:exported="false" android:stopWithTask="false" android:foregroundServiceType="dataSync" />
         <receiver android:name=".MainActivity$BackgroundAlertReceiver" android:enabled="true" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.QUICKBOOT_POWERON" />
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
                 <action android:name="com.priceradar.app.CHECK_ALERTS" />
+                <action android:name="com.priceradar.app.DELAYED_TEST_NOTIFICATION" />
             </intent-filter>
         </receiver>
 """
@@ -132,13 +136,16 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.pm.ServiceInfo;
 import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.PowerManager;
+import android.provider.Settings;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -159,6 +166,7 @@ import java.util.regex.Pattern;
 
 public class MainActivity extends BridgeActivity {
     public static final String CHANNEL_ID = "price_radar_alerts";
+    public static final String MONITOR_CHANNEL_ID = "price_radar_monitor_silent";
     private WebView scraperWebView;
 
     @Override
@@ -166,6 +174,7 @@ public class MainActivity extends BridgeActivity {
         super.onCreate(savedInstanceState);
         createNotificationChannel(this);
         requestNotificationPermissionIfNeeded();
+        requestBatteryExemptionIfNeeded();
         try {
             WebView mainWv = this.getBridge().getWebView();
             WebSettings ws = mainWv.getSettings();
@@ -176,14 +185,95 @@ public class MainActivity extends BridgeActivity {
             e.printStackTrace();
         }
         scheduleNextBackgroundCheck(this, 15);
+        startRadarMonitorService(this);
+    }
+
+    public static void startRadarMonitorService(Context ctx) {
         try {
-            startService(new Intent(this, TaskRemovedWatchdogService.class));
+            Intent svc = new Intent(ctx, TaskRemovedWatchdogService.class);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                ctx.startForegroundService(svc);
+            } else {
+                ctx.startService(svc);
+            }
+        } catch (Exception ignored) {
+            try {
+                ctx.startService(new Intent(ctx, TaskRemovedWatchdogService.class));
+            } catch (Exception ignored2) {}
+        }
+    }
+
+    private void requestBatteryExemptionIfNeeded() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+                if (pm != null && !pm.isIgnoringBatteryOptimizations(getPackageName())) {
+                    Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+                    intent.setData(Uri.parse("package:" + getPackageName()));
+                    startActivity(intent);
+                }
+            }
         } catch (Exception ignored) {}
     }
 
     public static class TaskRemovedWatchdogService extends Service {
+        private final Handler loopHandler = new Handler(Looper.getMainLooper());
+        private final Runnable periodicRunner = new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Intent i = new Intent(getApplicationContext(), BackgroundAlertReceiver.class);
+                    i.setAction("com.priceradar.app.CHECK_ALERTS");
+                    sendBroadcast(i);
+                } catch (Exception ignored) {}
+                SharedPreferences sp = getSharedPreferences("PriceRadarPrefs", Context.MODE_PRIVATE);
+                int mins = Math.max(5, sp.getInt("checkIntervalMinutes", 15));
+                loopHandler.postDelayed(this, mins * 60L * 1000L);
+            }
+        };
+
+        @Override
+        public void onCreate() {
+            super.onCreate();
+            startSilentForeground();
+            loopHandler.postDelayed(periodicRunner, 60000L);
+        }
+
+        private void startSilentForeground() {
+            try {
+                createNotificationChannel(this);
+                Intent tapIntent = new Intent(this, MainActivity.class);
+                tapIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                PendingIntent pi = PendingIntent.getActivity(
+                    this,
+                    7001,
+                    tapIntent,
+                    PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT
+                );
+                int smallIconId = getApplicationInfo().icon;
+                if (smallIconId == 0) smallIconId = android.R.drawable.ic_dialog_info;
+
+                Notification n = new NotificationCompat.Builder(this, MONITOR_CHANNEL_ID)
+                    .setSmallIcon(smallIconId)
+                    .setContentTitle("PriceRadar פועל ברקע 24/7")
+                    .setContentText("מנטר ירידות מחיר ומשלוח חינם גם כשהאפליקציה סגורה")
+                    .setPriority(NotificationCompat.PRIORITY_MIN)
+                    .setOngoing(true)
+                    .setSilent(true)
+                    .setContentIntent(pi)
+                    .build();
+
+                if (Build.VERSION.SDK_INT >= 34) {
+                    startForeground(7001, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
+                } else {
+                    startForeground(7001, n);
+                }
+            } catch (Exception ignored) {}
+        }
+
         @Override
         public int onStartCommand(Intent intent, int flags, int startId) {
+            startSilentForeground();
             return START_STICKY;
         }
 
@@ -198,7 +288,7 @@ public class MainActivity extends BridgeActivity {
                 SharedPreferences sp = getSharedPreferences("PriceRadarPrefs", Context.MODE_PRIVATE);
                 int mins = sp.getInt("checkIntervalMinutes", 15);
                 scheduleNextBackgroundCheck(getApplicationContext(), mins);
-                // Also schedule a quick 60-second wakeup check after swipe-away from multitasking
+                // Schedule an immediate 15-second wakeup check after swipe-away from multitasking
                 AlarmManager am = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
                 if (am != null) {
                     Intent i = new Intent(getApplicationContext(), BackgroundAlertReceiver.class);
@@ -209,7 +299,7 @@ public class MainActivity extends BridgeActivity {
                         i,
                         PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT
                     );
-                    long triggerSoon = System.currentTimeMillis() + 60000L;
+                    long triggerSoon = System.currentTimeMillis() + 15000L;
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && am.canScheduleExactAlarms()) {
                         am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerSoon, pi);
                     } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -233,18 +323,29 @@ public class MainActivity extends BridgeActivity {
 
     public static void createNotificationChannel(Context ctx) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
-                CHANNEL_ID,
-                "התראות מחיר PriceRadar",
-                NotificationManager.IMPORTANCE_HIGH
-            );
-            channel.setDescription("התראות מיידיות על ירידות מחיר ומשלוח חינם");
-            channel.enableVibration(true);
-            channel.enableLights(true);
-            channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
             NotificationManager nm = ctx.getSystemService(NotificationManager.class);
             if (nm != null) {
+                NotificationChannel channel = new NotificationChannel(
+                    CHANNEL_ID,
+                    "התראות מחיר PriceRadar",
+                    NotificationManager.IMPORTANCE_HIGH
+                );
+                channel.setDescription("התראות מיידיות על ירידות מחיר ומשלוח חינם");
+                channel.enableVibration(true);
+                channel.enableLights(true);
+                channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
                 nm.createNotificationChannel(channel);
+
+                NotificationChannel monitorChannel = new NotificationChannel(
+                    MONITOR_CHANNEL_ID,
+                    "ניטור מחירים ברקע PriceRadar",
+                    NotificationManager.IMPORTANCE_LOW
+                );
+                monitorChannel.setDescription("שומר על ניטור מחירים פעיל 24/7 גם כשהאפליקציה סגורה");
+                monitorChannel.enableVibration(false);
+                monitorChannel.setSound(null, null);
+                monitorChannel.setShowBadge(false);
+                nm.createNotificationChannel(monitorChannel);
             }
         }
     }
@@ -318,6 +419,19 @@ public class MainActivity extends BridgeActivity {
     public static class BackgroundAlertReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
+            if (intent != null && "com.priceradar.app.DELAYED_TEST_NOTIFICATION".equals(intent.getAction())) {
+                String t = intent.getStringExtra("title");
+                String m = intent.getStringExtra("message");
+                showSystemNotification(
+                    context,
+                    t != null ? t : "🔔 התראת PriceRadar כשהאפליקציה סגורה!",
+                    m != null ? m : "מנוע הרקע פועל בהצלחה גם לאחר סגירה מהמולטיטאסקינג!",
+                    (int) (System.currentTimeMillis() & 0x7fffffff)
+                );
+                startRadarMonitorService(context);
+                return;
+            }
+            startRadarMonitorService(context);
             final PendingResult pendingResult = goAsync();
             new Thread(() -> {
                 PowerManager.WakeLock wl = null;
@@ -333,87 +447,112 @@ public class MainActivity extends BridgeActivity {
 
                     String deviceId = sp.getString("deviceId", "");
                     String deviceSecret = sp.getString("deviceSecret", "");
-                    if (deviceId == null || deviceId.isEmpty()) return;
 
-                    String sbUrl = "https://ljggqatmryzfvvveefiz.supabase.co/rest/v1/user_profiles?device_id=eq." + deviceId + "&select=payload";
-                    String sbKey = "sb_publishable_BEFtsujmDeFgYfUicT0aTA_e5H2f6bx";
-                    URL u = new URL(sbUrl);
-                    HttpURLConnection conn = (HttpURLConnection) u.openConnection();
-                    conn.setRequestMethod("GET");
-                    conn.setRequestProperty("apikey", sbKey);
-                    conn.setRequestProperty("Authorization", "Bearer " + sbKey);
-                    conn.setRequestProperty("x-device-id", deviceId);
-                    if (deviceSecret != null && !deviceSecret.isEmpty()) {
-                        conn.setRequestProperty("x-device-secret", deviceSecret);
+                    // Load local backup first so background check works even before or without cloud sync!
+                    JSONObject localPayload = null;
+                    String localBackupStr = sp.getString("fullStateBackup", "");
+                    if (localBackupStr != null && !localBackupStr.isEmpty()) {
+                        try {
+                            localPayload = new JSONObject(localBackupStr);
+                        } catch (Exception ignored) {}
                     }
-                    conn.setConnectTimeout(10000);
-                    conn.setReadTimeout(10000);
 
-                    if (conn.getResponseCode() == 200) {
-                        BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
-                        StringBuilder sb = new StringBuilder();
-                        String line;
-                        while ((line = reader.readLine()) != null) sb.append(line);
-                        reader.close();
+                    JSONObject activePayload = localPayload;
 
-                        JSONArray arr = new JSONArray(sb.toString());
-                        if (arr.length() > 0) {
-                            JSONObject row = arr.getJSONObject(0);
-                            JSONObject payload = row.optJSONObject("payload");
-                            if (payload != null) {
-                                // 1. Check if cloud scraper added a new alert
-                                JSONArray alerts = payload.optJSONArray("alerts");
-                                if (alerts != null && alerts.length() > 0) {
-                                    JSONObject latest = alerts.getJSONObject(0);
-                                    String alertId = latest.optString("id");
-                                    String lastNotified = sp.getString("lastAlertId", "");
+                    if (deviceId != null && !deviceId.isEmpty()) {
+                        try {
+                            String sbUrl = "https://ljggqatmryzfvvveefiz.supabase.co/rest/v1/user_profiles?device_id=eq." + deviceId + "&select=payload";
+                            String sbKey = "sb_publishable_BEFtsujmDeFgYfUicT0aTA_e5H2f6bx";
+                            URL u = new URL(sbUrl);
+                            HttpURLConnection conn = (HttpURLConnection) u.openConnection();
+                            conn.setRequestMethod("GET");
+                            conn.setRequestProperty("apikey", sbKey);
+                            conn.setRequestProperty("Authorization", "Bearer " + sbKey);
+                            conn.setRequestProperty("x-device-id", deviceId);
+                            if (deviceSecret != null && !deviceSecret.isEmpty()) {
+                                conn.setRequestProperty("x-device-secret", deviceSecret);
+                            }
+                            conn.setConnectTimeout(10000);
+                            conn.setReadTimeout(10000);
 
-                                    if (!alertId.isEmpty() && !alertId.equals(lastNotified)) {
-                                        sp.edit().putString("lastAlertId", alertId).apply();
-                                        String title = latest.optString("title", "🔥 המחיר ירד!");
-                                        String msg = latest.optString("messagePlain", "נמצאה ירידת מחיר באחד המוצרים שלך");
-                                        showSystemNotification(context, title, msg, Math.abs(alertId.hashCode()));
-                                    }
-                                }
+                            if (conn.getResponseCode() == 200) {
+                                BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+                                StringBuilder sb = new StringBuilder();
+                                String line;
+                                while ((line = reader.readLine()) != null) sb.append(line);
+                                reader.close();
 
-                                // 2. Also perform lightweight background check on tracked products directly from device
-                                JSONArray products = payload.optJSONArray("products");
-                                boolean updated = false;
-                                if (products != null && products.length() > 0 && deviceSecret != null && !deviceSecret.isEmpty()) {
-                                    updated = checkProductsInBackground(context, sp, products, alerts != null ? alerts : new JSONArray(), payload);
-                                }
-
-                                // 3. Check if Daily Summary Report is due while app is closed
-                                JSONObject settings = payload.optJSONObject("settings");
-                                if (settings != null && products != null && products.length() > 0) {
-                                    String dailyTime = settings.optString("dailyTime", "09:00");
-                                    java.text.SimpleDateFormat sdfDate = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US);
-                                    java.text.SimpleDateFormat sdfTime = new java.text.SimpleDateFormat("HH:mm", java.util.Locale.US);
-                                    java.util.Date nowDate = new java.util.Date();
-                                    String todayStr = sdfDate.format(nowDate);
-                                    String nowHm = sdfTime.format(nowDate);
-                                    String lastDailySent = settings.optString("lastDailySentDate", "");
-                                    String spLastDaily = sp.getString("lastDailySentDate", "");
-                                    if (nowHm.compareTo(dailyTime) >= 0 && !todayStr.equals(lastDailySent) && !todayStr.equals(spLastDaily)) {
-                                        sp.edit().putString("lastDailySentDate", todayStr).apply();
-                                        settings.put("lastDailySentDate", todayStr);
-                                        int dropsCount = 0;
-                                        for (int p = 0; p < products.length(); p++) {
-                                            JSONObject pr = products.optJSONObject(p);
-                                            if (pr != null && pr.optDouble("currentPrice", 0) < pr.optDouble("initialPrice", 0)) {
-                                                dropsCount++;
-                                            }
+                                JSONArray arr = new JSONArray(sb.toString());
+                                if (arr.length() > 0) {
+                                    JSONObject row = arr.getJSONObject(0);
+                                    JSONObject cloudPayload = row.optJSONObject("payload");
+                                    if (cloudPayload != null) {
+                                        JSONArray cloudProds = cloudPayload.optJSONArray("products");
+                                        JSONArray localProds = localPayload != null ? localPayload.optJSONArray("products") : null;
+                                        if ((cloudProds != null && cloudProds.length() > 0) || localProds == null || localProds.length() == 0) {
+                                            activePayload = cloudPayload;
                                         }
-                                        String dTitle = "📊 דו\\"ח מחירים יומי (" + products.length() + " מוצרים)";
-                                        String dMsg = "סיכום יומי: " + dropsCount + " מוצרים בירידת מחיר מתוך " + products.length() + " במעקב.";
-                                        showSystemNotification(context, dTitle, dMsg, 99001);
-                                        updated = true;
                                     }
                                 }
+                            }
+                        } catch (Exception ignored) {}
+                    }
 
-                                if (updated && deviceSecret != null && !deviceSecret.isEmpty()) {
-                                    pushUpdatedPayloadToSupabase(deviceId, deviceSecret, payload);
+                    if (activePayload != null) {
+                        // 1. Check if cloud scraper added a new alert
+                        JSONArray alerts = activePayload.optJSONArray("alerts");
+                        if (alerts != null && alerts.length() > 0) {
+                            JSONObject latest = alerts.getJSONObject(0);
+                            String alertId = latest.optString("id");
+                            String lastNotified = sp.getString("lastAlertId", "");
+
+                            if (!alertId.isEmpty() && !alertId.equals(lastNotified)) {
+                                sp.edit().putString("lastAlertId", alertId).commit();
+                                String title = latest.optString("title", "🔥 המחיר ירד!");
+                                String msg = latest.optString("messagePlain", "נמצאה ירידת מחיר באחד המוצרים שלך");
+                                showSystemNotification(context, title, msg, Math.abs(alertId.hashCode()));
+                            }
+                        }
+
+                        // 2. Perform direct background check on tracked products from device
+                        JSONArray products = activePayload.optJSONArray("products");
+                        boolean updated = false;
+                        if (products != null && products.length() > 0) {
+                            updated = checkProductsInBackground(context, sp, products, alerts != null ? alerts : new JSONArray(), activePayload);
+                        }
+
+                        // 3. Check if Daily Summary Report is due while app is closed
+                        JSONObject settings = activePayload.optJSONObject("settings");
+                        if (settings != null && products != null && products.length() > 0) {
+                            String dailyTime = settings.optString("dailyTime", "09:00");
+                            java.text.SimpleDateFormat sdfDate = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US);
+                            java.text.SimpleDateFormat sdfTime = new java.text.SimpleDateFormat("HH:mm", java.util.Locale.US);
+                            java.util.Date nowDate = new java.util.Date();
+                            String todayStr = sdfDate.format(nowDate);
+                            String nowHm = sdfTime.format(nowDate);
+                            String lastDailySent = settings.optString("lastDailySentDate", "");
+                            String spLastDaily = sp.getString("lastDailySentDate", "");
+                            if (nowHm.compareTo(dailyTime) >= 0 && !todayStr.equals(lastDailySent) && !todayStr.equals(spLastDaily)) {
+                                sp.edit().putString("lastDailySentDate", todayStr).commit();
+                                settings.put("lastDailySentDate", todayStr);
+                                int dropsCount = 0;
+                                for (int p = 0; p < products.length(); p++) {
+                                    JSONObject pr = products.optJSONObject(p);
+                                    if (pr != null && pr.optDouble("currentPrice", 0) < pr.optDouble("initialPrice", 0)) {
+                                        dropsCount++;
+                                    }
                                 }
+                                String dTitle = "📊 דו\\"ח מחירים יומי (" + products.length() + " מוצרים)";
+                                String dMsg = "סיכום יומי: " + dropsCount + " מוצרים בירידת מחיר מתוך " + products.length() + " במעקב.";
+                                showSystemNotification(context, dTitle, dMsg, 99001);
+                                updated = true;
+                            }
+                        }
+
+                        if (updated) {
+                            sp.edit().putString("fullStateBackup", activePayload.toString()).commit();
+                            if (deviceId != null && !deviceId.isEmpty() && deviceSecret != null && !deviceSecret.isEmpty()) {
+                                pushUpdatedPayloadToSupabase(deviceId, deviceSecret, activePayload);
                             }
                         }
                     }
@@ -599,6 +738,35 @@ public class MainActivity extends BridgeActivity {
                 int id = (int) (System.currentTimeMillis() & 0x7fffffff);
                 showSystemNotification(context, title, message, id);
             });
+        }
+
+        @JavascriptInterface
+        public void scheduleDelayedNotification(final String title, final String message, final int delaySeconds) {
+            try {
+                int secs = Math.max(1, delaySeconds);
+                long triggerAt = System.currentTimeMillis() + (secs * 1000L);
+                AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+                if (am == null) return;
+                Intent i = new Intent(context, BackgroundAlertReceiver.class);
+                i.setAction("com.priceradar.app.DELAYED_TEST_NOTIFICATION");
+                i.putExtra("title", title);
+                i.putExtra("message", message);
+                PendingIntent pi = PendingIntent.getBroadcast(
+                    context,
+                    (int) (System.currentTimeMillis() & 0xfff),
+                    i,
+                    PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT
+                );
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && am.canScheduleExactAlarms()) {
+                    am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pi);
+                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pi);
+                } else {
+                    am.setExact(AlarmManager.RTC_WAKEUP, triggerAt, pi);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
 
         @JavascriptInterface
