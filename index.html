@@ -2,9 +2,9 @@
 <html lang="he" dir="rtl">
 <head>
   <script>
-    window.__APP_VERSION__ = "3.0.0";
-    window.__BUILD_TIMESTAMP__ = 1762135000;
-    window.__OTA_RELEASE_NOTES__ = "זיהוי ומניעת כפילויות קישורים, איחוד אוטומטי של אותו מוצר מחנויות שונות לקובייה משותפת עם השוואת מחירים, סינון ומיון לפי חנות וקטגוריה, ורענון עיצוב הממשק.";
+    window.__APP_VERSION__ = "3.0.1";
+    window.__BUILD_TIMESTAMP__ = 1762138000;
+    window.__OTA_RELEASE_NOTES__ = "תיקון זיהוי מחירי מבצע ומחיר סופי במחסני חשמל (PayNGo) ורשתות נוספות — מתעדף מחיר מיוחד/מבצע על פני מחיר רגיל מחוק.";
 
     // =========================================================================
     // OVER-THE-AIR (OTA) LIVE UPDATE ENGINE FROM GITHUB
@@ -2150,11 +2150,28 @@
         }
       }
 
-      // 2. Machsanei Hashmal (payngo.co.il) pattern: "מחיר מיוחד: לרכישה עכשיו ב: 118 ₪", "קנו באילת ב: 100 ₪"
-      const payngoRegMatch = cleanText.match(/מחיר\s*(?:מיוחד)?\s*:\s*(?:לרכישה עכשיו ב\s*:\s*)?₪?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*₪?/);
+      // 2. Machsanei Hashmal (payngo.co.il) pattern: prioritize special/sale price over crossed-out regular price!
+      const payngoSpecialMatch =
+        cleanText.match(/לרכישה עכשיו ב\s*:\s*₪?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*₪?/) ||
+        cleanText.match(/מחיר\s+(?:מיוחד|מבצע|מועדון|לאחר הנחה)\s*:\s*(?:לרכישה עכשיו ב\s*:\s*)?₪?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*₪?/);
+      const payngoRegMatches = [...cleanText.matchAll(/מחיר\s*(?:מיוחד|רגיל)?\s*:\s*(?:לרכישה עכשיו ב\s*:\s*)?₪?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*₪?/g)];
       const payngoEilatMatch = cleanText.match(/קנו באילת ב\s*:\s*₪?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*₪?/);
-      if (payngoRegMatch) {
-        const pReg = Number(payngoRegMatch[1].replace(/,/g, ''));
+      if (payngoSpecialMatch || payngoRegMatches.length > 0) {
+        let pReg = 0;
+        if (payngoSpecialMatch) {
+          pReg = Number(payngoSpecialMatch[1].replace(/,/g, ''));
+        }
+        if (payngoRegMatches.length > 0) {
+          const allPayngoPrices = payngoRegMatches
+            .map(m => Number(m[1].replace(/,/g, '')))
+            .filter(v => v > 5);
+          if (allPayngoPrices.length > 0) {
+            const minPayngo = Math.min(...allPayngoPrices);
+            if (!pReg || (minPayngo > 5 && minPayngo < pReg)) {
+              pReg = minPayngo;
+            }
+          }
+        }
         if (pReg > 5) {
           result.price = pReg;
           result.variations.push({ id: 'reg', label: 'מחיר רגיל', price: pReg, inStock: true });
@@ -2190,11 +2207,14 @@
         }
       }
 
-      // 3. Explicit "מחיר:" + "מחיר אילת:" pattern (KSP SSR & Israeli stores)
+      // 3. Explicit "מחיר:" + "מחיר אילת:" pattern (KSP SSR & Israeli stores — prefer sale/lowest price when both regular & special appear)
+      const specialPriceMatch = mainText.match(/(?:מחיר\s+(?:מיוחד|מבצע|מועדון|לאחר הנחה)|לרכישה עכשיו ב)\s*:\s*(?:(?:₪|ש["״']ח|ILS)\s*)?(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)/i);
       const regPriceMatch = mainText.match(/מחיר\s*:\s*(?:(?:₪|ש["״']ח|ILS)\s*)?(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)/i);
       const eilatPriceMatch = mainText.match(/מחיר\s+אילת\s*:\s*(?:(?:₪|ש["״']ח|ILS)\s*)?(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)/i);
-      if (regPriceMatch) {
-        const regP = Number(regPriceMatch[1].replace(/,/g, ''));
+      if (specialPriceMatch || regPriceMatch) {
+        const spP = specialPriceMatch ? Number(specialPriceMatch[1].replace(/,/g, '')) : 0;
+        const rgP = regPriceMatch ? Number(regPriceMatch[1].replace(/,/g, '')) : 0;
+        const regP = (spP > 5 && (rgP <= 5 || spP <= rgP)) ? spP : rgP;
         if (regP > 5) {
           result.price = regP;
           result.variations.push({ id: 'reg', label: 'מחיר רגיל', price: regP, inStock: true });
@@ -2353,13 +2373,27 @@
         }
       }
 
-      // 3. Specific Machsanei Hashmal (payngo.co.il) Selectors
-      const payngoPriceEl = doc.querySelector('[data-price-type="finalPrice"] .price') ||
-                            doc.querySelector('.special-price .price') ||
-                            doc.querySelector('.price-box .price');
-      if (payngoPriceEl) {
-        const cleanPayText = payngoPriceEl.textContent.replace(/[\u200E\u200F\u202A-\u202E]/g, '').replace(/[^0-9.]/g, '');
-        const payPrice = Number(cleanPayText);
+      // 3. Specific Machsanei Hashmal (payngo.co.il) & Magento 2 Selectors
+      // Prioritize finalPrice / special-price and explicitly ignore old-price / oldPrice
+      const payngoMainBox = doc.querySelector('.product-info-main, .product-info-price, .price-box') || doc;
+      const payngoCandidates = [];
+      const finalAmtEl = payngoMainBox.querySelector('[data-price-type="finalPrice"][data-price-amount], .special-price [data-price-amount]');
+      if (finalAmtEl && finalAmtEl.getAttribute('data-price-amount')) {
+        const amt = Number(finalAmtEl.getAttribute('data-price-amount'));
+        if (amt > 5) payngoCandidates.push(amt);
+      }
+      payngoMainBox.querySelectorAll(
+        '[data-price-type="finalPrice"] .price, [data-price-type="finalPrice"], .special-price .price, .price-final_price .price'
+      ).forEach(el => {
+        if (el.closest('.old-price, [data-price-type="oldPrice"], .related, .upsells, .block-related')) return;
+        const cleanPayText = (el.getAttribute('data-price-amount') || el.textContent || '')
+          .replace(/[\u200E\u200F\u202A-\u202E]/g, '')
+          .replace(/[^0-9.]/g, '');
+        const val = Number(cleanPayText);
+        if (val > 5) payngoCandidates.push(val);
+      });
+      if (payngoCandidates.length > 0) {
+        const payPrice = Math.min(...payngoCandidates);
         if (payPrice > 5) {
           result.price = payPrice;
           result.variations = [{ id: 'reg', label: 'מחיר רגיל', price: payPrice, inStock: true }];
@@ -2442,7 +2476,7 @@
               if (offers) {
                 const offerList = Array.isArray(offers) ? offers : (Array.isArray(offers.offers) ? offers.offers : [offers]);
                 offerList.forEach((off, idx) => {
-                  const p = Number(off.price || off.lowPrice);
+                  const p = Number(off.lowPrice || off.price);
                   if (p > 0) {
                     const vName = off.name || off.sku || (offerList.length > 1 ? `אפשרות ${idx + 1}` : '');
                     if (offerList.length > 1 && result.variations.length < 25) {
@@ -2453,7 +2487,7 @@
                         inStock: !String(off.availability || '').includes('OutOfStock')
                       });
                     }
-                    if (!result.price) {
+                    if (!result.price || (offerList.length === 1 && p < result.price)) {
                       result.price = p;
                       result.sourceMethod = result.sourceMethod || 'זיהוי מחיר ותמונה מהדף (Schema.org)';
                     }
@@ -2478,9 +2512,9 @@
       }
 
       // 8. Structured Text & DOM extraction (with RTL mark stripping)
-      if ((!result.price || kspUin || result.variations.length === 0) && doc.body) {
+      if ((!result.price || kspUin || targetUrl.includes('payngo.co.il') || result.variations.length === 0) && doc.body) {
         const cloned = doc.body.cloneNode(true);
-        cloned.querySelectorAll('script, style, noscript, .related, .upsells, footer, nav, header').forEach(el => el.remove());
+        cloned.querySelectorAll('script, style, noscript, del, s, strike, .old-price, [data-price-type="oldPrice"], .related, .upsells, footer, nav, header').forEach(el => el.remove());
         cloned.querySelectorAll('div, p, li, tr, br, h1, h2, h3, h4, section, article').forEach(el => {
           el.prepend(doc.createTextNode('\n'));
           el.append(doc.createTextNode('\n'));
@@ -2495,11 +2529,14 @@
           result.title = textExtracted.title;
         }
         if (textExtracted.price) {
-          if (!result.price) result.price = textExtracted.price;
-          if (!result.sourceMethod) result.sourceMethod = textExtracted.sourceMethod;
-          if (result.variations.length === 0 && textExtracted.variations.length > 0) {
+          // If text extraction found a lower sale price (e.g. "לרכישה עכשיו ב: 149 ₪" vs regular 189 ₪ in meta/JSON-LD), use the sale price!
+          if (!result.price || (textExtracted.price > 5 && textExtracted.price < result.price)) {
+            result.price = textExtracted.price;
+            result.sourceMethod = textExtracted.sourceMethod || result.sourceMethod;
+          }
+          if (result.variations.length <= 1 && textExtracted.variations.length > 0) {
             result.variations = textExtracted.variations;
-            result.SelectedVariant = textExtracted.SelectedVariant;
+            result.SelectedVariant = textExtracted.SelectedVariant || result.SelectedVariant;
           }
         }
       }

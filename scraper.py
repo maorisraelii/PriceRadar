@@ -175,19 +175,27 @@ def extract_price_from_html(html: str, url: str, selected_variant: str = ""):
         except ValueError:
             pass
 
-    # 2. Machsanei Hashmal (payngo.co.il) Selectors
-    payngo_el = soup.select_one('[data-price-type="finalPrice"] .price, .special-price .price, .price-box .price')
-    if payngo_el:
-        clean_txt = re.sub(r"[‎‏‪-‮]", "", payngo_el.get_text(strip=True))
+    # 2. Machsanei Hashmal (payngo.co.il) & Magento 2 Selectors
+    # Prioritize finalPrice / special-price and explicitly exclude old-price / oldPrice
+    payngo_candidates = []
+    main_box = soup.select_one(".product-info-main, .product-info-price, .price-box") or soup
+    for el in main_box.select('[data-price-type="finalPrice"] .price, [data-price-type="finalPrice"], .special-price .price, .price-final_price .price'):
+        if el.find_parent(class_="old-price") or el.find_parent(attrs={"data-price-type": "oldPrice"}) or el.find_parent(class_="related") or el.find_parent(class_="upsells"):
+            continue
+        raw_amt = el.get("data-price-amount") or el.get_text(strip=True)
+        clean_txt = re.sub(r"[‎‏‪-‮]", "", str(raw_amt))
         clean_txt = re.sub(r"[^0-9.]", "", clean_txt)
         try:
             val = float(clean_txt)
             if val > 5:
-                if "אילת" in selected_variant:
-                    return round(val / 1.18)
-                return val
+                payngo_candidates.append(val)
         except ValueError:
             pass
+    if payngo_candidates:
+        val = min(payngo_candidates)
+        if "אילת" in selected_variant:
+            return round(val / 1.18)
+        return val
 
     # 3. AliExpress Selectors
     ali_el = soup.select_one(".product-price-current, .uniform-banner-box-price")
@@ -248,7 +256,7 @@ def extract_price_from_html(html: str, url: str, selected_variant: str = ""):
                 pass
 
     # 7. Clean text extraction with Unicode RTL stripping & Multi-Currency support
-    for rel in soup.select("script, style, .related, .upsells, footer, nav, header"):
+    for rel in soup.select("script, style, del, s, strike, .old-price, [data-price-type='oldPrice'], .related, .upsells, footer, nav, header"):
         rel.decompose()
     full_text = re.sub(r"[\u200E\u200F\u202A-\u202E]", "", soup.get_text("\n", strip=True))
 
@@ -260,16 +268,28 @@ def extract_price_from_html(html: str, url: str, selected_variant: str = ""):
         if reg_val > 5:
             return float(round(reg_val / 1.18)) if "אילת" in selected_variant else reg_val
 
-    # 7b. Machsanei Hashmal (payngo) text pattern
-    m_payngo = re.search(r"מחיר\s*(?:מיוחד)?\s*:\s*(?:לרכישה עכשיו ב\s*:\s*)?₪?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*₪?", full_text)
-    if m_payngo:
-        val = float(m_payngo.group(1).replace(",", ""))
-        if "אילת" in selected_variant:
-            m_eil = re.search(r"קנו באילת ב\s*:\s*₪?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*₪?", full_text)
-            if m_eil:
-                return float(m_eil.group(1).replace(",", ""))
-            return float(round(val / 1.18))
-        return val
+    # 7b. Machsanei Hashmal (payngo) text pattern — prioritize special/sale price over regular price
+    m_payngo_special = (
+        re.search(r"לרכישה עכשיו ב\s*:\s*₪?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*₪?", full_text)
+        or re.search(r"מחיר\s+(?:מיוחד|מבצע|מועדון|לאחר הנחה)\s*:\s*(?:לרכישה עכשיו ב\s*:\s*)?₪?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*₪?", full_text)
+    )
+    m_payngo_all = re.findall(r"מחיר\s*(?:מיוחד|רגיל)?\s*:\s*(?:לרכישה עכשיו ב\s*:\s*)?₪?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*₪?", full_text)
+    if m_payngo_special or m_payngo_all:
+        candidates = []
+        if m_payngo_special:
+            candidates.append(float(m_payngo_special.group(1).replace(",", "")))
+        for raw_m in m_payngo_all:
+            v = float(raw_m.replace(",", ""))
+            if v > 5:
+                candidates.append(v)
+        val = min(candidates) if candidates else 0
+        if val > 5:
+            if "אילת" in selected_variant:
+                m_eil = re.search(r"קנו באילת ב\s*:\s*₪?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*₪?", full_text)
+                if m_eil:
+                    return float(m_eil.group(1).replace(",", ""))
+                return float(round(val / 1.18))
+            return val
 
     for marker in ["אפשרות איסוף ומשלוח", "הטבות והצעות משלימות", "לקוחות שהתעניינו במוצר זה", "מוצרים נוספים שיכולים להתאים"]:
         idx = full_text.find(marker)

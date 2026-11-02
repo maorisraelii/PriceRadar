@@ -692,6 +692,17 @@ public class MainActivity extends BridgeActivity {
                     double v = Double.parseDouble(mPd.group(1).replace(",", ""));
                     return variant.contains("אילת") ? (double) Math.round(v / 1.18) : v;
                 }
+                Matcher mFinal = Pattern.compile("data-price-type=[\\"']finalPrice[\\"'][^>]*data-price-amount=[\\"']([0-9.]+)[\\"']|data-price-amount=[\\"']([0-9.]+)[\\"'][^>]*data-price-type=[\\"']finalPrice[\\"']").matcher(html);
+                if (mFinal.find()) {
+                    String g = mFinal.group(1) != null ? mFinal.group(1) : mFinal.group(2);
+                    double v = Double.parseDouble(g);
+                    if (v > 5) return variant.contains("אילת") ? (double) Math.round(v / 1.18) : v;
+                }
+                Matcher mPayngoNow = Pattern.compile("(?:לרכישה עכשיו ב|מחיר\\\\s+(?:מיוחד|מבצע))\\\\s*:\\\\s*₪?\\\\s*(\\\\d{1,3}(?:,\\\\d{3})*(?:\\\\.\\\\d{1,2})?)").matcher(html);
+                if (mPayngoNow.find()) {
+                    double v = Double.parseDouble(mPayngoNow.group(1).replace(",", ""));
+                    if (v > 5) return variant.contains("אילת") ? (double) Math.round(v / 1.18) : v;
+                }
                 Matcher mMeta = Pattern.compile("property=[\\"'](?:product|og):price:amount[\\"'][^>]*content=[\\"']([0-9.]+)[\\"']").matcher(html);
                 if (mMeta.find()) {
                     return Double.parseDouble(mMeta.group(1));
