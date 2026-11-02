@@ -2,9 +2,9 @@
 <html lang="he" dir="rtl">
 <head>
   <script>
-    window.__APP_VERSION__ = "3.1.0";
-    window.__BUILD_TIMESTAMP__ = 1762142000;
-    window.__OTA_RELEASE_NOTES__ = "שדרוג בוט הטלגרם האינטראקטיבי: תפריט כפתורים בעברית לצפייה בכל המוצרים והמחירים כרגע, ירידות מחיר, השוואת חנויות, דו\"ח יומי ויומן התראות, וחיווי חיבור חי באפליקציה.";
+    window.__APP_VERSION__ = "3.2.0";
+    window.__BUILD_TIMESTAMP__ = 1762146000;
+    window.__OTA_RELEASE_NOTES__ = "תיקון מלא לסריקת קישורי Amazon ללא תקיעה, החלפת פס ההתקדמות הישן בחיווי סריקה נקי עם אפשרות דילוג מיידי, וסידור מקיף של עיצוב ה-UI והכרטיסים.";
 
     // =========================================================================
     // OVER-THE-AIR (OTA) LIVE UPDATE ENGINE FROM GITHUB
@@ -407,119 +407,109 @@
             </button>
           </form>
 
-          <!-- Animated Scan Progress -->
-          <div id="scanProgressBox" class="hidden rounded-2xl liquid-glass-soft p-4 space-y-2.5 border border-pink-400/40">
-            <div class="flex items-center justify-between text-xs">
-              <span id="scanProgressStep" class="font-bold text-pink-200 flex items-center gap-2">
-                <span class="inline-block w-4 h-4 border-2 border-pink-400 border-t-transparent rounded-full animate-spin"></span>
-                מזהה מוצר, תמונה ואפשרויות בחירה...
+          <!-- Clean Non-Blocking Live Scan Indicator (Replaces fake percentage bar) -->
+          <div id="scanProgressBox" class="hidden rounded-2xl liquid-glass-soft px-4 py-3 flex items-center justify-between gap-3 border border-pink-400/40">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <span class="inline-block w-4 h-4 border-2 border-pink-400 border-t-transparent rounded-full animate-spin shrink-0"></span>
+              <span id="scanProgressStep" class="text-xs font-extrabold text-pink-100 truncate">
+                שולף פרטי מוצר ומחיר מהחנות...
               </span>
-              <span id="scanProgressPct" class="font-mono font-bold text-cyan-300">25%</span>
             </div>
-            <div class="w-full h-2 bg-black/40 rounded-full overflow-hidden">
-              <div id="scanProgressBar" class="h-full bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-400 transition-all duration-300" style="width: 25%"></div>
-            </div>
+            <button id="skipLiveScanBtn" type="button" class="px-3 py-1 rounded-xl bg-white/15 hover:bg-white/25 text-[11px] font-extrabold text-cyan-200 border border-white/20 shrink-0 transition">
+              הזן ידנית ➔
+            </button>
           </div>
         </div>
       </div>
 
-      <!-- Colorful Glass KPI Strip -->
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div class="liquid-glass-soft rounded-2xl p-4 flex items-center justify-between border-r-4 border-r-purple-400">
+      <!-- Compact & Organized KPI Strip -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
+        <div class="liquid-glass-soft rounded-2xl p-3.5 flex items-center justify-between border-r-4 border-r-purple-400">
           <div>
-            <p class="text-[11px] sm:text-xs font-medium text-slate-300">מוצרים במעקב</p>
-            <p id="statTotalProducts" class="text-2xl font-black text-white mt-0.5">0</p>
+            <p class="text-[11px] font-bold text-slate-300">מוצרים במעקב</p>
+            <p id="statTotalProducts" class="text-xl sm:text-2xl font-black text-white mt-0.5">0</p>
           </div>
-          <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-purple-500/30 to-indigo-500/30 border border-purple-400/30 flex items-center justify-center text-xl shadow-inner">
+          <div class="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-400/30 flex items-center justify-center text-lg">
             🛍️
           </div>
         </div>
 
-        <div class="liquid-glass-soft rounded-2xl p-4 flex items-center justify-between border-r-4 border-r-emerald-400">
+        <div class="liquid-glass-soft rounded-2xl p-3.5 flex items-center justify-between border-r-4 border-r-emerald-400">
           <div>
-            <p class="text-[11px] sm:text-xs font-medium text-slate-300">ירידות מחיר</p>
-            <p id="statPriceDrops" class="text-2xl font-black text-emerald-300 mt-0.5">0</p>
+            <p class="text-[11px] font-bold text-slate-300">ירידות מחיר</p>
+            <p id="statPriceDrops" class="text-xl sm:text-2xl font-black text-emerald-300 mt-0.5">0</p>
           </div>
-          <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-500/30 to-teal-500/30 border border-emerald-400/30 flex items-center justify-center text-xl shadow-inner">
+          <div class="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-lg">
             📉
           </div>
         </div>
 
-        <div class="liquid-glass-soft rounded-2xl p-4 flex items-center justify-between border-r-4 border-r-cyan-400">
+        <div class="liquid-glass-soft rounded-2xl p-3.5 flex items-center justify-between border-r-4 border-r-cyan-400">
           <div>
-            <p class="text-[11px] sm:text-xs font-medium text-slate-300">חיסכון שזוהה</p>
-            <p id="statTotalSavings" class="text-2xl font-black text-cyan-300 mt-0.5">0 ₪</p>
+            <p class="text-[11px] font-bold text-slate-300">חיסכון שזוהה</p>
+            <p id="statTotalSavings" class="text-xl sm:text-2xl font-black text-cyan-300 mt-0.5">0 ₪</p>
           </div>
-          <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-cyan-500/30 to-blue-500/30 border border-cyan-400/30 flex items-center justify-center text-xl shadow-inner">
+          <div class="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-400/30 flex items-center justify-center text-lg">
             💎
           </div>
         </div>
 
-        <div class="liquid-glass-soft rounded-2xl p-4 flex items-center justify-between border-r-4 border-r-amber-400">
+        <div class="liquid-glass-soft rounded-2xl p-3.5 flex items-center justify-between border-r-4 border-r-amber-400">
           <div>
-            <p class="text-[11px] sm:text-xs font-medium text-slate-300">התראה יומית</p>
-            <div class="flex items-center gap-2 mt-0.5">
-              <p id="statDailyHour" class="text-xl font-black text-amber-300 font-mono">09:00</p>
-              <button id="sendDailyReportQuickBtn" type="button" class="text-[11px] font-bold px-2.5 py-0.5 rounded-lg bg-amber-400/20 hover:bg-amber-400/35 text-amber-200 border border-amber-300/30 transition">
-                שלח עכשיו
+            <p class="text-[11px] font-bold text-slate-300">דו"ח יומי</p>
+            <div class="flex items-center gap-1.5 mt-0.5">
+              <p id="statDailyHour" class="text-lg sm:text-xl font-black text-amber-300 font-mono">09:00</p>
+              <button id="sendDailyReportQuickBtn" type="button" class="text-[10px] font-extrabold px-2 py-0.5 rounded-lg bg-amber-400/20 hover:bg-amber-400/35 text-amber-200 border border-amber-300/30 transition">
+                שלח
               </button>
             </div>
           </div>
-          <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-500/30 to-orange-500/30 border border-amber-400/30 flex items-center justify-center text-xl shadow-inner">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400/30 flex items-center justify-center text-lg">
             ⏰
           </div>
         </div>
       </div>
 
-      <!-- Filter, Category, Store & Sort Bar (Shown when products > 0) -->
-      <div id="filterBar" class="hidden flex-col gap-3 liquid-glass rounded-3xl p-4 border border-white/15">
-        <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+      <!-- Clean & Compact Filter, Store, Category & Sort Bar -->
+      <div id="filterBar" class="hidden flex-col gap-2.5 liquid-glass rounded-2xl p-3.5 border border-white/15">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
           <!-- Status Filter Chips -->
-          <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
-            <button type="button" data-filter="all" class="filter-chip px-3.5 py-1.5 rounded-xl text-xs font-extrabold liquid-pill-active text-white transition shrink-0">הכל</button>
-            <button type="button" data-filter="dropped" class="filter-chip px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white/10 text-slate-200 hover:bg-white/20 transition shrink-0">ירד המחיר 🔥</button>
-            <button type="button" data-filter="multi_store" class="filter-chip px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white/10 text-slate-200 hover:bg-white/20 transition shrink-0">השוואת חנויות 🏪</button>
-            <button type="button" data-filter="variants" class="filter-chip px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white/10 text-slate-200 hover:bg-white/20 transition shrink-0">עם אפשרויות 🎯</button>
+          <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+            <button type="button" data-filter="all" class="filter-chip px-3 py-1.5 rounded-xl text-xs font-extrabold liquid-pill-active text-white transition shrink-0">הכל</button>
+            <button type="button" data-filter="dropped" class="filter-chip px-3 py-1.5 rounded-xl text-xs font-bold bg-white/10 text-slate-200 hover:bg-white/20 transition shrink-0">ירד המחיר 🔥</button>
+            <button type="button" data-filter="multi_store" class="filter-chip px-3 py-1.5 rounded-xl text-xs font-bold bg-white/10 text-slate-200 hover:bg-white/20 transition shrink-0">השוואת חנויות 🏪</button>
+            <button type="button" data-filter="variants" class="filter-chip px-3 py-1.5 rounded-xl text-xs font-bold bg-white/10 text-slate-200 hover:bg-white/20 transition shrink-0">עם אפשרויות 🎯</button>
           </div>
 
           <!-- Search Input -->
-          <div class="relative flex-1 lg:max-w-xs">
-            <input id="searchProductsInput" type="text" placeholder="🔍 חפש שם מוצר, חנות או קטגוריה..." class="w-full px-3.5 py-2 rounded-xl liquid-glass-input text-xs text-white placeholder-slate-400 outline-none" />
+          <div class="relative flex-1 sm:max-w-xs">
+            <input id="searchProductsInput" type="text" placeholder="🔍 חיפוש מוצר, חנות או תחום..." class="w-full px-3 py-1.5 rounded-xl liquid-glass-input text-xs text-white placeholder-slate-400 outline-none" />
           </div>
         </div>
 
-        <!-- Store Filter, Category Filter & Sort Selects -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-white/10">
-          <div class="flex items-center gap-2">
-            <span class="text-[11px] font-bold text-pink-200 shrink-0">🏪 חנות:</span>
-            <select id="filterStoreSelect" class="flex-1 px-3 py-1.5 rounded-xl liquid-glass-input text-xs font-bold text-white outline-none">
-              <option value="all" class="bg-slate-900">כל החנויות</option>
-            </select>
-          </div>
+        <!-- Store Filter, Category Filter & Sort Selects (Compact 3-col even on mobile) -->
+        <div class="grid grid-cols-3 gap-2 pt-2 border-t border-white/10">
+          <select id="filterStoreSelect" aria-label="סינון לפי חנות" class="w-full px-2.5 py-1.5 rounded-xl liquid-glass-input text-[11px] sm:text-xs font-bold text-pink-100 outline-none truncate">
+            <option value="all" class="bg-slate-900">🏪 כל החנויות</option>
+          </select>
 
-          <div class="flex items-center gap-2">
-            <span class="text-[11px] font-bold text-cyan-200 shrink-0">🏷️ תחום:</span>
-            <select id="filterCategorySelect" class="flex-1 px-3 py-1.5 rounded-xl liquid-glass-input text-xs font-bold text-white outline-none">
-              <option value="all" class="bg-slate-900">כל התחומים</option>
-              <option value="electronics" class="bg-slate-900">⚡ מוצרי חשמל</option>
-              <option value="pets" class="bg-slate-900">🐰 חיות מחמד</option>
-              <option value="fashion" class="bg-slate-900">👟 אופנה והנעלה</option>
-              <option value="home" class="bg-slate-900">🏠 לבית ולמטבח</option>
-              <option value="other" class="bg-slate-900">🛍️ כללי</option>
-            </select>
-          </div>
+          <select id="filterCategorySelect" aria-label="סינון לפי תחום" class="w-full px-2.5 py-1.5 rounded-xl liquid-glass-input text-[11px] sm:text-xs font-bold text-cyan-100 outline-none truncate">
+            <option value="all" class="bg-slate-900">🏷️ כל התחומים</option>
+            <option value="electronics" class="bg-slate-900">⚡ מוצרי חשמל</option>
+            <option value="pets" class="bg-slate-900">🐰 חיות מחמד</option>
+            <option value="fashion" class="bg-slate-900">👟 אופנה והנעלה</option>
+            <option value="home" class="bg-slate-900">🏠 לבית ולמטבח</option>
+            <option value="other" class="bg-slate-900">🛍️ כללי</option>
+          </select>
 
-          <div class="flex items-center gap-2">
-            <span class="text-[11px] font-bold text-amber-200 shrink-0">↕️ מיון:</span>
-            <select id="sortProductsSelect" class="flex-1 px-3 py-1.5 rounded-xl liquid-glass-input text-xs font-bold text-white outline-none">
-              <option value="newest" class="bg-slate-900">נוסף לאחרונה</option>
-              <option value="price_asc" class="bg-slate-900">מחיר: מהנמוך לגבוה</option>
-              <option value="price_desc" class="bg-slate-900">מחיר: מהגבוה לנמוך</option>
-              <option value="savings_desc" class="bg-slate-900">חיסכון: הכי גדול קודם</option>
-              <option value="store_az" class="bg-slate-900">לפי חנות (א-ת)</option>
-              <option value="category" class="bg-slate-900">לפי תחום מוצר</option>
-            </select>
-          </div>
+          <select id="sortProductsSelect" aria-label="מיון מוצרים" class="w-full px-2.5 py-1.5 rounded-xl liquid-glass-input text-[11px] sm:text-xs font-bold text-amber-100 outline-none truncate">
+            <option value="newest" class="bg-slate-900">↕️ נוסף לאחרונה</option>
+            <option value="price_asc" class="bg-slate-900">↕️ מחיר: נמוך לגבוה</option>
+            <option value="price_desc" class="bg-slate-900">↕️ מחיר: גבוה לנמוך</option>
+            <option value="savings_desc" class="bg-slate-900">↕️ החיסכון הגדול</option>
+            <option value="store_az" class="bg-slate-900">↕️ לפי חנות (א-ת)</option>
+            <option value="category" class="bg-slate-900">↕️ לפי תחום</option>
+          </select>
         </div>
       </div>
 
@@ -1670,7 +1660,7 @@
         const u = new URL(trimmed);
         ['srsltid', 'fbclid', 'gclid', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'aff_id', 'tt', 'ref', 'ref_', 'crid', 'sprefix', 'keywords', 'spm', 'scm', 'pdp_npi'].forEach(p => u.searchParams.delete(p));
 
-        // Normalize Amazon product URLs to canonical /dp/ASIN
+        // Normalize Amazon product URLs to canonical /dp/ASIN while preserving readable product title in hash/slug if needed
         if (/amazon\.(?:com|co\.uk|de|fr|it|es|ca|co\.jp)/i.test(u.hostname)) {
           const asinMatch = u.pathname.match(/(?:dp|gp\/product)\/([A-Z0-9]{10})/i);
           if (asinMatch) {
@@ -1883,12 +1873,25 @@
       return FALLBACK_IMAGES.hero;
     }
 
+    function extractAmazonAsin(rawUrl) {
+      const m = String(rawUrl || '').match(/(?:dp|gp\/product|aw\/d)\/([A-Z0-9]{10})/i);
+      return m ? m[1].toUpperCase() : '';
+    }
+
     function extractTitleFromUrlSlug(rawUrl) {
       const kspUin = extractKspUin(rawUrl);
       if (kspUin) return `מוצר KSP #${kspUin}`;
       try {
         const u = new URL(rawUrl);
         const parts = u.pathname.split('/').filter(Boolean);
+        // For Amazon URLs like /Apple-AirPods-Pro-2nd-Gen/dp/B0D1XD1ZV3, pick the slug BEFORE /dp/!
+        const dpIdx = parts.findIndex(p => /^(?:dp|gp|product)$/i.test(p));
+        if (dpIdx > 0 && parts[dpIdx - 1] && parts[dpIdx - 1].length > 3) {
+          const amzSlug = decodeURIComponent(parts[dpIdx - 1]).replace(/[-_]+/g, ' ').trim();
+          if (amzSlug && !/^(?:aw|product|gp)$/i.test(amzSlug)) return amzSlug;
+        }
+        const asin = extractAmazonAsin(rawUrl);
+        if (asin) return `מוצר Amazon (${asin})`;
         let last = parts[parts.length - 1] || u.hostname;
         last = decodeURIComponent(last).replace(/[-_]+/g, ' ').replace(/\.html?$/i, '').trim();
         return last || u.hostname;
@@ -2058,33 +2061,43 @@
     async function tryFetchRawViaProxies(targetUrl) {
       const fetchTarget = getScrapeTargetUrl(targetUrl);
       const isKsp = fetchTarget.includes('ksp.co.il');
+      const isHeavySite = /amazon\.|aliexpress\./i.test(fetchTarget);
 
-      // 1. Native Android WebView / CapacitorHttp
-      try { return await tryAndroidNativeWebViewScrape(fetchTarget, 6500); } catch (e) {}
-      try { return await tryCapacitorNativeHttpGet(fetchTarget); } catch (e) {}
+      // Run ALL available fetchers in parallel (with a strict 4.8s ceiling) so a slow WebView or proxy NEVER hangs the app!
+      const racePromises = [];
 
-      // 2. Direct browser fetch
-      try {
+      // 1. Capacitor Native HTTP (fast, doesn't block UI thread)
+      racePromises.push(tryCapacitorNativeHttpGet(fetchTarget));
+
+      // 2. Native Android WebView (skip for huge 4MB Amazon desktop pages so evaluateJavascript never freezes the WebView)
+      if (!isHeavySite) {
+        racePromises.push(tryAndroidNativeWebViewScrape(fetchTarget, 4200));
+      }
+
+      // 3. Jina Reader (clean lightweight markdown — works great for Amazon & global stores without freezing DOMParser!)
+      racePromises.push(fetchJinaMarkdownSimple(fetchTarget, 4800));
+
+      // 4. Fast CORS Proxies
+      racePromises.push(fetchViaCorsProxy('corsproxy', fetchTarget, 4500));
+      racePromises.push(fetchViaCorsProxy('codetabs', fetchTarget, 4500));
+      racePromises.push(fetchViaCorsProxy('allorigins_get', fetchTarget, 4500));
+
+      // 5. Direct fetch
+      racePromises.push((async () => {
         const directRes = await fetchWithTimeout(fetchTarget, {
           headers: { 'Accept': 'text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8' }
-        }, 4000);
-        if (directRes && directRes.ok) {
-          const directText = await directRes.text();
-          if (!isBlockedPayload(directText, isKsp)) {
-            return { content: directText, format: 'html' };
-          }
-        }
-      } catch (e) {}
+        }, 3200);
+        if (!directRes || !directRes.ok) throw new Error('direct non-200');
+        const directText = await directRes.text();
+        if (isBlockedPayload(directText, isKsp)) throw new Error('direct blocked');
+        return { content: directText, format: 'html' };
+      })());
 
-      // 3. Parallel race across Jina Simple GET & CORS Proxies
-      const tasks = [
-        fetchJinaMarkdownSimple(fetchTarget, 7500),
-        fetchViaCorsProxy('codetabs', fetchTarget, 6500),
-        fetchViaCorsProxy('corsproxy', fetchTarget, 6500),
-        fetchViaCorsProxy('allorigins_get', fetchTarget, 6500)
-      ];
       try {
-        return await Promise.any(tasks);
+        return await Promise.race([
+          Promise.any(racePromises),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Global fetch ceiling')), 5200))
+        ]);
       } catch (e) {
         return null;
       }
@@ -2330,6 +2343,37 @@
 
       if (html.trim().startsWith('{')) {
         return extractPricesAndVariantsFromText(html, '', targetUrl);
+      }
+
+      // Fast-path for huge HTML payloads (> 350KB, e.g. Amazon desktop HTML):
+      // Extract title, image, and price via lightweight regex + text parser WITHOUT freezing the main thread in DOMParser!
+      if (html.length > 350000) {
+        const fastTitleMatch =
+          html.match(/id=["']productTitle["'][^>]*>([\s\S]*?)<\/span>/i) ||
+          html.match(/property=["']og:title["'][^>]*content=["']([^"']+)["']/i) ||
+          html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+        const fastTitle = fastTitleMatch ? fastTitleMatch[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim() : '';
+        const fastImgMatch =
+          html.match(/id=["']landingImage["'][^>]*data-old-hires=["'](https?:\/\/[^"']+)["']/i) ||
+          html.match(/id=["']landingImage["'][^>]*src=["'](https?:\/\/[^"']+)["']/i) ||
+          html.match(/"hiRes"\s*:\s*"(https?:\/\/[^"]+)"/i) ||
+          html.match(/property=["']og:image["'][^>]*content=["'](https?:\/\/[^"']+)["']/i);
+        const fastPriceMatch =
+          html.match(/class=["'][^"']*a-price[^"']*["'][\s\S]{0,250}?<span class=["']a-offscreen["']>\s*(?:[₪$€£]|ILS|USD)?\s*([0-9,]+(?:\.[0-9]{1,2})?)<\/span>/i) ||
+          html.match(/"priceAmount"\s*:\s*([0-9]+(?:\.[0-9]{1,2})?)/i) ||
+          html.match(/property=["'](?:product|og):price:amount["'][^>]*content=["']([0-9.]+)["']/i);
+        const strippedText = html
+          .slice(0, 220000)
+          .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+          .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+          .replace(/<[^>]+>/g, '\n');
+        const fastRes = extractPricesAndVariantsFromText(strippedText, fastTitle, targetUrl);
+        if (fastImgMatch && fastImgMatch[1]) fastRes.image = fastImgMatch[1];
+        if (fastPriceMatch && Number(fastPriceMatch[1].replace(/,/g, '')) > 0.5) {
+          fastRes.price = Number(fastPriceMatch[1].replace(/,/g, ''));
+          fastRes.sourceMethod = 'זיהוי מהיר מ-Amazon';
+        }
+        return fastRes;
       }
 
       const parser = new DOMParser();
@@ -2629,7 +2673,7 @@
       } catch (e) {}
 
       // Stage 2: Parallel Race across KSP Mirror (pricedrop.co.il), Google Translate Crawler Proxy, and KSP Mobile SSR
-      if (updateStep) updateStep('עוקף הגנת בוטים של KSP ושולף מחיר חי...', 65);
+      if (updateStep) updateStep('עוקף הגנת בוטים של KSP ושולף מחיר חי...');
       try {
         const raceTasks = [
           runFetchParse(fetchJinaMarkdownSimple(pricedropUrl, 7500)),
@@ -2651,7 +2695,7 @@
 
       // Stage 3: Two-Step Search Engine Index Resolver (queries search index for UIN -> Title -> Price snippet)
       if (!bestPartial.price) {
-        if (updateStep) updateStep('מחלץ נתוני מוצר ומחיר מאינדקס החיפוש של KSP...', 85);
+        if (updateStep) updateStep('מחלץ נתוני מוצר ומחיר מאינדקס החיפוש של KSP...');
         try {
           const searchQ1 = encodeURIComponent(`"ksp.co.il" ${kspUin}`);
           const ddgUrl1 = `https://html.duckduckgo.com/html/?q=${searchQ1}`;
@@ -2687,100 +2731,181 @@
       return bestPartial.title || bestPartial.price ? bestPartial : null;
     }
 
-    async function scanProductUrl(rawUrl) {
-      const cleanedUrl = cleanTrackingUrl(rawUrl);
-      const progressBox = document.getElementById('scanProgressBox');
-      const progressStep = document.getElementById('scanProgressStep');
-      const progressPct = document.getElementById('scanProgressPct');
-      const progressBar = document.getElementById('scanProgressBar');
-
-      const updateStep = (text, pct) => {
-        if (progressBox) progressBox.classList.remove('hidden');
-        if (progressStep) {
-          progressStep.innerHTML = `<span class="inline-block w-4 h-4 border-2 border-pink-400 border-t-transparent rounded-full animate-spin"></span> ${escapeHtml(text)}`;
-        }
-        if (progressPct) progressPct.textContent = `${pct}%`;
-        if (progressBar) progressBar.style.width = `${pct}%`;
+    // Specialized Amazon Live Product Extractor (fast, non-blocking, supports USD/ILS/EUR & Free Shipping to Israel)
+    async function extractAmazonProductLive(cleanedUrl, rawUrl, updateStep) {
+      const asin = extractAmazonAsin(cleanedUrl || rawUrl);
+      const slugTitle = extractTitleFromUrlSlug(rawUrl);
+      let bestPartial = {
+        title: (slugTitle && !slugTitle.startsWith('מוצר Amazon')) ? slugTitle : '',
+        price: null,
+        image: '',
+        SelectedVariant: '',
+        variations: [],
+        freeShippingEligible: false,
+        sourceMethod: 'זיהוי מ-Amazon'
       };
 
-      updateStep('מתחבר לחנות ושולף נתונים בזמן אמת...', 30);
+      const recordCandidate = (parsed, rawContent = '') => {
+        if (!parsed) return null;
+        if (rawContent && checkAmazonFreeShippingToIsrael(rawContent)) {
+          bestPartial.freeShippingEligible = true;
+          parsed.freeShippingEligible = true;
+        }
+        if (parsed.title && !isBlockedTitle(parsed.title) && !/^amazon\.com$/i.test(parsed.title)) {
+          if (!bestPartial.title || parsed.title.length > bestPartial.title.length) {
+            bestPartial.title = parsed.title;
+          }
+        }
+        if (parsed.image && parsed.image.startsWith('http')) {
+          bestPartial.image = parsed.image;
+        }
+        if (parsed.price && Number(parsed.price) > 0.5) {
+          parsed.title = parsed.title && !isBlockedTitle(parsed.title) ? parsed.title : bestPartial.title;
+          parsed.image = parsed.image || bestPartial.image;
+          parsed.freeShippingEligible = bestPartial.freeShippingEligible;
+          return parsed;
+        }
+        return null;
+      };
+
+      const runAmzFetch = async (fetcherPromise) => {
+        const raw = await fetcherPromise;
+        if (!raw || !raw.content) throw new Error('Empty Amazon payload');
+        const parsed = raw.format === 'html'
+          ? parseHtmlForProductAndVariants(raw.content, rawUrl)
+          : extractPricesAndVariantsFromText(raw.content, raw.title || bestPartial.title, rawUrl);
+        const complete = recordCandidate(parsed, raw.content);
+        if (complete) return complete;
+        throw new Error('Incomplete Amazon parse');
+      };
+
+      if (updateStep) updateStep('שולף מחיר, תמונה ומשלוח חינם מ-Amazon...');
+      try {
+        const amzTasks = [
+          runAmzFetch(fetchJinaMarkdownSimple(cleanedUrl, 4500)),
+          runAmzFetch(tryCapacitorNativeHttpGet(cleanedUrl)),
+          runAmzFetch(fetchViaCorsProxy('corsproxy', cleanedUrl, 4200)),
+          runAmzFetch(fetchViaCorsProxy('allorigins_get', cleanedUrl, 4200))
+        ];
+        if (asin) {
+          const ddgAmzUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(`site:amazon.com "${asin}"`)}`;
+          amzTasks.push(runAmzFetch(fetchJinaMarkdownSimple(ddgAmzUrl, 4200)));
+        }
+        const winner = await Promise.race([
+          Promise.any(amzTasks),
+          new Promise((_, rej) => setTimeout(() => rej(new Error('Amazon timeout')), 4800))
+        ]);
+        if (winner && winner.price) return winner;
+      } catch (e) {}
+
+      return bestPartial;
+    }
+
+    let activeScanCancelResolver = null;
+    async function scanProductUrl(rawUrl) {
+      const cleanedUrl = cleanTrackingUrl(rawUrl);
+      const storeMeta = getStoreMeta(cleanedUrl);
+      const progressBox = document.getElementById('scanProgressBox');
+      const progressStep = document.getElementById('scanProgressStep');
+
+      const updateStep = (text) => {
+        if (progressBox) progressBox.classList.remove('hidden');
+        if (progressStep) {
+          progressStep.textContent = text;
+        }
+      };
+
+      updateStep(`שולף פרטי מוצר ומחיר מ-${storeMeta.name}...`);
 
       let urlVariantId = '';
       try { urlVariantId = new URL(rawUrl).searchParams.get('variant') || ''; } catch (e) {}
 
       let extracted = null;
+      let rawFetchedContent = '';
       const kspUin = extractKspUin(cleanedUrl);
+      const isAmz = cleanedUrl.includes('amazon.');
 
-      // 1. Dedicated Multi-Route KSP Scanner (handles Cloudflare WAF on ksp.co.il)
-      if (kspUin) {
-        updateStep('מזהה מוצר KSP – מפעיל סורק עוקף חסימות בוטים...', 45);
-        extracted = await extractKspProductLive(kspUin, rawUrl, updateStep);
-      }
+      // Allow user to click "הזן ידנית ➔" at any moment to skip waiting immediately!
+      const manualSkipPromise = new Promise((resolve) => {
+        activeScanCancelResolver = () => resolve('SKIPPED');
+      });
 
-      // 2. If Shopify store (/products/...), try Shopify .json API first
-      if ((!extracted || !extracted.price) && cleanedUrl.includes('/products/')) {
-        updateStep('מזהה חנות Shopify – שולף מחירים ומידות מקובץ המוצר...', 55);
-        try {
-          const u = new URL(cleanedUrl);
-          const baseProductPath = u.origin + u.pathname.replace(/\/$/, '') + '.json';
-          const fetchedJson = await tryFetchRawViaProxies(baseProductPath);
-          if (fetchedJson && fetchedJson.content) {
-            const parsed = JSON.parse(fetchedJson.content);
-            if (parsed && parsed.product) {
-              const prod = parsed.product;
-              const vars = (prod.variants || []).map(v => ({
-                id: String(v.id),
-                label: v.title || v.option1 || 'אפשרות',
-                price: Number(v.price),
-                inStock: v.available !== false
-              }));
-              const chosen = vars.find(v => v.id === urlVariantId) || vars[0];
-              const imgSrc = (prod.image && prod.image.src) || (prod.images && prod.images[0] && prod.images[0].src) || '';
-              extracted = {
-                title: prod.title || '',
-                price: chosen ? chosen.price : null,
-                image: imgSrc,
-                SelectedVariant: chosen ? chosen.label : '',
-                variations: vars,
-                sourceMethod: 'זיהוי חי מ-Shopify API'
-              };
+      const performScanWork = async () => {
+        if (kspUin) {
+          updateStep('שולף מחיר רגיל ומחיר אילת מ-KSP...');
+          extracted = await extractKspProductLive(kspUin, rawUrl, updateStep);
+        } else if (isAmz) {
+          extracted = await extractAmazonProductLive(cleanedUrl, rawUrl, updateStep);
+        } else if (cleanedUrl.includes('/products/')) {
+          updateStep(`שולף מחירים ואפשרויות מ-${storeMeta.name}...`);
+          try {
+            const u = new URL(cleanedUrl);
+            const baseProductPath = u.origin + u.pathname.replace(/\/$/, '') + '.json';
+            const fetchedJson = await tryFetchRawViaProxies(baseProductPath);
+            if (fetchedJson && fetchedJson.content) {
+              const parsed = JSON.parse(fetchedJson.content);
+              if (parsed && parsed.product) {
+                const prod = parsed.product;
+                const vars = (prod.variants || []).map(v => ({
+                  id: String(v.id),
+                  label: v.title || v.option1 || 'אפשרות',
+                  price: Number(v.price),
+                  inStock: v.available !== false
+                }));
+                const chosen = vars.find(v => v.id === urlVariantId) || vars[0];
+                const imgSrc = (prod.image && prod.image.src) || (prod.images && prod.images[0] && prod.images[0].src) || '';
+                extracted = {
+                  title: prod.title || '',
+                  price: chosen ? chosen.price : null,
+                  image: imgSrc,
+                  SelectedVariant: chosen ? chosen.label : '',
+                  variations: vars,
+                  sourceMethod: 'זיהוי חי מ-Shopify API'
+                };
+              }
             }
-          }
-        } catch (e) {}
-      }
+          } catch (e) {}
+        }
 
-      // 3. Universal Live Page Fetch (Direct CapacitorHttp / Proxies / Jina SSR Reader)
-      if (!extracted || !extracted.price) {
-        updateStep('קורא מחיר, תמונה ואפשרויות בחירה ישירות מדף המוצר...', 75);
-        const fetched = await tryFetchRawViaProxies(cleanedUrl);
-        if (fetched && fetched.content) {
-          if (fetched.format === 'html') {
-            const parsedHtml = parseHtmlForProductAndVariants(fetched.content, rawUrl);
-            if ((parsedHtml.title && !isBlockedTitle(parsedHtml.title)) || parsedHtml.price || parsedHtml.variations.length > 0) {
-              extracted = parsedHtml;
-            }
-          } else {
-            const parsedMd = extractPricesAndVariantsFromText(fetched.content, fetched.title, rawUrl);
-            if ((parsedMd.title && !isBlockedTitle(parsedMd.title)) || parsedMd.price || parsedMd.variations.length > 0) {
-              extracted = parsedMd;
+        if (!extracted || !extracted.price) {
+          updateStep(`קורא מחיר ותמונה מדף המוצר ב-${storeMeta.name}...`);
+          const fetched = await tryFetchRawViaProxies(cleanedUrl);
+          if (fetched && fetched.content) {
+            rawFetchedContent = fetched.content;
+            if (fetched.format === 'html') {
+              const parsedHtml = parseHtmlForProductAndVariants(fetched.content, rawUrl);
+              if ((parsedHtml.title && !isBlockedTitle(parsedHtml.title)) || parsedHtml.price || parsedHtml.variations.length > 0) {
+                extracted = parsedHtml;
+              }
+            } else {
+              const parsedMd = extractPricesAndVariantsFromText(fetched.content, fetched.title, rawUrl);
+              if ((parsedMd.title && !isBlockedTitle(parsedMd.title)) || parsedMd.price || parsedMd.variations.length > 0) {
+                extracted = parsedMd;
+              }
             }
           }
         }
-      }
+      };
 
-      updateStep('הסריקה הושלמה!', 100);
-      await new Promise(r => setTimeout(r, 200));
+      // Race the scan against manual skip AND a strict 5.5-second global timeout so it NEVER hangs!
+      try {
+        await Promise.race([
+          performScanWork(),
+          manualSkipPromise,
+          new Promise((resolve) => setTimeout(resolve, 5500))
+        ]);
+      } catch (e) {}
+
+      activeScanCancelResolver = null;
       if (progressBox) progressBox.classList.add('hidden');
 
-      const fallbackTitle = extractTitleFromUrlSlug(cleanedUrl);
+      const fallbackTitle = extractTitleFromUrlSlug(rawUrl);
       const validTitle = (extracted && extracted.title && !isBlockedTitle(extracted.title)) ? extracted.title : fallbackTitle;
-      const storeMeta = getStoreMeta(cleanedUrl);
       const cat = guessCategoryFromUrl(cleanedUrl, validTitle);
       const chosenImage = (extracted && extracted.image) ? extracted.image : getFallbackProductImage(cleanedUrl, cat);
-      const isAmz = cleanedUrl.includes('amazon.');
       const isFreeShip = isAmz && (
         (extracted && extracted.freeShippingEligible) ||
-        (fetched && fetched.content && checkAmazonFreeShippingToIsrael(fetched.content))
+        (rawFetchedContent && checkAmazonFreeShippingToIsrael(rawFetchedContent))
       );
 
       return {
@@ -3515,7 +3640,7 @@
       const storeSelectEl = document.getElementById('filterStoreSelect');
       if (storeSelectEl) {
         const currentStoreVal = state.ui.storeFilter || 'all';
-        storeSelectEl.innerHTML = `<option value="all" class="bg-slate-900">כל החנויות (${allStoresSet.size})</option>`;
+        storeSelectEl.innerHTML = `<option value="all" class="bg-slate-900">🏪 כל החנויות (${allStoresSet.size})</option>`;
         Array.from(allStoresSet).sort((a, b) => a.localeCompare(b, 'he')).forEach(stName => {
           const opt = document.createElement('option');
           opt.value = stName;
@@ -3611,54 +3736,53 @@
 
         const card = document.createElement('div');
         card.id = `prod_card_${p.id}`;
-        card.className = `liquid-glass card-hover rounded-3xl p-5 flex flex-col justify-between gap-4 relative overflow-hidden transition-all duration-300 ${
+        card.className = `liquid-glass card-hover rounded-3xl p-4 sm:p-5 flex flex-col justify-between gap-3.5 relative overflow-hidden transition-all duration-300 ${
           isDropped ? 'border-emerald-400/60 shadow-xl shadow-emerald-950/40' : (isMultiStore ? 'border-cyan-400/45 shadow-xl shadow-cyan-950/30' : '')
         }`;
 
         const statusBadge = isDropped
-          ? `<span class="px-3 py-1 rounded-full text-xs font-black bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md shadow-emerald-500/30">🔥 ירד ב-${formatPrice(Math.abs(diff))} (-${pct}%)</span>`
+          ? `<span class="px-2.5 py-1 rounded-full text-[11px] font-black bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md shadow-emerald-500/30">🔥 ירד ב-${formatPrice(Math.abs(diff))} (-${pct}%)</span>`
           : (isMultiStore && highestOfferPrice > bestOffer.currentPrice
-              ? `<span class="px-3 py-1 rounded-full text-[11px] font-black bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md">🏆 פער של ${formatPrice(highestOfferPrice - bestOffer.currentPrice)} בין החנויות!</span>`
+              ? `<span class="px-2.5 py-1 rounded-full text-[11px] font-black bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md">🏆 חיסכון ${formatPrice(highestOfferPrice - bestOffer.currentPrice)}</span>`
               : `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-white/10 text-slate-200 border border-white/15">מחיר יציב</span>`);
 
         const freeShippingPill = p.freeShippingEligible
-          ? `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-cyan-500/20 border border-cyan-400/40 text-cyan-200 text-xs font-black shadow-sm shadow-cyan-500/20">
-               <span>✈️ חינם מעל 49$</span>
+          ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-cyan-500/20 border border-cyan-400/40 text-cyan-200 text-[11px] font-extrabold">
+               <span>✈️ משלוח חינם</span>
              </span>`
           : '';
 
         const variantPill = p.SelectedVariant
-          ? `<button type="button" data-action="edit" data-id="${p.id}" class="prod-action-btn inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-gradient-to-r from-pink-500/25 to-purple-500/25 border border-pink-400/40 text-pink-100 text-xs font-extrabold hover:bg-pink-500/35 transition">
+          ? `<button type="button" data-action="edit" data-id="${p.id}" class="prod-action-btn inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-gradient-to-r from-pink-500/25 to-purple-500/25 border border-pink-400/40 text-pink-100 text-[11px] font-extrabold hover:bg-pink-500/35 transition">
                <span>🎯 ${escapeHtml(p.SelectedVariant)}</span>
-               <span class="text-[10px] opacity-80">(שנה)</span>
              </button>`
           : '';
 
         const multiStoreComparisonHtml = isMultiStore ? `
-          <div class="p-3 rounded-2xl bg-slate-950/65 border border-cyan-400/30 space-y-2">
+          <div class="p-2.5 rounded-2xl bg-slate-950/65 border border-cyan-400/30 space-y-1.5">
             <div class="flex items-center justify-between text-[11px]">
               <span class="font-extrabold text-cyan-200 flex items-center gap-1">
                 <span>🏪</span>
-                <span>השוואת מחירים בין ${offers.length} חנויות באותה קובייה:</span>
+                <span>השוואת ${offers.length} חנויות:</span>
               </span>
               <button type="button" data-action="add_store" data-id="${p.id}" class="prod-action-btn text-[11px] font-extrabold text-pink-300 hover:text-pink-200 underline">
-                + הוסף עוד חנות
+                + הוסף חנות
               </button>
             </div>
-            <div class="space-y-1.5">
+            <div class="space-y-1">
               ${offers.map((off, idx) => {
                 const isCheapest = idx === 0;
                 const offMeta = getStoreMeta(off.url);
                 return `
-                  <div class="flex items-center justify-between gap-2 px-3 py-2 rounded-xl ${isCheapest ? 'bg-emerald-500/20 border border-emerald-400/40' : 'bg-white/5 border border-white/10'}">
-                    <div class="flex items-center gap-2 min-w-0">
+                  <div class="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-xl ${isCheapest ? 'bg-emerald-500/20 border border-emerald-400/40' : 'bg-white/5 border border-white/10'}">
+                    <div class="flex items-center gap-1.5 min-w-0">
                       <img src="${escapeHtml(off.favicon || offMeta.favicon)}" alt="" class="w-4 h-4 rounded-sm object-contain shrink-0" onerror="this.style.display='none'" />
                       <span class="text-xs font-extrabold ${isCheapest ? 'text-emerald-200' : 'text-slate-200'} truncate">${escapeHtml(off.store)}</span>
-                      ${isCheapest ? `<span class="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950 shrink-0">הכי זול 🏆</span>` : ''}
+                      ${isCheapest ? `<span class="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-emerald-500 text-slate-950 shrink-0">הכי זול 🏆</span>` : ''}
                     </div>
-                    <div class="flex items-center gap-2.5 shrink-0">
-                      <span class="text-xs sm:text-sm font-black ${isCheapest ? 'text-emerald-300' : 'text-white'}">${formatPrice(off.currentPrice)}</span>
-                      <a href="${escapeHtml(off.url)}" target="_blank" rel="noopener noreferrer" class="text-[11px] font-extrabold px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-cyan-200 transition">
+                    <div class="flex items-center gap-2 shrink-0">
+                      <span class="text-xs font-black ${isCheapest ? 'text-emerald-300' : 'text-white'}">${formatPrice(off.currentPrice)}</span>
+                      <a href="${escapeHtml(off.url)}" target="_blank" rel="noopener noreferrer" class="text-[11px] font-extrabold px-2 py-0.5 rounded-lg bg-white/10 hover:bg-white/20 text-cyan-200 transition">
                         לחנות ↗
                       </a>
                       <button type="button" data-action="remove_offer" data-id="${p.id}" data-offer-url="${escapeHtml(off.url)}" title="הסר חנות זו מהקובייה" class="prod-action-btn text-[11px] text-slate-400 hover:text-rose-300 px-1">
@@ -3675,15 +3799,15 @@
         const canvasId = `chart_${p.id}`;
 
         card.innerHTML = `
-          <div class="space-y-4">
+          <div class="space-y-3.5">
             <!-- Top Store Bar & Status Badge -->
             <div class="flex items-center justify-between gap-2 flex-wrap">
               <div class="flex items-center gap-1.5 flex-wrap">
                 <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/10 border border-white/15">
-                  <img src="${escapeHtml(storeMeta.favicon)}" alt="" class="w-4 h-4 rounded-sm object-contain max-w-full h-auto" onerror="this.style.display='none'" />
-                  <span class="text-xs font-extrabold text-white">${escapeHtml(isMultiStore ? `${offers.length} חנויות (${bestOffer.store} הכי זול)` : p.store)}</span>
+                  <img src="${escapeHtml(storeMeta.favicon)}" alt="" class="w-3.5 h-3.5 rounded-sm object-contain max-w-full h-auto" onerror="this.style.display='none'" />
+                  <span class="text-[11px] font-extrabold text-white">${escapeHtml(isMultiStore ? `${offers.length} חנויות (${bestOffer.store})` : p.store)}</span>
                 </div>
-                <span class="text-[11px] font-bold px-2.5 py-1 rounded-xl bg-gradient-to-r ${catStyle.gradient} border">
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-xl bg-gradient-to-r ${catStyle.gradient} border">
                   ${catStyle.icon} ${catStyle.label}
                 </span>
               </div>
@@ -3691,17 +3815,17 @@
             </div>
 
             <!-- Product Image + Title Row -->
-            <div class="flex items-center gap-4">
-              <div class="relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden bg-slate-900/90 border-2 border-white/20 shadow-lg shrink-0">
+            <div class="flex items-start gap-3.5">
+              <div class="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-slate-900/90 border border-white/20 shadow-md shrink-0">
                 <img src="${escapeHtml(prodImg)}" alt="${escapeHtml(p.title)}" class="w-full h-full object-cover max-w-full h-auto" />
               </div>
-              <div class="space-y-2 flex-1 min-w-0">
-                <h3 class="text-base sm:text-lg font-black text-white leading-snug line-clamp-2">${escapeHtml(p.title)}</h3>
+              <div class="space-y-1.5 flex-1 min-w-0">
+                <h3 class="text-sm sm:text-base font-black text-white leading-snug line-clamp-2">${escapeHtml(p.title)}</h3>
                 <div class="flex flex-wrap items-center gap-1.5">
                   ${freeShippingPill}
                   ${variantPill}
-                  ${p.targetPrice ? `<span class="text-[11px] font-bold px-2.5 py-1 rounded-xl bg-amber-400/20 text-amber-200 border border-amber-300/30">יעד: ${formatPrice(p.targetPrice)}</span>` : ''}
-                  ${!isMultiStore ? `<button type="button" data-action="add_store" data-id="${p.id}" class="prod-action-btn text-[11px] font-bold px-2.5 py-1 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-200 border border-cyan-400/30 transition">+ השווה חנות נוספת</button>` : ''}
+                  ${p.targetPrice ? `<span class="text-[11px] font-bold px-2 py-0.5 rounded-lg bg-amber-400/20 text-amber-200 border border-amber-300/30">יעד: ${formatPrice(p.targetPrice)}</span>` : ''}
+                  ${!isMultiStore ? `<button type="button" data-action="add_store" data-id="${p.id}" class="prod-action-btn text-[11px] font-bold px-2 py-0.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-200 border border-cyan-400/30 transition">+ השווה חנות</button>` : ''}
                 </div>
               </div>
             </div>
@@ -3709,48 +3833,48 @@
             ${multiStoreComparisonHtml}
 
             <!-- Price Metrics Glass Boxes -->
-            <div class="grid grid-cols-3 gap-2.5">
-              <div class="p-3 rounded-2xl liquid-glass-soft text-center">
-                <p class="text-[11px] text-slate-300 font-medium">${isMultiStore ? 'הכי זול כעת' : 'מחיר כעת'}</p>
-                <p class="text-lg sm:text-xl font-black ${isDropped ? 'text-emerald-300' : 'text-white'} mt-0.5">${formatPrice(p.currentPrice)}</p>
+            <div class="grid grid-cols-3 gap-2">
+              <div class="p-2.5 rounded-2xl liquid-glass-soft text-center">
+                <p class="text-[10px] sm:text-[11px] text-slate-300 font-medium">${isMultiStore ? 'הכי זול כעת' : 'מחיר כעת'}</p>
+                <p class="text-base sm:text-lg font-black ${isDropped ? 'text-emerald-300' : 'text-white'} mt-0.5">${formatPrice(p.currentPrice)}</p>
               </div>
-              <div class="p-3 rounded-2xl liquid-glass-soft text-center">
-                <p class="text-[11px] text-slate-300 font-medium">מחיר התחלתי</p>
-                <p class="text-sm sm:text-base font-extrabold text-slate-200 mt-1">${formatPrice(p.initialPrice)}</p>
+              <div class="p-2.5 rounded-2xl liquid-glass-soft text-center">
+                <p class="text-[10px] sm:text-[11px] text-slate-300 font-medium">מחיר התחלתי</p>
+                <p class="text-xs sm:text-sm font-extrabold text-slate-200 mt-1">${formatPrice(p.initialPrice)}</p>
               </div>
-              <div class="p-3 rounded-2xl liquid-glass-soft text-center">
-                <p class="text-[11px] text-slate-300 font-medium">שיא השפל</p>
-                <p class="text-sm sm:text-base font-extrabold text-cyan-300 mt-1">${formatPrice(p.lowestPrice || p.currentPrice)}</p>
+              <div class="p-2.5 rounded-2xl liquid-glass-soft text-center">
+                <p class="text-[10px] sm:text-[11px] text-slate-300 font-medium">שיא השפל</p>
+                <p class="text-xs sm:text-sm font-extrabold text-cyan-300 mt-1">${formatPrice(p.lowestPrice || p.currentPrice)}</p>
               </div>
             </div>
 
             <!-- Fixed-height Price Chart Container -->
-            <div class="relative h-36 w-full rounded-2xl bg-black/35 p-2.5 border border-white/10">
+            <div class="relative h-28 sm:h-32 w-full rounded-2xl bg-black/35 p-2 border border-white/10">
               <canvas id="${canvasId}"></canvas>
             </div>
           </div>
 
           <!-- Card Footer Controls -->
-          <div class="pt-3 border-t border-white/15 space-y-2.5">
+          <div class="pt-2.5 border-t border-white/15 space-y-2">
             <div class="flex items-center justify-between text-[11px] text-slate-300">
-              <span>נבדק: ${escapeHtml(p.lastChecked || 'כעת')}</span>
+              <span>עודכן: ${escapeHtml(p.lastChecked || 'כעת')}</span>
               <a href="${escapeHtml(bestOffer.url || p.url)}" target="_blank" rel="noopener noreferrer" class="text-cyan-300 hover:text-cyan-200 font-extrabold underline flex items-center gap-1">
                 <span>${isMultiStore ? `למחיר הזול ב-${escapeHtml(bestOffer.store)}` : 'לדף המוצר בחנות'}</span>
                 <span>↗</span>
               </a>
             </div>
 
-            <div class="flex flex-wrap items-center gap-2">
-              <button type="button" data-action="check" data-id="${p.id}" class="prod-action-btn flex-1 py-2.5 px-3 rounded-2xl liquid-glass-soft hover:bg-white/20 text-white text-xs font-extrabold transition">
+            <div class="flex items-center gap-1.5">
+              <button type="button" data-action="check" data-id="${p.id}" class="prod-action-btn flex-1 py-2 px-2.5 rounded-xl liquid-glass-soft hover:bg-white/20 text-white text-xs font-extrabold transition">
                 🔄 בדוק מחיר
               </button>
-              <button type="button" data-action="simulate" data-id="${p.id}" class="prod-action-btn flex-1 py-2.5 px-3 rounded-2xl btn-gradient-emerald text-white text-xs font-extrabold transition">
-                📉 הדמיית ירידת מחיר
+              <button type="button" data-action="simulate" data-id="${p.id}" class="prod-action-btn flex-1 py-2 px-2.5 rounded-xl btn-gradient-emerald text-white text-xs font-extrabold transition">
+                📉 הדמיית ירידה
               </button>
-              <button type="button" data-action="edit" data-id="${p.id}" title="ערוך מוצר או אפשרות" class="prod-action-btn w-10 h-10 rounded-2xl liquid-glass-soft hover:bg-white/20 text-white text-xs flex items-center justify-center transition">
+              <button type="button" data-action="edit" data-id="${p.id}" title="ערוך מוצר או אפשרות" class="prod-action-btn w-9 h-9 rounded-xl liquid-glass-soft hover:bg-white/20 text-white text-xs flex items-center justify-center shrink-0 transition">
                 ✏️
               </button>
-              <button type="button" data-action="delete" data-id="${p.id}" title="הסר מוצר" class="prod-action-btn w-10 h-10 rounded-2xl liquid-glass-soft hover:bg-rose-500/35 text-rose-300 text-xs flex items-center justify-center transition">
+              <button type="button" data-action="delete" data-id="${p.id}" title="הסר מוצר" class="prod-action-btn w-9 h-9 rounded-xl liquid-glass-soft hover:bg-rose-500/35 text-rose-300 text-xs flex items-center justify-center shrink-0 transition">
                 🗑️
               </button>
             </div>
@@ -3916,6 +4040,15 @@
         clearUrlBtn.classList.add('hidden');
         urlInput.focus();
       });
+
+      const skipScanBtn = document.getElementById('skipLiveScanBtn');
+      if (skipScanBtn) {
+        skipScanBtn.addEventListener('click', () => {
+          if (typeof activeScanCancelResolver === 'function') {
+            activeScanCancelResolver();
+          }
+        });
+      }
 
       // Scan URL Form
       document.getElementById('scanUrlForm').addEventListener('submit', async (e) => {

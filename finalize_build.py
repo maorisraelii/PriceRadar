@@ -864,22 +864,40 @@ public class MainActivity extends BridgeActivity {
                         public void onPageFinished(WebView view, String url) {
                             mainHandler.postDelayed(() -> {
                                 if (delivered) return;
-                                view.evaluateJavascript("(function(){ return document.documentElement ? document.documentElement.outerHTML : ''; })();", value -> {
+                                // Extract compact essential DOM (title, og tags, price elements, and clean body text capped at 180KB) so IPC never freezes UI thread!
+                                String compactScript = "(function(){" +
+                                    "try {" +
+                                    "  var d = document;" +
+                                    "  if (!d || !d.documentElement) return '';" +
+                                    "  var title = d.title || '';" +
+                                    "  if (title.indexOf('Just a moment') !== -1) return 'Just a moment';" +
+                                    "  var out = '<html><head><title>' + title.replace(/</g,'&lt;') + '</title>';" +
+                                    "  var metas = d.querySelectorAll('meta[property], meta[name], [itemprop=\"price\"]');" +
+                                    "  for (var i=0; i<Math.min(metas.length, 40); i++) { out += metas[i].outerHTML; }" +
+                                    "  out += '</head><body>';" +
+                                    "  var pNodes = d.querySelectorAll('#productTitle, #title, #landingImage, .a-price, #corePrice_feature_div, #priceblock_ourprice, #priceblock_dealprice, [data-price-type], .special-price, .price-box, .product-price-current, .page-title, h1, [data-product_variations], script[type=\"application/ld+json\"]');" +
+                                    "  for (var j=0; j<Math.min(pNodes.length, 60); j++) { out += pNodes[j].outerHTML; }" +
+                                    "  var bodyText = (d.body && d.body.innerText) ? d.body.innerText.substring(0, 90000) : '';" +
+                                    "  out += '<div id=\"__pr_body_text__\">' + bodyText.replace(/</g,'&lt;') + '</div></body></html>';" +
+                                    "  return out;" +
+                                    "} catch(e) { return ''; }" +
+                                    "})();";
+                                view.evaluateJavascript(compactScript, value -> {
                                     if (delivered) return;
                                     if (value != null && value.contains("Just a moment")) {
                                         mainHandler.postDelayed(() -> {
                                             if (delivered) return;
                                             delivered = true;
-                                            view.evaluateJavascript("(function(){ return document.documentElement ? document.documentElement.outerHTML : ''; })();", val2 -> {
+                                            view.evaluateJavascript(compactScript, val2 -> {
                                                 sendResult(callbackId, val2);
                                             });
-                                        }, 2500);
+                                        }, 2000);
                                     } else {
                                         delivered = true;
                                         sendResult(callbackId, value);
                                     }
                                 });
-                            }, 1600);
+                            }, 1200);
                         }
                     });
                     scraperWebView.loadUrl(targetUrl);
