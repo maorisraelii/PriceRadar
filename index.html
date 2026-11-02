@@ -2,24 +2,67 @@
 <html lang="he" dir="rtl">
 <head>
   <script>
-    window.__APP_VERSION__ = "2.9.0";
-    window.__BUILD_TIMESTAMP__ = 1762126000;
-    window.__OTA_RELEASE_NOTES__ = "תיקון מלא של התראות מתוזמנות לפי שעה (פועלות גם כשהאפליקציה סגורה מהמולטיטאסקינג!) וסנכרון מספרי הגרסאות מול GitHub Releases.";
+    window.__APP_VERSION__ = "2.9.1";
+    window.__BUILD_TIMESTAMP__ = 1762130000;
+    window.__OTA_RELEASE_NOTES__ = "תיקון שכפול המסך בגלילה למטה (החלפת document.write בעדכון נקי של ה-DOM ב-OTA).";
 
     // =========================================================================
     // OVER-THE-AIR (OTA) LIVE UPDATE ENGINE FROM GITHUB
     // Allows the installed Android APK to update automatically on every git push
     // without ever re-downloading or reinstalling an APK file.
     // =========================================================================
+    function applyOtaHtmlCleanly(remoteHtml) {
+      try {
+        window.__OTA_APPLYING__ = true;
+        if (window.__prMainIntervalId) {
+          clearInterval(window.__prMainIntervalId);
+          window.__prMainIntervalId = null;
+        }
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(remoteHtml, 'text/html');
+        if (!doc || !doc.body) return false;
+
+        // Extract version/timestamp globals from the first script
+        const vMatch = remoteHtml.match(/window\.__APP_VERSION__\s*=\s*"([^"]+)"/);
+        const tMatch = remoteHtml.match(/window\.__BUILD_TIMESTAMP__\s*=\s*(\d+)/);
+        const nMatch = remoteHtml.match(/window\.__OTA_RELEASE_NOTES__\s*=\s*"([^"]+)"/);
+        if (vMatch) window.__APP_VERSION__ = vMatch[1];
+        if (tMatch) window.__BUILD_TIMESTAMP__ = Number(tMatch[1]);
+        if (nMatch) window.__OTA_RELEASE_NOTES__ = nMatch[1];
+
+        // Replace body HTML cleanly (removes any duplicate DOM from old document.write)
+        const newBodyClone = doc.body.cloneNode(true);
+        const bodyScripts = Array.from(newBodyClone.querySelectorAll('script'));
+        bodyScripts.forEach(s => s.remove());
+        document.body.innerHTML = newBodyClone.innerHTML;
+
+        // Re-execute the main application script on the fresh single DOM
+        bodyScripts.forEach(oldScript => {
+          const s = document.createElement('script');
+          if (oldScript.src) {
+            s.src = oldScript.src;
+          } else {
+            s.textContent = oldScript.textContent;
+          }
+          document.body.appendChild(s);
+        });
+        window.__OTA_APPLYING__ = false;
+        return true;
+      } catch (e) {
+        window.__OTA_APPLYING__ = false;
+        return false;
+      }
+    }
+
     (function bootstrapCachedLiveUpdate() {
       try {
         const cachedHtml = localStorage.getItem('pr_live_ota_html');
         const cachedTs = Number(localStorage.getItem('pr_live_ota_ts') || 0);
-        if (cachedHtml && cachedTs > window.__BUILD_TIMESTAMP__ && !sessionStorage.getItem('pr_running_cached')) {
-          sessionStorage.setItem('pr_running_cached', 'true');
-          document.open();
-          document.write(cachedHtml);
-          document.close();
+        if (cachedHtml && cachedTs > window.__BUILD_TIMESTAMP__ && !window.__PR_BOOTSTRAPPED_OTA__) {
+          window.__PR_BOOTSTRAPPED_OTA__ = true;
+          window.addEventListener('DOMContentLoaded', () => {
+            applyOtaHtmlCleanly(cachedHtml);
+          }, { once: true });
         }
       } catch (e) {}
     })();
@@ -56,14 +99,8 @@
           if (userStateSnap && !localStorage.getItem('priceradar_il_user_state_v1')) {
             try { localStorage.setItem('priceradar_il_user_state_v1', userStateSnap); } catch (e) {}
           }
-          // Only auto-rewrite DOM if user has not modified products in this session; otherwise show popup immediately!
           if (!window.__USER_MODIFIED_STATE__) {
-            sessionStorage.removeItem('pr_running_cached');
-            setTimeout(() => {
-              document.open();
-              document.write(remoteHtml);
-              document.close();
-            }, 500);
+            applyOtaHtmlCleanly(remoteHtml);
           } else if (typeof window.showOtaUpdatePopupModal === 'function') {
             window.showOtaUpdatePopupModal(remoteVer, remoteTs, remoteNotes);
           }
@@ -3391,7 +3428,28 @@
       renderAll();
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
+    function deduplicateAppDomIfNeeded() {
+      try {
+        // If an older APK version's document.write() inside <head> caused a second copy of <header> or <main> to be appended to <body>, remove duplicates!
+        const headers = document.querySelectorAll('body > header');
+        if (headers.length > 1) {
+          for (let i = 1; i < headers.length; i++) headers[i].remove();
+        }
+        const mains = document.querySelectorAll('body > main');
+        if (mains.length > 1) {
+          for (let i = 1; i < mains.length; i++) mains[i].remove();
+        }
+        ['toastContainer', 'onboardingModal', 'productModal', 'simulateModal', 'confirmDialogModal', 'otaUpdateModal'].forEach(id => {
+          const els = document.querySelectorAll(`[id="${id}"]`);
+          if (els.length > 1) {
+            for (let i = 1; i < els.length; i++) els[i].remove();
+          }
+        });
+      } catch (e) {}
+    }
+
+    function initPriceRadarApp() {
+      deduplicateAppDomIfNeeded();
       loadState();
       renderAll();
 
@@ -3948,7 +4006,10 @@
       } catch (e) {}
 
       // Background Timer Loop
-      setInterval(() => {
+      if (window.__prMainIntervalId) {
+        clearInterval(window.__prMainIntervalId);
+      }
+      window.__prMainIntervalId = setInterval(() => {
         if (state.ui.nextCheckSeconds > 0) {
           state.ui.nextCheckSeconds--;
         } else {
@@ -3971,7 +4032,21 @@
           generateAndSendDailyReport(false);
         }
       }, 1000);
-    });
+    }
+
+    if (document.readyState === 'loading') {
+      window.addEventListener('DOMContentLoaded', () => {
+        deduplicateAppDomIfNeeded();
+        initPriceRadarApp();
+        setTimeout(deduplicateAppDomIfNeeded, 150);
+        setTimeout(deduplicateAppDomIfNeeded, 800);
+      }, { once: true });
+    } else {
+      deduplicateAppDomIfNeeded();
+      initPriceRadarApp();
+      setTimeout(deduplicateAppDomIfNeeded, 150);
+      setTimeout(deduplicateAppDomIfNeeded, 800);
+    }
   </script>
 </body>
 </html>
