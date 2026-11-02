@@ -2,8 +2,9 @@
 <html lang="he" dir="rtl">
 <head>
   <script>
-    window.__APP_VERSION__ = "2.7.0";
-    window.__BUILD_TIMESTAMP__ = 1762119000;
+    window.__APP_VERSION__ = "2.8.0";
+    window.__BUILD_TIMESTAMP__ = 1762122000;
+    window.__OTA_RELEASE_NOTES__ = "נוסף פופ-אפ אישור עדכון אוטומטי (OTA), כפתור בדיקת התראות כשהאפליקציה סגורה, ושמירה מלאה של רשימת המוצרים בסגירה מהמולטיטאסקינג.";
 
     // =========================================================================
     // OVER-THE-AIR (OTA) LIVE UPDATE ENGINE FROM GITHUB
@@ -31,16 +32,23 @@
         if (!res.ok) return;
         const remoteHtml = await res.text();
         const m = remoteHtml.match(/window\.__BUILD_TIMESTAMP__\s*=\s*(\d+)/);
+        const vMatch = remoteHtml.match(/window\.__APP_VERSION__\s*=\s*"([^"]+)"/);
+        const nMatch = remoteHtml.match(/window\.__OTA_RELEASE_NOTES__\s*=\s*"([^"]+)"/);
         const remoteTs = m ? Number(m[1]) : 0;
+        const remoteVer = vMatch ? vMatch[1] : 'חדשה';
+        const remoteNotes = nMatch ? nMatch[1] : 'האפליקציה עודכנה אוטומטית מהענן לגרסה האחרונה.';
         const currentActiveTs = Number(localStorage.getItem('pr_live_ota_ts') || window.__BUILD_TIMESTAMP__);
 
         if (remoteTs > currentActiveTs) {
-          console.log(`[PriceRadar OTA] New version found on GitHub (${remoteTs} > ${currentActiveTs}). Caching for next launch...`);
+          console.log(`[PriceRadar OTA] New version found on GitHub (${remoteVer} | ${remoteTs} > ${currentActiveTs}).`);
           // Preserve user state before writing large OTA HTML to avoid WebView localStorage quota eviction!
           const userStateSnap = localStorage.getItem('priceradar_il_user_state_v1');
           try {
             localStorage.setItem('pr_live_ota_html', remoteHtml);
             localStorage.setItem('pr_live_ota_ts', String(remoteTs));
+            localStorage.setItem('pr_ota_just_updated_version', remoteVer);
+            localStorage.setItem('pr_ota_just_updated_ts', String(remoteTs));
+            localStorage.setItem('pr_ota_just_updated_notes', remoteNotes);
           } catch (quotaErr) {
             localStorage.removeItem('pr_live_ota_html');
             localStorage.removeItem('pr_live_ota_ts');
@@ -48,14 +56,16 @@
           if (userStateSnap && !localStorage.getItem('priceradar_il_user_state_v1')) {
             try { localStorage.setItem('priceradar_il_user_state_v1', userStateSnap); } catch (e) {}
           }
-          // Only auto-apply if user has not modified products in this session, to prevent interrupting active state
+          // Only auto-rewrite DOM if user has not modified products in this session; otherwise show popup immediately!
           if (!window.__USER_MODIFIED_STATE__) {
             sessionStorage.removeItem('pr_running_cached');
             setTimeout(() => {
               document.open();
               document.write(remoteHtml);
               document.close();
-            }, 600);
+            }, 500);
+          } else if (typeof window.showOtaUpdatePopupModal === 'function') {
+            window.showOtaUpdatePopupModal(remoteVer, remoteTs, remoteNotes);
           }
         }
       } catch (err) {}
@@ -240,6 +250,9 @@
             <span class="text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 flex items-center gap-1 shrink-0">
               <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 pulse-dot"></span>
               פעיל
+            </span>
+            <span id="appVersionHeaderBadge" class="text-[10px] sm:text-[11px] font-mono font-extrabold px-2 py-0.5 rounded-full bg-pink-500/20 text-pink-200 border border-pink-400/30 shrink-0">
+              v2.8.0
             </span>
             <span id="cloudSyncBadge" class="hidden md:inline-flex text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-500/25 text-purple-200 border border-purple-400/30 items-center gap-1 shrink-0">
               ☁️ ענן 24/7
@@ -1028,6 +1041,40 @@
         <button id="confirmDialogCancelBtn" type="button" class="px-4 py-2 rounded-2xl liquid-glass-soft text-xs font-bold text-slate-200">ביטול</button>
         <button id="confirmDialogOkBtn" type="button" class="px-5 py-2 rounded-2xl bg-gradient-to-r from-rose-500 to-pink-600 text-xs font-extrabold text-white shadow-lg">אישור</button>
       </div>
+    </div>
+  </div>
+
+  <!-- MODAL: OTA UPDATE RECEIVED POPUP -->
+  <div id="otaUpdateModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="liquid-glass rounded-3xl max-w-sm w-full p-6 space-y-4 border border-cyan-400/45 shadow-2xl text-center relative overflow-hidden">
+      <div class="w-16 h-16 rounded-2xl mx-auto overflow-hidden shadow-lg shadow-cyan-500/30 border border-white/30 bg-indigo-950 flex items-center justify-center">
+        <img src="icon-192.png" onerror="this.onerror=null;this.src=FALLBACK_IMAGES.hero;" alt="PriceRadar" class="w-full h-full object-cover" />
+      </div>
+      <div class="space-y-1.5">
+        <span class="inline-block text-[11px] font-extrabold px-3 py-0.5 rounded-full bg-emerald-500/25 text-emerald-300 border border-emerald-400/40">
+          🚀 עדכון OTA הותקן בהצלחה!
+        </span>
+        <h3 class="text-lg font-black text-white">האפליקציה עודכנה אוטומטית</h3>
+        <p class="text-xs text-slate-300">
+          גרסת עדכון חדשה פעילה כעת במכשיר שלך:
+        </p>
+      </div>
+      <div class="p-3.5 rounded-2xl liquid-glass-soft border border-white/15 space-y-1.5 text-right text-xs">
+        <div class="flex items-center justify-between">
+          <span class="text-slate-300 font-bold">מספר גרסה (Version):</span>
+          <span id="otaModalVersionBadge" class="font-mono font-black text-sm text-pink-300 bg-pink-500/20 px-2.5 py-0.5 rounded-lg border border-pink-400/30">v2.8.0</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-slate-300 font-bold">מספר בנייה (Build):</span>
+          <span id="otaModalBuildBadge" class="font-mono font-bold text-cyan-300">#1762122000</span>
+        </div>
+        <div class="pt-1.5 border-t border-white/10">
+          <p id="otaModalNotesText" class="text-[11px] text-slate-200 leading-relaxed"></p>
+        </div>
+      </div>
+      <button id="closeOtaUpdateModalBtn" type="button" class="w-full py-3 rounded-2xl btn-gradient-primary text-white text-xs sm:text-sm font-extrabold shadow-lg">
+        מעולה, הבנתי! 👍
+      </button>
     </div>
   </div>
 
@@ -3752,6 +3799,46 @@
         const completed = localStorage.getItem('priceradar_onboarding_completed_v1');
         if (!completed) {
           setTimeout(openOnboardingModal, 500);
+        }
+      } catch (e) {}
+
+      // Update header version badge and show OTA Update Popup if a new version was received
+      window.showOtaUpdatePopupModal = function(ver, buildTs, notes) {
+        try {
+          const modal = document.getElementById('otaUpdateModal');
+          if (!modal) return;
+          document.getElementById('otaModalVersionBadge').textContent = 'v' + String(ver || window.__APP_VERSION__).replace(/^v/i, '');
+          document.getElementById('otaModalBuildBadge').textContent = '#' + String(buildTs || window.__BUILD_TIMESTAMP__);
+          document.getElementById('otaModalNotesText').textContent = notes || window.__OTA_RELEASE_NOTES__ || 'האפליקציה התעדכנה אוטומטית מ-GitHub.';
+          modal.classList.remove('hidden');
+        } catch (e) {}
+      };
+
+      const closeOtaBtn = document.getElementById('closeOtaUpdateModalBtn');
+      if (closeOtaBtn) {
+        closeOtaBtn.addEventListener('click', () => {
+          document.getElementById('otaUpdateModal').classList.add('hidden');
+        });
+      }
+
+      try {
+        const verBadge = document.getElementById('appVersionHeaderBadge');
+        if (verBadge && window.__APP_VERSION__) {
+          verBadge.textContent = 'v' + String(window.__APP_VERSION__).replace(/^v/i, '');
+        }
+        const pendingOtaVer = localStorage.getItem('pr_ota_just_updated_version');
+        const pendingOtaTs = localStorage.getItem('pr_ota_just_updated_ts');
+        const pendingOtaNotes = localStorage.getItem('pr_ota_just_updated_notes');
+        const lastAckTs = Number(localStorage.getItem('pr_ota_last_ack_ts') || 0);
+        if (pendingOtaVer && pendingOtaTs) {
+          localStorage.removeItem('pr_ota_just_updated_version');
+          localStorage.removeItem('pr_ota_just_updated_ts');
+          localStorage.removeItem('pr_ota_just_updated_notes');
+          localStorage.setItem('pr_ota_last_ack_ts', String(pendingOtaTs));
+          setTimeout(() => window.showOtaUpdatePopupModal(pendingOtaVer, pendingOtaTs, pendingOtaNotes), 450);
+        } else if (window.__BUILD_TIMESTAMP__ > lastAckTs && localStorage.getItem('priceradar_onboarding_completed_v1')) {
+          localStorage.setItem('pr_ota_last_ack_ts', String(window.__BUILD_TIMESTAMP__));
+          setTimeout(() => window.showOtaUpdatePopupModal(window.__APP_VERSION__, window.__BUILD_TIMESTAMP__, window.__OTA_RELEASE_NOTES__), 450);
         }
       } catch (e) {}
 
