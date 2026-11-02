@@ -31,17 +31,43 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Extract App Version from index.html
+      - name: Extract App Version & Release Notes from index.html
         id: versioning
         run: |
           RUN_NUM="${{ github.run_number }}"
-          BASE_VER=$(grep -oP 'window\.__APP_VERSION__\s*=\s*"\K[^"]+' index.html || echo "2.9.0")
-          VERSION_NAME="${BASE_VER}"
-          VERSION_CODE=$((200 + RUN_NUM))
-          TAG_NAME="v${VERSION_NAME}"
+          BASE_VER=$(grep -oP 'window\.__APP_VERSION__\s*=\s*"\K[^"]+' index.html || echo "3.0.1")
+          export VERSION_NAME="${BASE_VER}"
+          export VERSION_CODE=$((200 + RUN_NUM))
+          export TAG_NAME="v${VERSION_NAME}"
           echo "VERSION_NAME=${VERSION_NAME}" >> $GITHUB_ENV
           echo "VERSION_CODE=${VERSION_CODE}" >> $GITHUB_ENV
           echo "TAG_NAME=${TAG_NAME}" >> $GITHUB_ENV
+          python3 - << 'PYEOF'
+          import os, re, subprocess
+          ver = os.environ.get("VERSION_NAME", "3.0.1")
+          code = os.environ.get("VERSION_CODE", "201")
+          notes = ""
+          if os.path.exists("index.html"):
+              with open("index.html", "r", encoding="utf-8") as f:
+                  m = re.search(r'window\.__OTA_RELEASE_NOTES__\s*=\s*"([^"]+)"', f.read())
+                  if m:
+                      notes = m.group(1)
+          if not notes:
+              notes = "שיפורי יציבות, זיהוי מחירים ותיקוני באגים."
+          commit_msg = subprocess.check_output(["git", "log", "-1", "--pretty=%s"], text=True).strip()
+          md = f"""## 🚀 מה חדש בגרסה v{ver} (Build {code})
+
+          {notes}
+
+          ### 📝 פירוט עדכון (Commit)
+          - `{commit_msg}`
+
+          ---
+          📦 **הורדה ישירה:** הורד את הקובץ `PriceRadar.apk` המצורף למטה (ניתן להתקין ישירות מעל גרסה קיימת ללא מחיקת נתונים).
+          """
+          with open("release_notes.md", "w", encoding="utf-8") as out:
+              out.write("\n".join(line.lstrip() for line in md.strip().splitlines()) + "\n")
+          PYEOF
           echo "Synced Release Version from index.html: ${VERSION_NAME} (code: ${VERSION_CODE}, tag: ${TAG_NAME})"
 
       - name: Prepare Web Assets & Setup Android Project
@@ -67,6 +93,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.TAG_NAME }}
-          name: "PriceRadar ${{ env.TAG_NAME }} (Official Release)"
-          body: "הורדה ישירה של גרסה ${{ env.VERSION_NAME }} (Build ${{ env.VERSION_CODE }}). הגרסה עולה אוטומטית ב-0.1 בכל הרצת בנייה ומאפשרת התקנה חלקה מעל גרסאות ישנות!"
+          name: "PriceRadar ${{ env.TAG_NAME }}"
+          body_path: release_notes.md
           files: PriceRadar.apk
