@@ -659,8 +659,9 @@ def process_profile(page, data: dict, chat_id: str, now_il: datetime, fcm_token:
                 store_offers[0]["lowestPrice"] = min(float(store_offers[0].get("lowestPrice") or new_price), new_price)
                 store_offers[0]["lastChecked"] = f"{time_str} {date_str}"
 
-        # Check Amazon Free Shipping to Israel change:
-        if "amazon." in raw_url.lower():
+        # Check Amazon Free Shipping to Israel change (supports amazon.*, a.co, amzn.to, amzn.eu):
+        is_amazon_url = bool(re.search(r"(?:amazon\.|a\.co/|amzn\.)", raw_url.lower())) or "amazon" in str(prod.get("store", "")).lower()
+        if is_amazon_url:
             try:
                 page_content = page.content()
                 is_free_ship = check_amazon_free_shipping(page_content)

@@ -2,9 +2,9 @@
 <html lang="he" dir="rtl">
 <head>
   <script>
-    window.__APP_VERSION__ = "3.3.0";
-    window.__BUILD_TIMESTAMP__ = 1762152000;
-    window.__OTA_RELEASE_NOTES__ = "שדרוג עיצוב מקיף (Obsidian Luxury UI), דף פרטי מוצר מלא בלחיצה על קובייה, תצוגת סטטוס משלוח חינם לישראל במוצרי Amazon, סינון מהיר בלחיצה על תגית חנות, ושיתוף ישיר (Share) מאפליקציית אמזון ומהדפדפן.";
+    window.__APP_VERSION__ = "3.3.1";
+    window.__BUILD_TIMESTAMP__ = 1762154500;
+    window.__OTA_RELEASE_NOTES__ = "תיקון מלא לזיהוי כל קישורי הקיצור והשיתוף של Amazon (כגון a.co/d/..., amzn.to, amzn.eu) ומיגרציה אוטומטית של מוצרי אמזון קיימים כך שתגית המשלוח והמעקב תופיע מיד.";
 
     // =========================================================================
     // OVER-THE-AIR (OTA) LIVE UPDATE ENGINE FROM GITHUB
@@ -1946,8 +1946,26 @@
       return null;
     }
 
+    function isAmazonUrlOrStore(rawUrl, storeName = '') {
+      const s = String(rawUrl || '').toLowerCase();
+      const st = String(storeName || '').toLowerCase();
+      if (st.includes('amazon') || st.includes('אמזון') || st === 'a.co' || st.startsWith('amzn.')) return true;
+      try {
+        const u = new URL(rawUrl);
+        const h = u.hostname.replace(/^www\./, '').toLowerCase();
+        return h === 'a.co' || h.includes('amazon.') || h.startsWith('amzn.');
+      } catch (e) {
+        return /(?:^|\/\/|\.)(?:amazon\.|a\.co\/|amzn\.)/i.test(s);
+      }
+    }
+
     function ensureProductOffersSynced(p) {
       if (!p) return;
+      // Auto-migrate existing short-link Amazon products (e.g. store saved as "a.co" or "amzn.to") to "Amazon"
+      if (isAmazonUrlOrStore(p.url, p.store)) {
+        p.store = 'Amazon';
+        if (p.trackFreeShipping === undefined) p.trackFreeShipping = true;
+      }
       if (!Array.isArray(p.storeOffers) || p.storeOffers.length === 0) {
         const sm = getStoreMeta(p.url);
         p.storeOffers = [{
@@ -1960,6 +1978,13 @@
           SelectedVariant: p.SelectedVariant || '',
           lastChecked: p.lastChecked || 'כעת'
         }];
+      } else {
+        p.storeOffers.forEach(off => {
+          if (isAmazonUrlOrStore(off.url, off.store)) {
+            off.store = 'Amazon';
+            off.favicon = 'https://www.google.com/s2/favicons?domain=amazon.com&sz=128';
+          }
+        });
       }
       if (p.storeOffers.length > 1) {
         // Keep top-level currentPrice as the cheapest across all stores in the cube!
@@ -2008,15 +2033,16 @@
 
         let matchedKey = host;
         if (host.endsWith('payngo.co.il')) matchedKey = 'payngo.co.il';
-        else if (host.endsWith('aliexpress.com')) matchedKey = 'aliexpress.com';
-        else if (host.includes('amazon.')) matchedKey = 'amazon.com';
+        else if (host.endsWith('aliexpress.com') || host === 'a.aliexpress.com' || host.endsWith('s.click.aliexpress.com')) matchedKey = 'aliexpress.com';
+        else if (host.includes('amazon.') || host === 'a.co' || host.startsWith('amzn.')) matchedKey = 'amazon.com';
 
+        const faviconDomain = matchedKey === 'amazon.com' ? 'amazon.com' : (matchedKey === 'aliexpress.com' ? 'aliexpress.com' : host);
         const info = stores[matchedKey] || { name: host, emoji: '🏪', color: 'from-purple-500 to-indigo-600' };
         return {
           name: info.name,
           emoji: info.emoji,
           color: info.color,
-          favicon: `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=128`
+          favicon: `https://www.google.com/s2/favicons?domain=${encodeURIComponent(faviconDomain)}&sz=128`
         };
       } catch (e) {
         return { name: 'חנות אונליין', emoji: '🏪', color: 'from-purple-500 to-indigo-600', favicon: '' };
@@ -2061,6 +2087,7 @@
         }
         const asin = extractAmazonAsin(rawUrl);
         if (asin) return `מוצר Amazon (${asin})`;
+        if (isAmazonUrlOrStore(rawUrl)) return 'מוצר Amazon';
         let last = parts[parts.length - 1] || u.hostname;
         last = decodeURIComponent(last).replace(/[-_]+/g, ' ').replace(/\.html?$/i, '').trim();
         return last || u.hostname;
@@ -2230,7 +2257,7 @@
     async function tryFetchRawViaProxies(targetUrl) {
       const fetchTarget = getScrapeTargetUrl(targetUrl);
       const isKsp = fetchTarget.includes('ksp.co.il');
-      const isHeavySite = /amazon\.|aliexpress\./i.test(fetchTarget);
+      const isHeavySite = isAmazonUrlOrStore(fetchTarget) || /aliexpress\./i.test(fetchTarget);
 
       // Run ALL available fetchers in parallel (with a strict 4.8s ceiling) so a slow WebView or proxy NEVER hangs the app!
       const racePromises = [];
@@ -2992,7 +3019,7 @@
       let extracted = null;
       let rawFetchedContent = '';
       const kspUin = extractKspUin(cleanedUrl);
-      const isAmz = cleanedUrl.includes('amazon.');
+      const isAmz = isAmazonUrlOrStore(cleanedUrl, storeMeta.name) || isAmazonUrlOrStore(rawUrl);
 
       const performScanWork = async () => {
         if (kspUin) {
@@ -3114,7 +3141,7 @@
       const fsBox = document.getElementById('modalFreeShippingBox');
       const fsCheck = document.getElementById('modalTrackFreeShipping');
       const fsDetectedBadge = document.getElementById('modalFreeShippingDetectedBadge');
-      const isAmazonProd = (data.url || '').includes('amazon.') || (data.store || '').toLowerCase().includes('amazon');
+      const isAmazonProd = isAmazonUrlOrStore(data.url, data.store);
       if (fsBox) {
         fsBox.className = isAmazonProd
           ? 'p-3.5 rounded-2xl bg-gradient-to-r from-cyan-950/70 via-slate-900/80 to-indigo-950/60 border border-cyan-400/40 space-y-2.5'
@@ -3273,7 +3300,7 @@
       const diff = p.currentPrice - p.initialPrice;
       const pct = p.initialPrice > 0 ? Math.round((Math.abs(diff) / p.initialPrice) * 100) : 0;
       const isDropped = diff < 0;
-      const isAmz = (p.url || '').includes('amazon.') || (p.store || '').toLowerCase().includes('amazon') || offers.some(o => (o.url || '').includes('amazon.'));
+      const isAmz = isAmazonUrlOrStore(p.url, p.store) || offers.some(o => isAmazonUrlOrStore(o.url, o.store));
 
       const storeFav = document.getElementById('detailsStoreFavicon');
       if (storeFav) {
@@ -3856,7 +3883,7 @@
       const isNowFreeShip = Boolean(scanned.freeShippingEligible);
       p.freeShippingEligible = isNowFreeShip;
 
-      if (!wasFreeShip && isNowFreeShip && p.trackFreeShipping !== false && (p.url || '').includes('amazon.')) {
+      if (!wasFreeShip && isNowFreeShip && p.trackFreeShipping !== false && isAmazonUrlOrStore(p.url, p.store)) {
         const fsMsg =
           `✈️ בשורה מעולה! משלוח חינם לישראל באמזון!\n\n` +
           `🛍️ מוצר: ${p.title}\n` +
@@ -4140,7 +4167,7 @@
         const catStyle = CATEGORY_STYLES[p.category] || CATEGORY_STYLES.other;
         const prodImg = p.image || getFallbackProductImage(p.url, p.category);
 
-        const isAmazonProduct = (p.url || '').includes('amazon.') || (p.store || '').toLowerCase().includes('amazon') || offers.some(o => (o.url || '').includes('amazon.'));
+        const isAmazonProduct = isAmazonUrlOrStore(p.url, p.store) || offers.some(o => isAmazonUrlOrStore(o.url, o.store));
 
         const card = document.createElement('div');
         card.id = `prod_card_${p.id}`;
