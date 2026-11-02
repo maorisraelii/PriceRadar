@@ -2,9 +2,9 @@
 <html lang="he" dir="rtl">
 <head>
   <script>
-    window.__APP_VERSION__ = "2.9.1";
-    window.__BUILD_TIMESTAMP__ = 1762130000;
-    window.__OTA_RELEASE_NOTES__ = "תיקון שכפול המסך בגלילה למטה (החלפת document.write בעדכון נקי של ה-DOM ב-OTA).";
+    window.__APP_VERSION__ = "3.0.0";
+    window.__BUILD_TIMESTAMP__ = 1762135000;
+    window.__OTA_RELEASE_NOTES__ = "זיהוי ומניעת כפילויות קישורים, איחוד אוטומטי של אותו מוצר מחנויות שונות לקובייה משותפת עם השוואת מחירים, סינון ומיון לפי חנות וקטגוריה, ורענון עיצוב הממשק.";
 
     // =========================================================================
     // OVER-THE-AIR (OTA) LIVE UPDATE ENGINE FROM GITHUB
@@ -471,15 +471,55 @@
         </div>
       </div>
 
-      <!-- Filter & Search Bar (Shown when products > 0) -->
-      <div id="filterBar" class="hidden flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 liquid-glass-soft rounded-2xl p-3">
-        <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-          <button type="button" data-filter="all" class="filter-chip px-3.5 py-1.5 rounded-xl text-xs font-bold liquid-pill-active text-white transition">הכל</button>
-          <button type="button" data-filter="dropped" class="filter-chip px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white/10 text-slate-200 hover:bg-white/20 transition">ירד המחיר 🔥</button>
-          <button type="button" data-filter="variants" class="filter-chip px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white/10 text-slate-200 hover:bg-white/20 transition">עם אפשרויות/מידות 🎯</button>
+      <!-- Filter, Category, Store & Sort Bar (Shown when products > 0) -->
+      <div id="filterBar" class="hidden flex-col gap-3 liquid-glass rounded-3xl p-4 border border-white/15">
+        <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+          <!-- Status Filter Chips -->
+          <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+            <button type="button" data-filter="all" class="filter-chip px-3.5 py-1.5 rounded-xl text-xs font-extrabold liquid-pill-active text-white transition shrink-0">הכל</button>
+            <button type="button" data-filter="dropped" class="filter-chip px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white/10 text-slate-200 hover:bg-white/20 transition shrink-0">ירד המחיר 🔥</button>
+            <button type="button" data-filter="multi_store" class="filter-chip px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white/10 text-slate-200 hover:bg-white/20 transition shrink-0">השוואת חנויות 🏪</button>
+            <button type="button" data-filter="variants" class="filter-chip px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white/10 text-slate-200 hover:bg-white/20 transition shrink-0">עם אפשרויות 🎯</button>
+          </div>
+
+          <!-- Search Input -->
+          <div class="relative flex-1 lg:max-w-xs">
+            <input id="searchProductsInput" type="text" placeholder="🔍 חפש שם מוצר, חנות או קטגוריה..." class="w-full px-3.5 py-2 rounded-xl liquid-glass-input text-xs text-white placeholder-slate-400 outline-none" />
+          </div>
         </div>
-        <div class="flex items-center gap-2">
-          <input id="searchProductsInput" type="text" placeholder="חיפוש מוצר או חנות..." class="px-3.5 py-1.5 rounded-xl liquid-glass-input text-xs text-white placeholder-slate-400 outline-none w-full sm:w-56" />
+
+        <!-- Store Filter, Category Filter & Sort Selects -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-white/10">
+          <div class="flex items-center gap-2">
+            <span class="text-[11px] font-bold text-pink-200 shrink-0">🏪 חנות:</span>
+            <select id="filterStoreSelect" class="flex-1 px-3 py-1.5 rounded-xl liquid-glass-input text-xs font-bold text-white outline-none">
+              <option value="all" class="bg-slate-900">כל החנויות</option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <span class="text-[11px] font-bold text-cyan-200 shrink-0">🏷️ תחום:</span>
+            <select id="filterCategorySelect" class="flex-1 px-3 py-1.5 rounded-xl liquid-glass-input text-xs font-bold text-white outline-none">
+              <option value="all" class="bg-slate-900">כל התחומים</option>
+              <option value="electronics" class="bg-slate-900">⚡ מוצרי חשמל</option>
+              <option value="pets" class="bg-slate-900">🐰 חיות מחמד</option>
+              <option value="fashion" class="bg-slate-900">👟 אופנה והנעלה</option>
+              <option value="home" class="bg-slate-900">🏠 לבית ולמטבח</option>
+              <option value="other" class="bg-slate-900">🛍️ כללי</option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <span class="text-[11px] font-bold text-amber-200 shrink-0">↕️ מיון:</span>
+            <select id="sortProductsSelect" class="flex-1 px-3 py-1.5 rounded-xl liquid-glass-input text-xs font-bold text-white outline-none">
+              <option value="newest" class="bg-slate-900">נוסף לאחרונה</option>
+              <option value="price_asc" class="bg-slate-900">מחיר: מהנמוך לגבוה</option>
+              <option value="price_desc" class="bg-slate-900">מחיר: מהגבוה לנמוך</option>
+              <option value="savings_desc" class="bg-slate-900">חיסכון: הכי גדול קודם</option>
+              <option value="store_az" class="bg-slate-900">לפי חנות (א-ת)</option>
+              <option value="category" class="bg-slate-900">לפי תחום מוצר</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -985,8 +1025,13 @@
             <input id="modalCurrentPrice" type="number" step="0.01" min="0.01" required class="w-full px-3.5 py-2.5 rounded-2xl liquid-glass-input text-base font-black text-emerald-300 outline-none" />
           </div>
           <div>
-            <!-- Amazon Free Shipping over $49 Toggle -->
-        <div id="modalFreeShippingBox" class="p-3 rounded-2xl bg-cyan-950/40 border border-cyan-400/40 flex items-center justify-between">
+            <label for="modalTargetPrice" class="block text-xs font-bold text-slate-200 mb-1">מחיר יעד (אופציונלי, ₪):</label>
+            <input id="modalTargetPrice" type="number" step="0.01" min="0" placeholder="התראה בכל ירידה" class="w-full px-3.5 py-2.5 rounded-2xl liquid-glass-input text-sm text-white outline-none" />
+          </div>
+        </div>
+
+        <!-- Amazon Free Shipping over $49 Toggle -->
+        <div id="modalFreeShippingBox" class="hidden p-3 rounded-2xl bg-cyan-950/40 border border-cyan-400/40 flex items-center justify-between">
           <div class="flex items-center gap-2.5">
             <span class="text-xl">✈️</span>
             <div>
@@ -997,18 +1042,13 @@
           <input id="modalTrackFreeShipping" type="checkbox" checked class="w-5 h-5 accent-cyan-400 cursor-pointer" />
         </div>
 
-        <label for="modalTargetPrice" class="block text-xs font-bold text-slate-200 mb-1">מחיר יעד (אופציונלי, ₪):</label>
-            <input id="modalTargetPrice" type="number" step="0.01" min="0" placeholder="התראה בכל ירידה" class="w-full px-3.5 py-2.5 rounded-2xl liquid-glass-input text-sm text-white outline-none" />
-          </div>
-        </div>
-
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label for="modalSelectedVariantText" class="block text-xs font-bold text-slate-200 mb-1">אפשרות שנבחרה:</label>
             <input id="modalSelectedVariantText" type="text" placeholder="למשל: 2 ק״ג / מידה 41" class="w-full px-3.5 py-2 rounded-2xl liquid-glass-input text-xs font-bold text-cyan-200 outline-none" />
           </div>
           <div>
-            <label for="modalCategorySelect" class="block text-xs font-bold text-slate-200 mb-1">קטגוריה:</label>
+            <label for="modalCategorySelect" class="block text-xs font-bold text-slate-200 mb-1">תחום / קטגוריה:</label>
             <select id="modalCategorySelect" class="w-full px-3.5 py-2 rounded-2xl liquid-glass-input text-xs font-bold text-white outline-none">
               <option value="electronics" class="bg-slate-900">⚡ מוצרי חשמל</option>
               <option value="pets" class="bg-slate-900">🐰 חיות מחמד</option>
@@ -1017,6 +1057,20 @@
               <option value="other" class="bg-slate-900">🛍️ כללי</option>
             </select>
           </div>
+        </div>
+
+        <!-- Multi-Store Merge Selector (Auto-detects same product in another store or lets user merge manually) -->
+        <div id="modalMergeSection" class="hidden p-3.5 rounded-2xl bg-gradient-to-r from-indigo-950/75 via-purple-950/70 to-cyan-950/60 border border-cyan-400/40 space-y-2">
+          <div class="flex items-center justify-between">
+            <label for="modalMergeTargetSelect" class="text-xs font-extrabold text-cyan-200 flex items-center gap-1.5">
+              <span>🔗</span>
+              <span>איחוד עם אותו מוצר מחנות אחרת (השוואת מחירים באותה קובייה):</span>
+            </label>
+          </div>
+          <select id="modalMergeTargetSelect" class="w-full px-3.5 py-2 rounded-xl liquid-glass-input text-xs font-bold text-white outline-none">
+            <option value="" class="bg-slate-900">➕ צור כקוביית מוצר חדשה ונפרדת</option>
+          </select>
+          <p id="modalMergeHint" class="text-[11px] text-cyan-200/90 leading-relaxed"></p>
         </div>
 
         <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-white/15">
@@ -1172,6 +1226,9 @@
       ui: {
         activeTab: 'dashboard',
         filter: 'all',
+        storeFilter: 'all',
+        categoryFilter: 'all',
+        sortBy: 'newest',
         searchQuery: '',
         nextCheckSeconds: 3600,
         pendingVariations: [],
@@ -1609,14 +1666,134 @@
           }
         }
 
-        // Normalize Machsanei Hashmal (payngo.co.il) URLs
-        if (/payngo\.co\.il/i.test(u.hostname)) {
-          return `${u.origin}${u.pathname}`;
+        // Normalize KSP mobile/web URLs to canonical web/item/UIN
+        if (/ksp\.co\.il/i.test(u.hostname)) {
+          const kspMatch = u.pathname.match(/\/(?:web\/|mob\/)?item\/(\d+)/i);
+          if (kspMatch) {
+            return `https://ksp.co.il/web/item/${kspMatch[1]}`;
+          }
         }
 
+        // Normalize Machsanei Hashmal (payngo.co.il) URLs
+        if (/payngo\.co\.il/i.test(u.hostname)) {
+          return `${u.origin}${u.pathname.replace(/\/+$/, '')}`;
+        }
+
+        u.pathname = u.pathname.replace(/\/+$/, '') || '/';
         return u.toString();
       } catch (e) {
         return rawUrl.trim();
+      }
+    }
+
+    function normalizeUrlForComparison(rawUrl) {
+      return cleanTrackingUrl(rawUrl || '')
+        .toLowerCase()
+        .replace(/^https?:\/\/(www\.)?/, '')
+        .replace(/\/+$/, '');
+    }
+
+    function findExistingProductBySameUrl(rawUrl, excludeProductId = '') {
+      const targetNorm = normalizeUrlForComparison(rawUrl);
+      if (!targetNorm || targetNorm === 'example.com') return null;
+      for (const p of state.products) {
+        if (excludeProductId && p.id === excludeProductId) continue;
+        if (normalizeUrlForComparison(p.url) === targetNorm) {
+          return { product: p, storeName: p.store };
+        }
+        if (Array.isArray(p.storeOffers)) {
+          for (const off of p.storeOffers) {
+            if (normalizeUrlForComparison(off.url) === targetNorm) {
+              return { product: p, storeName: off.store || p.store };
+            }
+          }
+        }
+      }
+      return null;
+    }
+
+    function tokenizeTitleForMatch(title) {
+      const stopWords = new Set(['של', 'עם', 'או', 'את', 'כל', 'גם', 'רק', 'עד', 'דגם', 'חדש', 'מקורי', 'משלוח', 'חינם', 'אחריות', 'שנה', 'שנים', 'צבע', 'ללא', 'כולל', 'מבית', 'the', 'and', 'for', 'with', 'new', 'pro']);
+      return String(title || '')
+        .toLowerCase()
+        .replace(/[^\u0590-\u05FFa-z0-9\s-]/g, ' ')
+        .split(/\s+/)
+        .map(w => w.trim())
+        .filter(w => w.length >= 2 && !stopWords.has(w));
+    }
+
+    function areProductTitlesSimilar(titleA, titleB) {
+      const cleanA = String(titleA || '').trim().toLowerCase();
+      const cleanB = String(titleB || '').trim().toLowerCase();
+      if (!cleanA || !cleanB) return false;
+      if (cleanA === cleanB) return true;
+      if (cleanA.length > 6 && cleanB.length > 6 && (cleanA.includes(cleanB) || cleanB.includes(cleanA))) {
+        return true;
+      }
+
+      // Check alphanumeric model numbers (e.g. NC300, F307790011, RTX4070, S24)
+      const modelsA = cleanA.match(/\b(?=.*[a-z])(?=.*\d)[a-z0-9-]{4,}\b/g) || [];
+      const modelsB = cleanB.match(/\b(?=.*[a-z])(?=.*\d)[a-z0-9-]{4,}\b/g) || [];
+      if (modelsA.length > 0 && modelsB.length > 0) {
+        const setB = new Set(modelsB.map(m => m.replace(/-/g, '')));
+        for (const mA of modelsA) {
+          if (setB.has(mA.replace(/-/g, ''))) return true;
+        }
+      }
+
+      const tokensA = tokenizeTitleForMatch(cleanA);
+      const tokensB = tokenizeTitleForMatch(cleanB);
+      if (tokensA.length === 0 || tokensB.length === 0) return false;
+      const setTokensB = new Set(tokensB);
+      let shared = 0;
+      for (const t of tokensA) {
+        if (setTokensB.has(t)) shared++;
+      }
+      const minLen = Math.min(tokensA.length, tokensB.length);
+      if (minLen >= 2 && shared >= 2 && (shared / minLen) >= 0.5) {
+        return true;
+      }
+      return false;
+    }
+
+    function findMatchingProductFromDifferentStore(title, url, excludeProductId = '') {
+      const newStore = getStoreMeta(url).name;
+      for (const p of state.products) {
+        if (excludeProductId && p.id === excludeProductId) continue;
+        if (areProductTitlesSimilar(title, p.title)) {
+          return p;
+        }
+      }
+      return null;
+    }
+
+    function ensureProductOffersSynced(p) {
+      if (!p) return;
+      if (!Array.isArray(p.storeOffers) || p.storeOffers.length === 0) {
+        const sm = getStoreMeta(p.url);
+        p.storeOffers = [{
+          store: p.store || sm.name,
+          url: p.url,
+          favicon: sm.favicon,
+          currentPrice: Number(p.currentPrice) || 0,
+          initialPrice: Number(p.initialPrice) || Number(p.currentPrice) || 0,
+          lowestPrice: Number(p.lowestPrice) || Number(p.currentPrice) || 0,
+          SelectedVariant: p.SelectedVariant || '',
+          lastChecked: p.lastChecked || 'כעת'
+        }];
+      }
+      if (p.storeOffers.length > 1) {
+        // Keep top-level currentPrice as the cheapest across all stores in the cube!
+        let cheapestOffer = p.storeOffers[0];
+        for (const off of p.storeOffers) {
+          if (Number(off.currentPrice) > 0 && Number(off.currentPrice) < Number(cheapestOffer.currentPrice)) {
+            cheapestOffer = off;
+          }
+        }
+        p.currentPrice = Number(cheapestOffer.currentPrice);
+        if (p.currentPrice < p.lowestPrice || !p.lowestPrice) {
+          p.lowestPrice = p.currentPrice;
+        }
       }
     }
 
@@ -2603,6 +2780,41 @@
       document.getElementById('modalSelectedVariantText').value = data.SelectedVariant || '';
       document.getElementById('modalCategorySelect').value = data.category || 'other';
 
+      // Populate Multi-Store Merge Selector (for adding a new product when other products exist)
+      const mergeSection = document.getElementById('modalMergeSection');
+      const mergeSelect = document.getElementById('modalMergeTargetSelect');
+      const mergeHint = document.getElementById('modalMergeHint');
+      if (mergeSection && mergeSelect) {
+        if (!existingId && state.products.length > 0) {
+          mergeSection.classList.remove('hidden');
+          mergeSelect.innerHTML = `<option value="" class="bg-slate-900">➕ צור כקוביית מוצר חדשה ונפרדת</option>`;
+          const autoMatched = findMatchingProductFromDifferentStore(data.title || '', data.url || '');
+          state.products.forEach(prod => {
+            const opt = document.createElement('option');
+            opt.value = prod.id;
+            opt.className = 'bg-slate-900';
+            opt.textContent = `🔗 אחד עם: ${prod.title} (${prod.store} - ${formatPrice(prod.currentPrice)})`;
+            mergeSelect.appendChild(opt);
+          });
+          if (data.forceMergeId) {
+            mergeSelect.value = data.forceMergeId;
+            if (mergeHint) {
+              mergeHint.textContent = '✨ החנות החדשה תתווסף לתוך קוביית המוצר שבחרת להשוואת מחירים!';
+            }
+          } else if (autoMatched) {
+            mergeSelect.value = autoMatched.id;
+            if (mergeHint) {
+              mergeHint.textContent = `✨ זוהה שזה אותו מוצר כמו "${autoMatched.title}"! הוא יאוחד אוטומטית לאותה קובייה להשוואת מחירים בין החנויות.`;
+            }
+          } else if (mergeHint) {
+            mergeHint.textContent = 'אם המוצר הזה כבר קיים אצלך מחנות אחרת, בחר אותו כאן כדי לאחד אותם לאותה קובייה.';
+          }
+        } else {
+          mergeSection.classList.add('hidden');
+          mergeSelect.value = '';
+        }
+      }
+
       const banner = document.getElementById('modalScanBanner');
       if (data.variations && data.variations.length > 1) {
         banner.className = 'p-3.5 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 text-xs text-emerald-100';
@@ -2990,9 +3202,42 @@
     async function checkSingleProductNow(productId, silent = false) {
       const p = state.products.find(item => item.id === productId);
       if (!p) return;
+      ensureProductOffersSynced(p);
 
       if (!silent) {
-        showToast('בודק מחיר בחנות...', `סורק את ${p.title} ב-${p.store}`, 'info');
+        const storesLabel = (Array.isArray(p.storeOffers) && p.storeOffers.length > 1)
+          ? `${p.storeOffers.length} חנויות (${p.storeOffers.map(o => o.store).join(', ')})`
+          : p.store;
+        showToast('בודק מחיר בחנות...', `סורק את ${p.title} ב-${storesLabel}`, 'info');
+      }
+
+      if (Array.isArray(p.storeOffers) && p.storeOffers.length > 1) {
+        for (const off of p.storeOffers) {
+          try {
+            const scannedOff = await scanProductUrl(off.url);
+            const prevOffPrice = Number(off.currentPrice || p.currentPrice);
+            let nextOffPrice = prevOffPrice;
+            if (off.SelectedVariant && scannedOff.variations && scannedOff.variations.length > 0) {
+              const mv = scannedOff.variations.find(v => v.label === off.SelectedVariant);
+              if (mv && mv.price > 0) nextOffPrice = Number(mv.price);
+            } else if (scannedOff.price && Number(scannedOff.price) > 0) {
+              nextOffPrice = Number(scannedOff.price);
+            }
+            if (nextOffPrice > 0) {
+              off.currentPrice = nextOffPrice;
+              if (!off.lowestPrice || nextOffPrice < off.lowestPrice) off.lowestPrice = nextOffPrice;
+              off.lastChecked = formatTimeNow();
+            }
+          } catch (e) {}
+        }
+        let bestOffer = p.storeOffers[0];
+        for (const off of p.storeOffers) {
+          if (Number(off.currentPrice) > 0 && Number(off.currentPrice) < Number(bestOffer.currentPrice)) {
+            bestOffer = off;
+          }
+        }
+        await applyNewPriceToProduct(p, Number(bestOffer.currentPrice), silent, bestOffer.store, bestOffer.url);
+        return;
       }
 
       const scanned = await scanProductUrl(p.url);
@@ -3040,7 +3285,7 @@
       await applyNewPriceToProduct(p, newPrice, silent);
     }
 
-    async function applyNewPriceToProduct(p, newPrice, silent = false) {
+    async function applyNewPriceToProduct(p, newPrice, silent = false, dropStoreName = '', dropStoreUrl = '') {
       const prevPrice = Number(p.currentPrice);
       const cleanNew = Number(newPrice);
       if (isNaN(cleanNew) || cleanNew <= 0) return;
@@ -3049,6 +3294,11 @@
       p.lastChecked = formatTimeNow();
       p.currentPrice = cleanNew;
       if (cleanNew < p.lowestPrice) p.lowestPrice = cleanNew;
+      if (Array.isArray(p.storeOffers) && p.storeOffers.length === 1) {
+        p.storeOffers[0].currentPrice = cleanNew;
+        if (cleanNew < (p.storeOffers[0].lowestPrice || cleanNew)) p.storeOffers[0].lowestPrice = cleanNew;
+        p.storeOffers[0].lastChecked = p.lastChecked;
+      }
 
       if (!Array.isArray(p.history)) p.history = [];
       p.history.push({ time: nowLabel, price: cleanNew });
@@ -3057,6 +3307,9 @@
       saveState();
       renderAll();
 
+      const activeStore = dropStoreName || p.store;
+      const activeUrl = dropStoreUrl || p.url;
+
       if (cleanNew < prevPrice) {
         const savedAmount = prevPrice - cleanNew;
         const savedPct = Math.round((savedAmount / prevPrice) * 100);
@@ -3064,23 +3317,23 @@
         const tgMsg =
           `🎉 התראת ירידת מחיר!\n\n` +
           `🛍️ מוצר: ${p.title}${varText}\n` +
-          `🏪 חנות: ${p.store}\n` +
+          `🏪 חנות: ${activeStore}\n` +
           `💰 מחיר חדש: ${formatPrice(cleanNew)} (במקום ${formatPrice(prevPrice)})\n` +
           `📉 חיסכון: ${formatPrice(savedAmount)} (${savedPct}%-)\n\n` +
-          `🛒 להזמנה מהירה:\n${p.url}`;
+          `🛒 להזמנה מהירה:\n${activeUrl}`;
 
         await recordAndDispatchAlert({
           id: 'drop_' + Date.now(),
           type: 'drop',
           timestamp: formatTimeNow(),
-          title: `🔥 המחיר ירד! ${p.title}${varText}`,
-          messagePlain: `ירד מ-${formatPrice(prevPrice)} ל-${formatPrice(cleanNew)} (חיסכון של ${formatPrice(savedAmount)}, -${savedPct}%)!`,
+          title: `🔥 המחיר ירד ב-${activeStore}! ${p.title}${varText}`,
+          messagePlain: `ירד מ-${formatPrice(prevPrice)} ל-${formatPrice(cleanNew)} ב-${activeStore} (חיסכון של ${formatPrice(savedAmount)}, -${savedPct}%)!`,
           telegramText: tgMsg,
-          url: p.url,
+          url: activeUrl,
           image: p.image
         });
       } else if (!silent) {
-        showToast('המחיר מעודכן ✅', `המחיר של "${p.title}" הוא ${formatPrice(cleanNew)} (ללא שינוי).`, 'success');
+        showToast('המחיר מעודכן ✅', `המחיר הזול ביותר של "${p.title}" הוא ${formatPrice(cleanNew)} (ללא שינוי).`, 'success');
       }
     }
 
@@ -3175,43 +3428,124 @@
       filterBar.classList.remove('hidden');
       filterBar.classList.add('flex');
 
+      // Normalize all products' storeOffers and dynamically populate the Store Filter dropdown
+      const allStoresSet = new Set();
+      state.products.forEach(p => {
+        ensureProductOffersSynced(p);
+        if (p.store) allStoresSet.add(p.store);
+        if (Array.isArray(p.storeOffers)) {
+          p.storeOffers.forEach(o => { if (o.store) allStoresSet.add(o.store); });
+        }
+      });
+
+      const storeSelectEl = document.getElementById('filterStoreSelect');
+      if (storeSelectEl) {
+        const currentStoreVal = state.ui.storeFilter || 'all';
+        storeSelectEl.innerHTML = `<option value="all" class="bg-slate-900">כל החנויות (${allStoresSet.size})</option>`;
+        Array.from(allStoresSet).sort((a, b) => a.localeCompare(b, 'he')).forEach(stName => {
+          const opt = document.createElement('option');
+          opt.value = stName;
+          opt.className = 'bg-slate-900';
+          opt.textContent = stName;
+          storeSelectEl.appendChild(opt);
+        });
+        storeSelectEl.value = allStoresSet.has(currentStoreVal) ? currentStoreVal : 'all';
+        state.ui.storeFilter = storeSelectEl.value;
+      }
+
+      const catSelectEl = document.getElementById('filterCategorySelect');
+      if (catSelectEl) {
+        catSelectEl.value = state.ui.categoryFilter || 'all';
+      }
+      const sortSelectEl = document.getElementById('sortProductsSelect');
+      if (sortSelectEl) {
+        sortSelectEl.value = state.ui.sortBy || 'newest';
+      }
+
       const q = (state.ui.searchQuery || '').trim().toLowerCase();
       const filtered = state.products.filter(p => {
+        const offers = Array.isArray(p.storeOffers) ? p.storeOffers : [];
         if (state.ui.filter === 'dropped' && !(p.currentPrice < p.initialPrice)) return false;
+        if (state.ui.filter === 'multi_store' && offers.length < 2) return false;
         if (state.ui.filter === 'variants' && (!p.SelectedVariant && (!p.variations || p.variations.length <= 1))) return false;
-        if (q && !(p.title.toLowerCase().includes(q) || p.store.toLowerCase().includes(q) || (p.SelectedVariant || '').toLowerCase().includes(q))) {
-          return false;
+
+        if (state.ui.storeFilter && state.ui.storeFilter !== 'all') {
+          const hasStore = p.store === state.ui.storeFilter || offers.some(o => o.store === state.ui.storeFilter);
+          if (!hasStore) return false;
+        }
+
+        if (state.ui.categoryFilter && state.ui.categoryFilter !== 'all') {
+          if ((p.category || 'other') !== state.ui.categoryFilter) return false;
+        }
+
+        if (q) {
+          const catLabel = ((CATEGORY_STYLES[p.category] && CATEGORY_STYLES[p.category].label) || '').toLowerCase();
+          const inTitle = (p.title || '').toLowerCase().includes(q);
+          const inStore = (p.store || '').toLowerCase().includes(q) || offers.some(o => (o.store || '').toLowerCase().includes(q));
+          const inVar = (p.SelectedVariant || '').toLowerCase().includes(q);
+          const inCat = catLabel.includes(q);
+          if (!(inTitle || inStore || inVar || inCat)) return false;
         }
         return true;
+      });
+
+      // Apply Sorting
+      const sortBy = state.ui.sortBy || 'newest';
+      filtered.sort((a, b) => {
+        if (sortBy === 'price_asc') return Number(a.currentPrice || 0) - Number(b.currentPrice || 0);
+        if (sortBy === 'price_desc') return Number(b.currentPrice || 0) - Number(a.currentPrice || 0);
+        if (sortBy === 'savings_desc') {
+          const savA = Math.max(0, Number(a.initialPrice || 0) - Number(a.currentPrice || 0));
+          const savB = Math.max(0, Number(b.initialPrice || 0) - Number(b.currentPrice || 0));
+          return savB - savA;
+        }
+        if (sortBy === 'store_az') return String(a.store || '').localeCompare(String(b.store || ''), 'he');
+        if (sortBy === 'category') {
+          const cA = (CATEGORY_STYLES[a.category] && CATEGORY_STYLES[a.category].label) || 'כללי';
+          const cB = (CATEGORY_STYLES[b.category] && CATEGORY_STYLES[b.category].label) || 'כללי';
+          return cA.localeCompare(cB, 'he');
+        }
+        return 0;
       });
 
       grid.innerHTML = '';
 
       if (filtered.length === 0) {
         grid.innerHTML = `
-          <div class="col-span-full liquid-glass-soft rounded-3xl p-8 text-center text-slate-300 text-sm">
-            לא נמצאו מוצרים התואמים לסינון שבחרת.
+          <div class="col-span-full liquid-glass-soft rounded-3xl p-8 text-center text-slate-300 text-sm space-y-2">
+            <p class="text-2xl">🔍</p>
+            <p class="font-bold text-white">לא נמצאו מוצרים התואמים לחיפוש או לסינון שבחרת.</p>
+            <p class="text-xs text-slate-400">נסה לבחור "הכל" או לשנות את החנות / התחום בתיבות הסינון למעלה.</p>
           </div>
         `;
         return;
       }
 
       filtered.forEach(p => {
+        ensureProductOffersSynced(p);
+        const offers = Array.isArray(p.storeOffers) ? p.storeOffers.slice().sort((a, b) => Number(a.currentPrice || 0) - Number(b.currentPrice || 0)) : [];
+        const isMultiStore = offers.length > 1;
+        const bestOffer = offers.length > 0 ? offers[0] : { store: p.store, url: p.url, currentPrice: p.currentPrice };
+        const highestOfferPrice = offers.length > 1 ? Math.max(...offers.map(o => Number(o.currentPrice || 0))) : p.initialPrice;
+
         const diff = p.currentPrice - p.initialPrice;
         const pct = p.initialPrice > 0 ? Math.round((Math.abs(diff) / p.initialPrice) * 100) : 0;
         const isDropped = diff < 0;
-        const storeMeta = getStoreMeta(p.url);
+        const storeMeta = getStoreMeta(bestOffer.url || p.url);
         const catStyle = CATEGORY_STYLES[p.category] || CATEGORY_STYLES.other;
         const prodImg = p.image || getFallbackProductImage(p.url, p.category);
 
         const card = document.createElement('div');
-        card.className = `liquid-glass card-hover rounded-3xl p-5 flex flex-col justify-between gap-4 relative overflow-hidden ${
-          isDropped ? 'border-emerald-400/60 shadow-xl shadow-emerald-950/40' : ''
+        card.id = `prod_card_${p.id}`;
+        card.className = `liquid-glass card-hover rounded-3xl p-5 flex flex-col justify-between gap-4 relative overflow-hidden transition-all duration-300 ${
+          isDropped ? 'border-emerald-400/60 shadow-xl shadow-emerald-950/40' : (isMultiStore ? 'border-cyan-400/45 shadow-xl shadow-cyan-950/30' : '')
         }`;
 
         const statusBadge = isDropped
           ? `<span class="px-3 py-1 rounded-full text-xs font-black bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md shadow-emerald-500/30">🔥 ירד ב-${formatPrice(Math.abs(diff))} (-${pct}%)</span>`
-          : `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-white/10 text-slate-200 border border-white/15">מחיר יציב</span>`;
+          : (isMultiStore && highestOfferPrice > bestOffer.currentPrice
+              ? `<span class="px-3 py-1 rounded-full text-[11px] font-black bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md">🏆 פער של ${formatPrice(highestOfferPrice - bestOffer.currentPrice)} בין החנויות!</span>`
+              : `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-white/10 text-slate-200 border border-white/15">מחיר יציב</span>`);
 
         const freeShippingPill = p.freeShippingEligible
           ? `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-cyan-500/20 border border-cyan-400/40 text-cyan-200 text-xs font-black shadow-sm shadow-cyan-500/20">
@@ -3226,16 +3560,54 @@
              </button>`
           : '';
 
+        const multiStoreComparisonHtml = isMultiStore ? `
+          <div class="p-3 rounded-2xl bg-slate-950/65 border border-cyan-400/30 space-y-2">
+            <div class="flex items-center justify-between text-[11px]">
+              <span class="font-extrabold text-cyan-200 flex items-center gap-1">
+                <span>🏪</span>
+                <span>השוואת מחירים בין ${offers.length} חנויות באותה קובייה:</span>
+              </span>
+              <button type="button" data-action="add_store" data-id="${p.id}" class="prod-action-btn text-[11px] font-extrabold text-pink-300 hover:text-pink-200 underline">
+                + הוסף עוד חנות
+              </button>
+            </div>
+            <div class="space-y-1.5">
+              ${offers.map((off, idx) => {
+                const isCheapest = idx === 0;
+                const offMeta = getStoreMeta(off.url);
+                return `
+                  <div class="flex items-center justify-between gap-2 px-3 py-2 rounded-xl ${isCheapest ? 'bg-emerald-500/20 border border-emerald-400/40' : 'bg-white/5 border border-white/10'}">
+                    <div class="flex items-center gap-2 min-w-0">
+                      <img src="${escapeHtml(off.favicon || offMeta.favicon)}" alt="" class="w-4 h-4 rounded-sm object-contain shrink-0" onerror="this.style.display='none'" />
+                      <span class="text-xs font-extrabold ${isCheapest ? 'text-emerald-200' : 'text-slate-200'} truncate">${escapeHtml(off.store)}</span>
+                      ${isCheapest ? `<span class="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950 shrink-0">הכי זול 🏆</span>` : ''}
+                    </div>
+                    <div class="flex items-center gap-2.5 shrink-0">
+                      <span class="text-xs sm:text-sm font-black ${isCheapest ? 'text-emerald-300' : 'text-white'}">${formatPrice(off.currentPrice)}</span>
+                      <a href="${escapeHtml(off.url)}" target="_blank" rel="noopener noreferrer" class="text-[11px] font-extrabold px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-cyan-200 transition">
+                        לחנות ↗
+                      </a>
+                      <button type="button" data-action="remove_offer" data-id="${p.id}" data-offer-url="${escapeHtml(off.url)}" title="הסר חנות זו מהקובייה" class="prod-action-btn text-[11px] text-slate-400 hover:text-rose-300 px-1">
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        ` : '';
+
         const canvasId = `chart_${p.id}`;
 
         card.innerHTML = `
           <div class="space-y-4">
             <!-- Top Store Bar & Status Badge -->
             <div class="flex items-center justify-between gap-2 flex-wrap">
-              <div class="flex items-center gap-2">
+              <div class="flex items-center gap-1.5 flex-wrap">
                 <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/10 border border-white/15">
                   <img src="${escapeHtml(storeMeta.favicon)}" alt="" class="w-4 h-4 rounded-sm object-contain max-w-full h-auto" onerror="this.style.display='none'" />
-                  <span class="text-xs font-extrabold text-white">${escapeHtml(p.store)}</span>
+                  <span class="text-xs font-extrabold text-white">${escapeHtml(isMultiStore ? `${offers.length} חנויות (${bestOffer.store} הכי זול)` : p.store)}</span>
                 </div>
                 <span class="text-[11px] font-bold px-2.5 py-1 rounded-xl bg-gradient-to-r ${catStyle.gradient} border">
                   ${catStyle.icon} ${catStyle.label}
@@ -3253,16 +3625,19 @@
                 <h3 class="text-base sm:text-lg font-black text-white leading-snug line-clamp-2">${escapeHtml(p.title)}</h3>
                 <div class="flex flex-wrap items-center gap-1.5">
                   ${freeShippingPill}
-              ${variantPill}
+                  ${variantPill}
                   ${p.targetPrice ? `<span class="text-[11px] font-bold px-2.5 py-1 rounded-xl bg-amber-400/20 text-amber-200 border border-amber-300/30">יעד: ${formatPrice(p.targetPrice)}</span>` : ''}
+                  ${!isMultiStore ? `<button type="button" data-action="add_store" data-id="${p.id}" class="prod-action-btn text-[11px] font-bold px-2.5 py-1 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-200 border border-cyan-400/30 transition">+ השווה חנות נוספת</button>` : ''}
                 </div>
               </div>
             </div>
 
+            ${multiStoreComparisonHtml}
+
             <!-- Price Metrics Glass Boxes -->
             <div class="grid grid-cols-3 gap-2.5">
               <div class="p-3 rounded-2xl liquid-glass-soft text-center">
-                <p class="text-[11px] text-slate-300 font-medium">מחיר כעת</p>
+                <p class="text-[11px] text-slate-300 font-medium">${isMultiStore ? 'הכי זול כעת' : 'מחיר כעת'}</p>
                 <p class="text-lg sm:text-xl font-black ${isDropped ? 'text-emerald-300' : 'text-white'} mt-0.5">${formatPrice(p.currentPrice)}</p>
               </div>
               <div class="p-3 rounded-2xl liquid-glass-soft text-center">
@@ -3270,7 +3645,7 @@
                 <p class="text-sm sm:text-base font-extrabold text-slate-200 mt-1">${formatPrice(p.initialPrice)}</p>
               </div>
               <div class="p-3 rounded-2xl liquid-glass-soft text-center">
-                <p class="text-[11px] text-slate-300 font-medium">הכי נמוך</p>
+                <p class="text-[11px] text-slate-300 font-medium">שיא השפל</p>
                 <p class="text-sm sm:text-base font-extrabold text-cyan-300 mt-1">${formatPrice(p.lowestPrice || p.currentPrice)}</p>
               </div>
             </div>
@@ -3285,8 +3660,8 @@
           <div class="pt-3 border-t border-white/15 space-y-2.5">
             <div class="flex items-center justify-between text-[11px] text-slate-300">
               <span>נבדק: ${escapeHtml(p.lastChecked || 'כעת')}</span>
-              <a href="${escapeHtml(p.url)}" target="_blank" rel="noopener noreferrer" class="text-cyan-300 hover:text-cyan-200 font-extrabold underline flex items-center gap-1">
-                <span>לדף המוצר בחנות</span>
+              <a href="${escapeHtml(bestOffer.url || p.url)}" target="_blank" rel="noopener noreferrer" class="text-cyan-300 hover:text-cyan-200 font-extrabold underline flex items-center gap-1">
+                <span>${isMultiStore ? `למחיר הזול ב-${escapeHtml(bestOffer.store)}` : 'לדף המוצר בחנות'}</span>
                 <span>↗</span>
               </a>
             </div>
@@ -3473,10 +3848,33 @@
         e.preventDefault();
         const rawUrl = urlInput.value.trim();
         if (!rawUrl) return;
+
+        // 1. Check immediately if this exact product URL from the same store is already tracked!
+        const duplicateHit = findExistingProductBySameUrl(rawUrl);
+        if (duplicateHit) {
+          playNotificationSound('daily');
+          showToast(
+            '⚠️ המוצר כבר קיים במעקב מהחנות הזו!',
+            `הקישור ל-"${duplicateHit.product.title}" (${duplicateHit.storeName}) כבר נמצא ברשימה שלך ולא נוסף שוב.`,
+            'warning'
+          );
+          const existingCard = document.getElementById(`prod_card_${duplicateHit.product.id}`);
+          if (existingCard) {
+            existingCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            existingCard.classList.add('ring-4', 'ring-amber-400');
+            setTimeout(() => existingCard.classList.remove('ring-4', 'ring-amber-400'), 2800);
+          }
+          return;
+        }
+
         const submitBtn = document.getElementById('scanUrlSubmitBtn');
         submitBtn.disabled = true;
         try {
           const scannedData = await scanProductUrl(rawUrl);
+          if (state.ui.pendingForceMergeId) {
+            scannedData.forceMergeId = state.ui.pendingForceMergeId;
+            state.ui.pendingForceMergeId = '';
+          }
           openProductModalWithData(scannedData, '');
         } finally {
           submitBtn.disabled = false;
@@ -3551,12 +3949,30 @@
           return;
         }
 
+        // Prevent duplicate URL from the same store when saving
+        const dupSaveHit = findExistingProductBySameUrl(url, existingId);
+        if (dupSaveHit) {
+          showToast(
+            '⚠️ המוצר כבר קיים מאותה חנות!',
+            `הקישור הזה כבר נמצא תחת "${dupSaveHit.product.title}" (${dupSaveHit.storeName}) ולכן לא שוכפל.`,
+            'warning'
+          );
+          return;
+        }
+
         const nowTime = new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+        const mergeSelectEl = document.getElementById('modalMergeTargetSelect');
+        const chosenMergeId = (!existingId && mergeSelectEl && mergeSelectEl.value) ? mergeSelectEl.value : '';
+        const autoMergeTarget = (!existingId && !chosenMergeId) ? findMatchingProductFromDifferentStore(title, url) : null;
+        const targetMergeProduct = chosenMergeId
+          ? state.products.find(item => item.id === chosenMergeId)
+          : autoMergeTarget;
 
         if (existingId) {
           const idx = state.products.findIndex(item => item.id === existingId);
           if (idx !== -1) {
             const p = state.products[idx];
+            ensureProductOffersSynced(p);
             p.title = title;
             p.url = url;
             p.store = storeMeta.name;
@@ -3571,8 +3987,48 @@
             p.variations = state.ui.pendingVariations.slice();
             p.lastChecked = formatTimeNow();
             p.history.push({ time: nowTime, price });
+            if (Array.isArray(p.storeOffers) && p.storeOffers.length > 0) {
+              const matchOff = p.storeOffers.find(o => normalizeUrlForComparison(o.url) === normalizeUrlForComparison(url)) || p.storeOffers[0];
+              matchOff.store = storeMeta.name;
+              matchOff.url = url;
+              matchOff.favicon = storeMeta.favicon;
+              matchOff.currentPrice = price;
+              if (price < (matchOff.lowestPrice || price)) matchOff.lowestPrice = price;
+              matchOff.SelectedVariant = selectedVariant;
+              matchOff.lastChecked = p.lastChecked;
+            }
+            ensureProductOffersSynced(p);
           }
           showToast('המוצר עודכן! ✨', `${title} עודכן ברשימת המעקב שלך.`, 'success');
+        } else if (targetMergeProduct) {
+          // Merge same product from another store into the existing product cube!
+          ensureProductOffersSynced(targetMergeProduct);
+          const newOffer = {
+            store: storeMeta.name,
+            url: url,
+            favicon: storeMeta.favicon,
+            currentPrice: price,
+            initialPrice: price,
+            lowestPrice: price,
+            SelectedVariant: selectedVariant,
+            lastChecked: formatTimeNow()
+          };
+          targetMergeProduct.storeOffers.push(newOffer);
+          if (!targetMergeProduct.image || Object.values(FALLBACK_IMAGES).includes(targetMergeProduct.image)) {
+            if (imgUrl && !Object.values(FALLBACK_IMAGES).includes(imgUrl)) {
+              targetMergeProduct.image = imgUrl;
+            }
+          }
+          ensureProductOffersSynced(targetMergeProduct);
+          targetMergeProduct.lastChecked = formatTimeNow();
+          targetMergeProduct.history.push({ time: `${nowTime} (${storeMeta.name})`, price: targetMergeProduct.currentPrice });
+          urlInput.value = '';
+          clearUrlBtn.classList.add('hidden');
+          showToast(
+            '🔗 אוחד לקובייה משותפת!',
+            `המוצר מ-${storeMeta.name} (${formatPrice(price)}) אוחד עם "${targetMergeProduct.title}" להשוואת מחירים באותה קובייה!`,
+            'success'
+          );
         } else {
           const newProd = {
             id: 'prod_' + Date.now(),
@@ -3590,7 +4046,17 @@
             variations: state.ui.pendingVariations.slice(),
             category,
             lastChecked: formatTimeNow(),
-            history: [{ time: 'הוספה', price: price }]
+            history: [{ time: 'הוספה', price: price }],
+            storeOffers: [{
+              store: storeMeta.name,
+              url,
+              favicon: storeMeta.favicon,
+              currentPrice: price,
+              initialPrice: price,
+              lowestPrice: price,
+              SelectedVariant: selectedVariant,
+              lastChecked: formatTimeNow()
+            }]
           };
           state.products.unshift(newProd);
           urlInput.value = '';
@@ -3614,6 +4080,27 @@
 
         if (action === 'check') {
           checkSingleProductNow(id, false);
+        } else if (action === 'add_store') {
+          state.ui.pendingForceMergeId = prod.id;
+          urlInput.value = '';
+          urlInput.placeholder = `הדבק כאן קישור ל-"${prod.title}" מחנות אחרת לאיחוד...`;
+          urlInput.focus();
+          urlInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          urlInput.classList.add('ring-2', 'ring-cyan-400');
+          setTimeout(() => urlInput.classList.remove('ring-2', 'ring-cyan-400'), 3000);
+          showToast('🔗 הדבק קישור מהחנות השנייה למעלה', `הקישור הבא שתסרוק יאוחד אוטומטית לתוך הקובייה של "${prod.title}"!`, 'info');
+        } else if (action === 'remove_offer') {
+          const offerUrl = btn.getAttribute('data-offer-url');
+          if (Array.isArray(prod.storeOffers) && prod.storeOffers.length > 1) {
+            prod.storeOffers = prod.storeOffers.filter(o => o.url !== offerUrl);
+            const firstOff = prod.storeOffers[0];
+            prod.store = firstOff.store;
+            prod.url = firstOff.url;
+            ensureProductOffersSynced(prod);
+            saveState(false, true);
+            renderAll();
+            showToast('החנות הוסרה מהקובייה', 'רשימת ההשוואה עודכנה.', 'info');
+          }
         } else if (action === 'simulate') {
           document.getElementById('simulateProductId').value = id;
           document.getElementById('simulateProductName').textContent = `${prod.title}${prod.SelectedVariant ? ' (' + prod.SelectedVariant + ')' : ''} — כעת: ${formatPrice(prod.currentPrice)}`;
@@ -3696,6 +4183,30 @@
         state.ui.searchQuery = e.target.value;
         renderProductsGrid();
       });
+
+      const storeFilterEl = document.getElementById('filterStoreSelect');
+      if (storeFilterEl) {
+        storeFilterEl.addEventListener('change', (e) => {
+          state.ui.storeFilter = e.target.value;
+          renderProductsGrid();
+        });
+      }
+
+      const categoryFilterEl = document.getElementById('filterCategorySelect');
+      if (categoryFilterEl) {
+        categoryFilterEl.addEventListener('change', (e) => {
+          state.ui.categoryFilter = e.target.value;
+          renderProductsGrid();
+        });
+      }
+
+      const sortSelectEl = document.getElementById('sortProductsSelect');
+      if (sortSelectEl) {
+        sortSelectEl.addEventListener('change', (e) => {
+          state.ui.sortBy = e.target.value;
+          renderProductsGrid();
+        });
+      }
 
       document.getElementById('checkAllNowBtn').addEventListener('click', checkAllProductsNow);
       document.getElementById('sendDailyReportQuickBtn').addEventListener('click', () => generateAndSendDailyReport(true));

@@ -351,7 +351,38 @@ def process_profile(page, data: dict, chat_id: str, now_il: datetime, fcm_token:
 
     for prod in products:
         raw_url = prod.get("url", "")
-        new_price = check_product_live(page, prod)
+        store_offers = prod.get("storeOffers")
+        if isinstance(store_offers, list) and len(store_offers) > 1:
+            best_offer_price = None
+            best_offer_store = prod.get("store", "")
+            best_offer_url = raw_url
+            for off in store_offers:
+                if not isinstance(off, dict) or not off.get("url"):
+                    continue
+                off_price = check_product_live(page, {
+                    "url": off.get("url"),
+                    "SelectedVariant": off.get("SelectedVariant") or prod.get("SelectedVariant", "")
+                })
+                if off_price and off_price > 0:
+                    off["currentPrice"] = off_price
+                    off["lowestPrice"] = min(float(off.get("lowestPrice") or off_price), off_price)
+                    off["lastChecked"] = f"{time_str} {date_str}"
+                curr_off_p = float(off.get("currentPrice") or 0)
+                if curr_off_p > 0 and (best_offer_price is None or curr_off_p < best_offer_price):
+                    best_offer_price = curr_off_p
+                    best_offer_store = off.get("store") or best_offer_store
+                    best_offer_url = off.get("url") or best_offer_url
+            new_price = best_offer_price
+            if best_offer_store:
+                prod["store"] = best_offer_store
+            if best_offer_url:
+                prod["url"] = best_offer_url
+        else:
+            new_price = check_product_live(page, prod)
+            if isinstance(store_offers, list) and len(store_offers) == 1 and new_price and new_price > 0:
+                store_offers[0]["currentPrice"] = new_price
+                store_offers[0]["lowestPrice"] = min(float(store_offers[0].get("lowestPrice") or new_price), new_price)
+                store_offers[0]["lastChecked"] = f"{time_str} {date_str}"
 
         # Check Amazon Free Shipping to Israel change:
         if "amazon." in raw_url.lower():
