@@ -72,8 +72,14 @@ def send_fcm_notification(fcm_token: str, title: str, body: str, url: str = ""):
 def check_amazon_free_shipping(html: str) -> bool:
     if not html:
         return False
-    clean = re.sub(r"[\u200E\u200F\u202A-\u202E]", "", html)
-    pattern = r"(?:FREE Shipping|משלוח חינם|זכאי למשלוח חינם).*(?:to Israel|לישראל|מעל\s*\$?49|49\$)|qualif(?:y|ies) for FREE Shipping to Israel|eligible for FREE Shipping to Israel"
+    clean = re.sub(r"[\u200E\u200F\u202A-\u202E\u00A0]", " ", html)
+    pattern = (
+        r'data-csa-c-delivery-price=["\'](?:חינם|FREE)["\']|'
+        r'data-csa-c-delivery-benefit-program-id=["\']efs["\']|'
+        r'data-csa-c-mir-sub-type=["\']CONDITIONALLY_FREE["\']|'
+        r'(?:FREE\s+(?:International\s+)?(?:Shipping|Delivery)|משלוח\s+חינם|זכאי\s+למשלוח\s+חינם)[\s\S]{0,160}?(?:to\s+Israel|אל\s+ישראל|לישראל|מעל\s*\$?49|49\$|על\s+הזמנות\s+שעומדות\s+בדרישות|ILS)|'
+        r'qualif(?:y|ies)\s+for\s+FREE\s+(?:Shipping|Delivery)|eligible\s+for\s+FREE\s+(?:Shipping|Delivery)'
+    )
     return bool(re.search(pattern, clean, re.I))
 
 

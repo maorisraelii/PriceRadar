@@ -2,9 +2,9 @@
 <html lang="he" dir="rtl">
 <head>
   <script>
-    window.__APP_VERSION__ = "3.3.2";
-    window.__BUILD_TIMESTAMP__ = 1762155200;
-    window.__OTA_RELEASE_NOTES__ = "תיקון חתימת ה-APK הקבועה (Persistent Signing Keystore) כך שמעתה כל עדכון APK יותקן ישירות מעל הקיים בלי למחוק את האפליקציה, פלוס תמיכה מלאה בקישורי השיתוף המקוצרים של אמזון (a.co, amzn.to).";
+    window.__APP_VERSION__ = "3.3.3";
+    window.__BUILD_TIMESTAMP__ = 1762156000;
+    window.__OTA_RELEASE_NOTES__ = "תיקון מדויק לזיהוי משלוח חינם לישראל מאמזון (זיהוי תגיות המשלוח הרשמיות של אמזון מישראל data-csa-c-delivery-price='חינם' / CONDITIONALLY_FREE ונוסח העברית והאנגלית של אמזון ישראל).";
 
     // =========================================================================
     // OVER-THE-AIR (OTA) LIVE UPDATE ENGINE FROM GITHUB
@@ -2003,8 +2003,17 @@
 
     function checkAmazonFreeShippingToIsrael(rawText) {
       if (!rawText) return false;
-      const clean = String(rawText).replace(/[\u200E\u200F\u202A-\u202E]/g, '');
-      return /(?:FREE\s+(?:International\s+)?(?:Shipping|Delivery)|משלוח\s+חינם|זכאי\s+למשלוח\s+חינם)[\s\S]{0,90}?(?:to\s+Israel|לישראל|מעל\s*\$?49|49\$|\$49\s+of\s+eligible)|(?:to\s+Israel|לישראל)[\s\S]{0,60}?(?:FREE\s+(?:Shipping|Delivery)|משלוח\s+חינם)|qualif(?:y|ies)\s+for\s+FREE\s+(?:Shipping|Delivery)|eligible\s+for\s+FREE\s+(?:Shipping|Delivery)|FREE\s+delivery[\s\S]{0,40}?on\s+\$49/i.test(clean);
+      const clean = String(rawText)
+        .replace(/[\u200E\u200F\u202A-\u202E\u00A0]/g, ' ')
+        .replace(/\s+/g, ' ');
+      return (
+        /data-csa-c-delivery-price=["'](?:חינם|FREE)["']/i.test(clean) ||
+        /data-csa-c-delivery-benefit-program-id=["']efs["']/i.test(clean) ||
+        /data-csa-c-mir-sub-type=["']CONDITIONALLY_FREE["']/i.test(clean) ||
+        /(?:FREE\s+(?:International\s+)?(?:Shipping|Delivery)|משלוח\s+חינם|זכאי\s+למשלוח\s+חינם)[\s\S]{0,160}?(?:to\s+Israel|אל\s+ישראל|לישראל|מעל\s*\$?49|49\$|\$49\s+of\s+eligible|על\s+הזמנות\s+שעומדות\s+בדרישות|ILS)/i.test(clean) ||
+        /(?:to\s+Israel|אל\s+ישראל|לישראל)[\s\S]{0,120}?(?:FREE\s+(?:Shipping|Delivery)|משלוח\s+חינם|על\s+הזמנות\s+שעומדות\s+בדרישות)/i.test(clean) ||
+        /qualif(?:y|ies)\s+for\s+FREE\s+(?:Shipping|Delivery)|eligible\s+for\s+FREE\s+(?:Shipping|Delivery)|FREE\s+delivery[\s\S]{0,80}?on\s+\$49/i.test(clean)
+      );
     }
 
     function extractKspUin(rawUrl) {
@@ -2977,9 +2986,29 @@
 
       if (updateStep) updateStep('שולף מחיר, תמונה ומשלוח חינם מ-Amazon...');
       try {
+        // Also kick off a fast direct/native check from the user's Israeli IP specifically to detect Israel Free Shipping eligibility!
+        const israelIpShipCheck = Promise.any([
+          tryCapacitorNativeHttpGet(cleanedUrl),
+          tryAndroidNativeWebViewScrape(cleanedUrl, 3800),
+          (async () => {
+            const r = await fetchWithTimeout(cleanedUrl, {
+              headers: { 'Accept-Language': 'he-IL,he;q=0.9,en-US;q=0.8' }
+            }, 3500);
+            if (!r || !r.ok) throw new Error('direct amz non-200');
+            return { content: await r.text(), format: 'html' };
+          })()
+        ]).then(res => {
+          if (res && res.content && checkAmazonFreeShippingToIsrael(res.content)) {
+            bestPartial.freeShippingEligible = true;
+            return true;
+          }
+          return false;
+        }).catch(() => false);
+
         const amzTasks = [
-          runAmzFetch(fetchJinaMarkdownSimple(cleanedUrl, 4500)),
           runAmzFetch(tryCapacitorNativeHttpGet(cleanedUrl)),
+          runAmzFetch(tryAndroidNativeWebViewScrape(cleanedUrl, 4000)),
+          runAmzFetch(fetchJinaMarkdownSimple(cleanedUrl, 4500)),
           runAmzFetch(fetchViaCorsProxy('corsproxy', cleanedUrl, 4200)),
           runAmzFetch(fetchViaCorsProxy('allorigins_get', cleanedUrl, 4200))
         ];
@@ -2991,7 +3020,20 @@
           Promise.any(amzTasks),
           new Promise((_, rej) => setTimeout(() => rej(new Error('Amazon timeout')), 4800))
         ]);
-        if (winner && winner.price) return winner;
+        if (winner && winner.price) {
+          if (!winner.freeShippingEligible && !bestPartial.freeShippingEligible) {
+            const isIlFree = await Promise.race([
+              israelIpShipCheck,
+              new Promise(r => setTimeout(() => r(false), 1200))
+            ]);
+            if (isIlFree || bestPartial.freeShippingEligible) {
+              winner.freeShippingEligible = true;
+            }
+          } else {
+            winner.freeShippingEligible = true;
+          }
+          return winner;
+        }
       } catch (e) {}
 
       return bestPartial;

@@ -956,7 +956,7 @@ public class MainActivity extends BridgeActivity {
                                     "  var metas = d.querySelectorAll('meta[property], meta[name], [itemprop=\\\"price\\\"]');" +
                                     "  for (var i=0; i<Math.min(metas.length, 40); i++) { out += metas[i].outerHTML; }" +
                                     "  out += '</head><body>';" +
-                                    "  var pNodes = d.querySelectorAll('#productTitle, #title, #landingImage, .a-price, #corePrice_feature_div, #priceblock_ourprice, #priceblock_dealprice, [data-price-type], .special-price, .price-box, .product-price-current, .page-title, h1, [data-product_variations], script[type=\\\"application/ld+json\\\"]');" +
+                                    "  var pNodes = d.querySelectorAll('#productTitle, #title, #landingImage, .a-price, #corePrice_feature_div, #priceblock_ourprice, #priceblock_dealprice, #deliveryBlockMessage, #mir-layout-DELIVERY_BLOCK, #deliveryBlockContainerMobile, [data-csa-c-delivery-price], [data-price-type], .special-price, .price-box, .product-price-current, .page-title, h1, [data-product_variations], script[type=\\\"application/ld+json\\\"]');" +
                                     "  for (var j=0; j<Math.min(pNodes.length, 60); j++) { out += pNodes[j].outerHTML; }" +
                                     "  var bodyText = (d.body && d.body.innerText) ? d.body.innerText.substring(0, 90000) : '';" +
                                     "  out += '<div id=\\\"__pr_body_text__\\\">' + bodyText.replace(/</g,'&lt;') + '</div></body></html>';" +
