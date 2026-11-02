@@ -2,9 +2,9 @@
 <html lang="he" dir="rtl">
 <head>
   <script>
-    window.__APP_VERSION__ = "3.3.3";
-    window.__BUILD_TIMESTAMP__ = 1762156000;
-    window.__OTA_RELEASE_NOTES__ = "תיקון מדויק לזיהוי משלוח חינם לישראל מאמזון (זיהוי תגיות המשלוח הרשמיות של אמזון מישראל data-csa-c-delivery-price='חינם' / CONDITIONALLY_FREE ונוסח העברית והאנגלית של אמזון ישראל).";
+    window.__APP_VERSION__ = "3.4.0";
+    window.__BUILD_TIMESTAMP__ = 1762165000;
+    window.__OTA_RELEASE_NOTES__ = "שדרוג מסיבי לממשק המשתמש (ניקוי עומס, כותרת מרווחת וכרטיסי מוצר נקיים), זיהוי אוטומטי של קישורים בלוח ההעתקה (Clipboard), תיקון מלא לקליטת קישורים משותפים (Share), ותיקון זיהוי מחירים ב-MyRabbit (75 ₪ במקום 250 ₪) ובטרקלין חשמל (מחיר רגיל 999 ₪ ומחיר אילת 846 ₪).";
 
     // =========================================================================
     // OVER-THE-AIR (OTA) LIVE UPDATE ENGINE FROM GITHUB
@@ -293,62 +293,35 @@
   <!-- Toast Container -->
   <div id="toastContainer" class="fixed top-4 left-4 right-4 sm:left-auto sm:right-6 sm:w-96 z-50 flex flex-col gap-2.5 pointer-events-none"></div>
 
-  <!-- Android Style Top App Bar (100% Mobile Responsive) -->
-  <header class="sticky top-0 z-30 liquid-glass border-b border-white/15 px-3 py-2 sm:px-6 sm:py-3 w-full overflow-x-hidden">
-    <div class="max-w-5xl mx-auto flex items-center justify-between gap-2">
-      <!-- Logo & Title Section -->
-      <div class="flex items-center gap-2 min-w-0">
-        <div class="relative w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl overflow-hidden shadow-lg shadow-pink-500/30 border border-white/30 shrink-0 bg-indigo-950">
+  <!-- Android Style Top App Bar (Clean, Spacious & Uncluttered) -->
+  <header class="sticky top-0 z-30 liquid-glass border-b border-white/15 px-4 py-2.5 sm:px-6 sm:py-3.5 w-full">
+    <div class="max-w-5xl mx-auto flex items-center justify-between gap-3">
+      <!-- Logo & Full Un-truncated App Name -->
+      <div class="flex items-center gap-3 shrink-0">
+        <div class="relative w-10 h-10 sm:w-11 sm:h-11 rounded-2xl overflow-hidden shadow-lg shadow-pink-500/30 border border-white/30 shrink-0 bg-indigo-950">
           <img src="icon-192.png" onerror="this.onerror=null;this.src=FALLBACK_IMAGES.hero;" alt="PriceRadar Icon" class="w-full h-full object-cover max-w-full h-auto" />
         </div>
-        <div class="min-w-0">
-          <div class="flex items-center gap-1.5">
-            <h1 class="text-base sm:text-xl font-black tracking-tight bg-gradient-to-r from-white via-pink-200 to-cyan-200 bg-clip-text text-transparent truncate">
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-xl sm:text-2xl font-black tracking-tight bg-gradient-to-r from-white via-pink-100 to-cyan-200 bg-clip-text text-transparent whitespace-nowrap">
               PriceRadar
             </h1>
-            <span class="text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 flex items-center gap-1 shrink-0">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 pulse-dot"></span>
-              פעיל
-            </span>
-            <span id="appVersionHeaderBadge" class="text-[10px] sm:text-[11px] font-mono font-extrabold px-2 py-0.5 rounded-full bg-pink-500/20 text-pink-200 border border-pink-400/30 shrink-0">
-              v2.8.0
-            </span>
-            <span id="cloudSyncBadge" class="hidden md:inline-flex text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-500/25 text-purple-200 border border-purple-400/30 items-center gap-1 shrink-0">
-              ☁️ ענן 24/7
-            </span>
+            <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot shrink-0" title="מעקב מחירים פעיל"></span>
           </div>
-          <p class="hidden sm:block text-[11px] text-slate-300/90 truncate">מעקב מחירים אוטומטי והתראות חכמות</p>
+          <p class="text-[11px] text-slate-300/85 font-medium">מעקב מחירים חכם 24/7</p>
         </div>
       </div>
 
-      <!-- Action Buttons (Fits perfectly on mobile) -->
-      <div class="flex items-center gap-1.5 sm:gap-2 text-xs shrink-0">
-        <div class="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-full liquid-glass-soft">
-          <span>⏱️</span>
-          <span class="text-slate-300">בדיקה הבאה:</span>
-          <span id="nextCheckTimer" class="font-mono font-bold text-cyan-300">--:--</span>
-        </div>
-
-        <div class="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full liquid-glass-soft">
-          <span>🔔</span>
-          <span class="text-slate-300">עדכון:</span>
-          <span id="headerDailyTime" class="font-mono font-bold text-amber-300">09:00</span>
-        </div>
-
-        <button id="openOnboardingAgainBtn" type="button" title="פתח מדריך פתיחה והגדרות" class="px-2 py-1.5 rounded-xl liquid-glass-soft hover:bg-white/15 text-pink-200 text-xs font-bold transition flex items-center gap-1">
-          <span>✨</span>
-          <span class="hidden sm:inline">הגדרה</span>
-        </button>
-
-        <button id="checkAllNowBtn" type="button" class="px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl btn-gradient-primary text-white font-bold text-xs flex items-center gap-1.5">
-          <svg id="checkAllSpinner" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
+      <!-- Clean Minimal Header Controls -->
+      <div class="flex items-center gap-2 shrink-0">
+        <button id="checkAllNowBtn" type="button" class="px-3.5 sm:px-4 py-2 rounded-xl btn-gradient-primary text-white font-extrabold text-xs flex items-center gap-1.5 shadow-md">
+          <svg id="checkAllSpinner" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
           </svg>
-          <span class="hidden sm:inline">בדוק הכל עכשיו</span>
-          <span class="sm:hidden">רענן</span>
+          <span>רענן מחירים</span>
         </button>
 
-        <button id="soundToggleBtn" type="button" title="הפעל/השתק צליל התראה" class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl liquid-glass-soft hover:bg-white/15 flex items-center justify-center text-sm sm:text-base transition">
+        <button id="soundToggleBtn" type="button" title="הפעל/השתק צליל התראה" class="w-9 h-9 rounded-xl liquid-glass-soft hover:bg-white/15 flex items-center justify-center text-base transition">
           <span id="soundIconOn">🔔</span>
         </button>
       </div>
@@ -360,78 +333,88 @@
     <nav class="liquid-glass rounded-2xl p-1.5 inline-flex items-center gap-1.5">
       <button type="button" data-tab="dashboard" class="nav-tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 liquid-pill-active text-white">
         <span>🛍️</span>
-        <span>מוצרים במעקב</span>
+        <span>המוצרים שלי</span>
         <span id="tabCountProducts" class="px-2 py-0.5 rounded-full text-[11px] bg-black/30 text-white font-extrabold">0</span>
       </button>
 
       <button type="button" data-tab="alerts" class="nav-tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 text-slate-200 hover:bg-white/10">
         <span>🔔</span>
-        <span>התראות ודו"ח יומי</span>
+        <span>התראות</span>
         <span id="tabCountAlerts" class="px-2 py-0.5 rounded-full text-[11px] bg-white/15 text-white font-extrabold">0</span>
       </button>
 
       <button type="button" data-tab="settings" class="nav-tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 text-slate-200 hover:bg-white/10">
         <span>⚙️</span>
-        <span>זמני התראה וטלגרם</span>
+        <span>הגדרות וטלגרם</span>
       </button>
     </nav>
   </div>
 
   <!-- Main Content Container -->
-  <main class="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-5 space-y-6">
+  <main class="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-4 sm:py-5 space-y-5">
 
     <!-- TAB 1: DASHBOARD -->
-    <section id="tab-dashboard" class="space-y-6">
+    <section id="tab-dashboard" class="space-y-4 sm:space-y-5">
 
-      <!-- Glass Add Product Card -->
-      <div class="liquid-glass rounded-3xl p-5 sm:p-6 relative overflow-hidden">
-        <div class="absolute -top-20 -left-20 w-52 h-52 bg-pink-500/20 rounded-full blur-3xl pointer-events-none"></div>
-        <div class="absolute -bottom-20 -right-20 w-52 h-52 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none"></div>
-
-        <div class="relative z-10 space-y-4">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-            <div class="flex items-center gap-3">
-              <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-pink-500 via-purple-600 to-cyan-500 flex items-center justify-center text-xl shadow-lg shadow-purple-500/30 shrink-0 border border-white/25">
-                ✨
-              </div>
-              <div>
-                <h2 class="text-base sm:text-lg font-black text-white tracking-tight">הוסף מוצר למעקב חכם</h2>
-                <p class="text-xs text-slate-300/90">
-                  הדבק קישור מכל חנות — או שתף ישירות מאפליקציית Amazon / הדפדפן אל PriceRadar
-                </p>
-              </div>
+      <!-- Automatic Clipboard Link Detection Banner (Appears when entering the app with a copied link) -->
+      <div id="clipboardDetectBanner" class="hidden rounded-2xl bg-gradient-to-r from-indigo-950/95 via-purple-950/95 to-pink-950/90 border border-pink-400/50 p-4 shadow-2xl space-y-3 transition-all">
+        <div class="flex items-start justify-between gap-3">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-10 h-10 rounded-xl bg-pink-500/25 border border-pink-400/40 flex items-center justify-center text-lg shrink-0">
+              📋
             </div>
-            <span class="self-start sm:self-auto inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/15 border border-cyan-400/30 text-[11px] font-extrabold text-cyan-200">
-              <span>📲</span>
-              <span>תומך בשיתוף מהיר (Share)</span>
-            </span>
+            <div class="min-w-0">
+              <p class="text-xs sm:text-sm font-black text-white">זוהה קישור מועתק בלוח שלך! האם להדביק ולחפש אותו?</p>
+              <p id="clipboardDetectUrlPreview" class="text-[11px] text-cyan-200 font-mono truncate dir-ltr text-left mt-0.5"></p>
+            </div>
           </div>
+          <button id="dismissClipboardBannerBtn" type="button" class="text-slate-400 hover:text-white text-sm px-1.5">✕</button>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="acceptClipboardBannerBtn" type="button" class="flex-1 py-2.5 px-4 rounded-xl btn-gradient-primary text-white text-xs font-extrabold shadow-md flex items-center justify-center gap-1.5">
+            <span>🔍</span>
+            <span>כן, הדבק וחפש את המוצר</span>
+          </button>
+          <button id="ignoreClipboardBannerBtn" type="button" class="py-2.5 px-4 rounded-xl liquid-glass-soft hover:bg-white/15 text-slate-200 text-xs font-bold transition">
+            לא תודה
+          </button>
+        </div>
+      </div>
 
+      <!-- Clean & Simple Add Product Bar -->
+      <div class="liquid-glass rounded-3xl p-4 sm:p-5 relative overflow-hidden">
+        <div class="relative z-10 space-y-3">
           <form id="scanUrlForm" class="flex flex-col sm:flex-row gap-2.5">
-            <div class="relative flex-1">
+            <div class="relative flex-1 flex items-center">
               <input
                 id="urlInput"
-                type="url"
+                type="text"
+                inputmode="url"
                 required
-                placeholder="הדבק קישור (Amazon, KSP, מחסני חשמל, טרקלין, פוט לוקר, MyRabbit...)"
-                class="w-full pl-10 pr-4 py-3.5 rounded-2xl liquid-glass-input text-sm text-white placeholder-slate-400 outline-none transition dir-ltr"
+                placeholder="הדבק קישור למוצר או שתף מכל אפליקציה..."
+                class="w-full pl-20 pr-4 py-3.5 rounded-2xl liquid-glass-input text-sm text-white placeholder-slate-400 outline-none transition dir-ltr"
               />
-              <button id="clearUrlInputBtn" type="button" title="נקה שדה" class="hidden absolute left-3.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white/15 hover:bg-white/25 text-white text-xs flex items-center justify-center">
-                ✕
-              </button>
+              <div class="absolute left-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                <button id="clearUrlInputBtn" type="button" title="נקה שדה" class="hidden w-7 h-7 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs flex items-center justify-center">
+                  ✕
+                </button>
+                <button id="pasteFromClipboardBtn" type="button" title="הדבק קישור מהלוח" class="px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-[11px] font-bold text-cyan-200 border border-white/15 transition">
+                  📋 הדבק
+                </button>
+              </div>
             </div>
             <button
               id="scanUrlSubmitBtn"
               type="submit"
-              class="px-6 py-3.5 rounded-2xl btn-gradient-primary text-white font-extrabold text-sm flex items-center justify-center gap-2 shrink-0"
+              class="px-6 py-3.5 rounded-2xl btn-gradient-primary text-white font-extrabold text-sm flex items-center justify-center gap-2 shrink-0 shadow-lg"
             >
               <span>🔍</span>
-              <span>סרוק והוסף למעקב</span>
+              <span>הוסף מוצר</span>
             </button>
           </form>
 
           <!-- Clean Non-Blocking Live Scan Indicator -->
-          <div id="scanProgressBox" class="hidden rounded-2xl liquid-glass-soft px-4 py-3 flex items-center justify-between gap-3 border border-pink-400/40">
+          <div id="scanProgressBox" class="hidden rounded-2xl liquid-glass-soft px-4 py-2.5 flex items-center justify-between gap-3 border border-pink-400/40">
             <div class="flex items-center gap-2.5 min-w-0">
               <span class="inline-block w-4 h-4 border-2 border-pink-400 border-t-transparent rounded-full animate-spin shrink-0"></span>
               <span id="scanProgressStep" class="text-xs font-extrabold text-pink-100 truncate">
@@ -442,55 +425,21 @@
         </div>
       </div>
 
-      <!-- High-Craft KPI Strip -->
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
-        <div class="liquid-glass rounded-2xl p-3.5 sm:p-4 flex items-center justify-between relative overflow-hidden group">
-          <div class="absolute top-0 right-0 w-1 h-full bg-gradient-to-b from-purple-400 to-indigo-600"></div>
-          <div>
-            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">מוצרים במעקב</p>
-            <p id="statTotalProducts" class="text-2xl sm:text-3xl font-black text-white mt-0.5 tabular-nums">0</p>
-          </div>
-          <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-purple-500/25 to-indigo-600/20 border border-purple-400/30 flex items-center justify-center text-xl shadow-inner">
-            🛍️
-          </div>
+      <!-- Compact 3-Column Summary Strip -->
+      <div class="grid grid-cols-3 gap-2 sm:gap-3">
+        <div class="liquid-glass rounded-2xl p-3 sm:p-4 text-center">
+          <p class="text-[10px] sm:text-xs font-bold text-slate-400">מוצרים במעקב</p>
+          <p id="statTotalProducts" class="text-lg sm:text-2xl font-black text-white mt-0.5 tabular-nums">0</p>
         </div>
 
-        <div class="liquid-glass rounded-2xl p-3.5 sm:p-4 flex items-center justify-between relative overflow-hidden group">
-          <div class="absolute top-0 right-0 w-1 h-full bg-gradient-to-b from-emerald-400 to-teal-500"></div>
-          <div>
-            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">ירידות מחיר</p>
-            <p id="statPriceDrops" class="text-2xl sm:text-3xl font-black text-emerald-300 mt-0.5 tabular-nums">0</p>
-          </div>
-          <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-500/25 to-teal-500/20 border border-emerald-400/30 flex items-center justify-center text-xl shadow-inner">
-            📉
-          </div>
+        <div class="liquid-glass rounded-2xl p-3 sm:p-4 text-center">
+          <p class="text-[10px] sm:text-xs font-bold text-slate-400">ירידות מחיר</p>
+          <p id="statPriceDrops" class="text-lg sm:text-2xl font-black text-emerald-300 mt-0.5 tabular-nums">0</p>
         </div>
 
-        <div class="liquid-glass rounded-2xl p-3.5 sm:p-4 flex items-center justify-between relative overflow-hidden group">
-          <div class="absolute top-0 right-0 w-1 h-full bg-gradient-to-b from-cyan-400 to-blue-500"></div>
-          <div>
-            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">חיסכון שזוהה</p>
-            <p id="statTotalSavings" class="text-2xl sm:text-3xl font-black text-cyan-300 mt-0.5 tabular-nums">0 ₪</p>
-          </div>
-          <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-cyan-500/25 to-blue-500/20 border border-cyan-400/30 flex items-center justify-center text-xl shadow-inner">
-            💎
-          </div>
-        </div>
-
-        <div class="liquid-glass rounded-2xl p-3.5 sm:p-4 flex items-center justify-between relative overflow-hidden group">
-          <div class="absolute top-0 right-0 w-1 h-full bg-gradient-to-b from-amber-400 to-orange-500"></div>
-          <div>
-            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">דו"ח יומי</p>
-            <div class="flex items-center gap-1.5 mt-0.5">
-              <p id="statDailyHour" class="text-xl sm:text-2xl font-black text-amber-300 font-mono tabular-nums">09:00</p>
-              <button id="sendDailyReportQuickBtn" type="button" class="text-[10px] font-extrabold px-2 py-0.5 rounded-lg bg-amber-400/20 hover:bg-amber-400/35 text-amber-200 border border-amber-300/30 transition">
-                שלח
-              </button>
-            </div>
-          </div>
-          <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-500/25 to-orange-500/20 border border-amber-400/30 flex items-center justify-center text-xl shadow-inner">
-            ⏰
-          </div>
+        <div class="liquid-glass rounded-2xl p-3 sm:p-4 text-center">
+          <p class="text-[10px] sm:text-xs font-bold text-slate-400">חיסכון שזוהה</p>
+          <p id="statTotalSavings" class="text-lg sm:text-2xl font-black text-cyan-300 mt-0.5 tabular-nums">0 ₪</p>
         </div>
       </div>
 
@@ -618,7 +567,7 @@
         <p class="text-3xl">✨</p>
         <p class="text-base font-extrabold text-white">עדיין אין התראות ביומן</p>
         <p class="text-xs text-slate-300 max-w-md mx-auto">
-          ברגע שתוסיף מוצר ותהיה ירידת מחיר (או כשתלחץ על "הדמיית ירידת מחיר" בכרטיס המוצר), ההתראה תופיע כאן מיד!
+          ברגע שתוסיף מוצר ותהיה ירידת מחיר או עדכון משלוח חינם, ההתראה תופיע כאן ותישלח אליך מיד!
         </p>
       </div>
 
@@ -849,15 +798,31 @@
         </div>
       </div>
 
-      <!-- Clean Reset Card -->
-      <div class="liquid-glass-soft rounded-3xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h4 class="text-sm font-extrabold text-white">איפוס רשימת המעקב</h4>
-          <p class="text-xs text-slate-300">מחיקת כל המוצרים וההתראות השמורים באפליקציה והתחלה מחדש</p>
+      <!-- Clean Reset & App Status Card -->
+      <div class="liquid-glass-soft rounded-3xl p-5 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-white/10 text-xs">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-slate-300 font-bold">גרסת מערכת:</span>
+            <span id="appVersionHeaderBadge" class="font-mono font-extrabold px-2.5 py-0.5 rounded-full bg-pink-500/20 text-pink-200 border border-pink-400/30">v3.4.0</span>
+            <span id="cloudSyncBadge" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-purple-500/25 text-purple-200 border border-purple-400/30 flex items-center gap-1">☁️ ענן 24/7</span>
+            <span class="text-slate-400">בדיקה הבאה: <span id="nextCheckTimer" class="font-mono font-bold text-cyan-300">--:--</span></span>
+            <span class="hidden" id="headerDailyTime">09:00</span>
+            <span class="hidden" id="statDailyHour">09:00</span>
+            <button id="sendDailyReportQuickBtn" type="button" class="hidden">שלח</button>
+          </div>
+          <button id="openOnboardingAgainBtn" type="button" class="px-3 py-1.5 rounded-xl liquid-glass-soft hover:bg-white/15 text-pink-200 text-xs font-bold transition">
+            ✨ פתח מדריך הגדרות ראשוני
+          </button>
         </div>
-        <button id="resetAllDataBtn" type="button" class="px-4 py-2.5 rounded-2xl bg-rose-500/20 hover:bg-rose-500/35 text-rose-200 border border-rose-400/30 text-xs font-extrabold transition shrink-0">
-          🗑️ איפוס מערכת ומחיקת הכל
-        </button>
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h4 class="text-sm font-extrabold text-white">איפוס רשימת המעקב</h4>
+            <p class="text-xs text-slate-300">מחיקת כל המוצרים וההתראות השמורים באפליקציה והתחלה מחדש</p>
+          </div>
+          <button id="resetAllDataBtn" type="button" class="px-4 py-2.5 rounded-2xl bg-rose-500/20 hover:bg-rose-500/35 text-rose-200 border border-rose-400/30 text-xs font-extrabold transition shrink-0">
+            🗑️ איפוס מערכת ומחיקת הכל
+          </button>
+        </div>
       </div>
 
       <!-- Hidden compatibility elements so previous IDs remain valid without cluttering UI -->
@@ -1328,16 +1293,12 @@
             <span>🔄</span>
             <span>בדוק מחיר עכשיו</span>
           </button>
-          <button id="detailsSimulateBtn" type="button" class="flex-1 py-2.5 px-4 rounded-2xl btn-gradient-emerald text-white text-xs font-extrabold transition flex items-center justify-center gap-1.5">
-            <span>📉</span>
-            <span>הדמיית ירידת מחיר</span>
-          </button>
         </div>
         <div class="flex items-center gap-2">
-          <button id="detailsEditBtn" type="button" class="py-2.5 px-3.5 rounded-2xl liquid-glass-soft hover:bg-white/20 text-white text-xs font-bold transition">
-            ✏️ ערוך
+          <button id="detailsEditBtn" type="button" class="py-2.5 px-4 rounded-2xl liquid-glass-soft hover:bg-white/20 text-white text-xs font-bold transition">
+            ✏️ ערוך מוצר
           </button>
-          <button id="detailsDeleteBtn" type="button" class="py-2.5 px-3.5 rounded-2xl liquid-glass-soft hover:bg-rose-500/35 text-rose-300 text-xs font-bold transition">
+          <button id="detailsDeleteBtn" type="button" class="py-2.5 px-4 rounded-2xl liquid-glass-soft hover:bg-rose-500/35 text-rose-300 text-xs font-bold transition">
             🗑️ מחק
           </button>
         </div>
@@ -1823,17 +1784,112 @@
     // =========================================================================
     // STORE INFO, FAVICON & CATEGORY HELPERS
     // =========================================================================
+    function extractCleanUrlFromText(rawInput) {
+      if (!rawInput) return '';
+      const s = String(rawInput).trim();
+      const matches = [...s.matchAll(/https?:\/\/[^\s"'<>]+/gi)];
+      if (matches.length === 0) return '';
+      let chosen = matches[matches.length - 1][0];
+      for (const m of matches) {
+        const candidate = m[0];
+        if (!/\.(?:png|jpe?g|gif|webp|svg)(?:\?|$)/i.test(candidate)) {
+          chosen = candidate;
+          break;
+        }
+      }
+      return chosen.replace(/[.,;!?)\]}\u0590-\u05FF]+$/g, '');
+    }
+
+    function isShortRedirectUrl(rawUrl) {
+      try {
+        const u = new URL(rawUrl);
+        const h = u.hostname.replace(/^www\./, '').toLowerCase();
+        return (
+          h === 'a.co' ||
+          h.startsWith('amzn.') ||
+          h === 's.click.aliexpress.com' ||
+          h === 'a.aliexpress.com' ||
+          h === 'bit.ly' ||
+          h === 'tinyurl.com' ||
+          h === 't.co' ||
+          h === 'cutt.ly' ||
+          h === 'rb.gy' ||
+          h === 'is.gd'
+        );
+      } catch (e) {
+        return false;
+      }
+    }
+
+    async function resolveShortUrlIfNeeded(rawUrl) {
+      const clean = extractCleanUrlFromText(rawUrl) || String(rawUrl || '').trim();
+      if (!clean || !isShortRedirectUrl(clean)) return clean;
+
+      // 1. Native Android Redirect Resolver (instant in APK)
+      if (window.AndroidNativeScraper && typeof window.AndroidNativeScraper.resolveRedirectUrl === 'function') {
+        try {
+          const nativeResolved = window.AndroidNativeScraper.resolveRedirectUrl(clean);
+          if (nativeResolved && nativeResolved.startsWith('http') && nativeResolved !== clean) {
+            return extractCleanUrlFromText(nativeResolved) || nativeResolved;
+          }
+        } catch (e) {}
+      }
+
+      // 2. CapacitorHttp native redirect follower
+      try {
+        const capHttp = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.CapacitorHttp;
+        if (capHttp && typeof capHttp.get === 'function') {
+          const res = await capHttp.get({
+            url: clean,
+            connectTimeout: 4000,
+            readTimeout: 4000
+          });
+          if (res && res.url && res.url.startsWith('http') && res.url !== clean) {
+            return res.url;
+          }
+        }
+      } catch (e) {}
+
+      // 3. Jina Reader "URL Source:" header extraction + AllOrigins status.url race
+      try {
+        const resolved = await Promise.any([
+          (async () => {
+            const r = await fetchWithTimeout(`https://r.jina.ai/${clean}`, {}, 4000);
+            if (!r || !r.ok) throw new Error('jina err');
+            const txt = await r.text();
+            const m = txt.match(/^URL Source:\s*(https?:\/\/[^\s\r\n]+)/m);
+            if (m && m[1] && m[1] !== clean) return m[1].trim();
+            throw new Error('no url source');
+          })(),
+          (async () => {
+            const r = await fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(clean)}`, {}, 4000);
+            if (!r || !r.ok) throw new Error('ao err');
+            const d = await r.json();
+            if (d && d.status && d.status.url && d.status.url.startsWith('http') && d.status.url !== clean) {
+              return d.status.url;
+            }
+            const canon = (d && d.contents || '').match(/rel=["']canonical["'][^>]*href=["'](https?:\/\/[^"']+)["']/i);
+            if (canon && canon[1]) return canon[1];
+            throw new Error('no ao url');
+          })()
+        ]);
+        if (resolved && resolved.startsWith('http')) return resolved;
+      } catch (e) {}
+
+      return clean;
+    }
+
     function cleanTrackingUrl(rawUrl) {
       try {
-        const trimmed = rawUrl.trim();
-        const u = new URL(trimmed);
-        ['srsltid', 'fbclid', 'gclid', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'aff_id', 'tt', 'ref', 'ref_', 'crid', 'sprefix', 'keywords', 'spm', 'scm', 'pdp_npi'].forEach(p => u.searchParams.delete(p));
+        const extracted = extractCleanUrlFromText(rawUrl) || String(rawUrl || '').trim();
+        const u = new URL(extracted);
+        ['srsltid', 'fbclid', 'gclid', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'aff_id', 'tt', 'ref', 'ref_', 'crid', 'sprefix', 'keywords', 'spm', 'scm', 'pdp_npi', 'psc', 'smid'].forEach(p => u.searchParams.delete(p));
 
         // Normalize Amazon product URLs to canonical /dp/ASIN while preserving readable product title in hash/slug if needed
         if (/amazon\.(?:com|co\.uk|de|fr|it|es|ca|co\.jp)/i.test(u.hostname)) {
-          const asinMatch = u.pathname.match(/(?:dp|gp\/product)\/([A-Z0-9]{10})/i);
+          const asinMatch = u.pathname.match(/(?:dp|gp\/product|aw\/d)\/([A-Z0-9]{10})/i);
           if (asinMatch) {
-            return `https://${u.hostname}/dp/${asinMatch[1]}`;
+            return `https://${u.hostname}/dp/${asinMatch[1].toUpperCase()}`;
           }
         }
 
@@ -2319,9 +2375,15 @@
         .trim();
       if (isBlockedTitle(cleanedTitle)) cleanedTitle = '';
 
-      // Strip Unicode direction formatting marks (RTL \u200F / LTR \u200E used by Machsanei Hashmal)
+      // Strip Unicode direction formatting marks (RTL \u200F / LTR \u200E used by Machsanei Hashmal),
+      // decode common currency HTML entities (&#8362; -> ₪), and remove store-wide free shipping / floor fee disclaimers
       const cleanText = String(rawText || '')
+        .replace(/&#8362;|&#x20aa;/gi, '₪')
+        .replace(/&nbsp;/gi, ' ')
         .replace(/[\u200E\u200F\u202A-\u202E]/g, '')
+        .replace(/(?:משלוח(?:ים)?[^\r\n]{0,60}?)?(?:חינם\s+)?בהזמנות\s+מעל\s+\d+\s*(?:₪|ש["״']ח|ILS)/gi, ' ')
+        .replace(/\*?\s*הובלה\s+לכל\s+קומה[^\r\n]+/gi, ' ')
+        .replace(/תוספת\s+תשלום\s+בסך[^\r\n]+/gi, ' ')
         .replace(/[*_~`#>]/g, ' ');
 
       // Extract full untruncated Hebrew product title right after מק"ט: <number> (KSP & Machsanei Hashmal)
@@ -2388,12 +2450,13 @@
         }
       }
 
-      // 2. Machsanei Hashmal (payngo.co.il) pattern: prioritize special/sale price over crossed-out regular price!
+      // 2. Machsanei Hashmal (payngo.co.il) & Traklin Hashmal (traklin.co.il) pattern:
+      // Prioritize special/sale/buy button price ("לרכישה ב 999 ₪", "לרכישה עכשיו ב: ₪...") and Eilat price ("לרכישה באילת ב 846 ₪", "קנו באילת ב: ₪...")
       const payngoSpecialMatch =
-        cleanText.match(/לרכישה עכשיו ב\s*:\s*₪?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*₪?/) ||
+        cleanText.match(/לרכישה\s+(?:עכשיו\s+)?ב\s*[:\-\s\r\n]*?(?:₪\s*)?(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(?:₪|ש["״']ח)?/) ||
         cleanText.match(/מחיר\s+(?:מיוחד|מבצע|מועדון|לאחר הנחה)\s*:\s*(?:לרכישה עכשיו ב\s*:\s*)?₪?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*₪?/);
       const payngoRegMatches = [...cleanText.matchAll(/מחיר\s*(?:מיוחד|רגיל)?\s*:\s*(?:לרכישה עכשיו ב\s*:\s*)?₪?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*₪?/g)];
-      const payngoEilatMatch = cleanText.match(/קנו באילת ב\s*:\s*₪?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*₪?/);
+      const payngoEilatMatch = cleanText.match(/(?:קנו\s+באילת\s+ב|לרכישה\s+באילת\s+ב)\s*[:\-\s\r\n]*?(?:₪\s*)?(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(?:₪|ש["״']ח)?/);
       if (payngoSpecialMatch || payngoRegMatches.length > 0) {
         let pReg = 0;
         if (payngoSpecialMatch) {
@@ -2414,7 +2477,9 @@
           result.price = pReg;
           result.variations.push({ id: 'reg', label: 'מחיר רגיל', price: pReg, inStock: true });
           result.SelectedVariant = 'מחיר רגיל';
-          result.sourceMethod = 'זיהוי מחיר מ-מחסני חשמל';
+          result.sourceMethod = String(targetUrl || '').includes('traklin')
+            ? 'זיהוי מחיר מ-טרקלין חשמל'
+            : 'זיהוי מחיר מ-מחסני חשמל';
           if (payngoEilatMatch) {
             const pEilat = Number(payngoEilatMatch[1].replace(/,/g, ''));
             if (pEilat > 5) {
@@ -2470,19 +2535,27 @@
       }
 
       // 4. Amazon & International Multi-Currency Price Pattern ($189.99, US $11.45, ₪118, €45.00, £32.00)
+      // Scan line-by-line and skip shipping/delivery/floor/threshold lines so we never match "משלוח חינם בהזמנות מעל 250 ₪" or "50 ₪ לכל קומה"
       if (!result.price) {
-        const multiCurrencyMatch = mainText.match(/(?:Price|Deal Price|Our Price|מחיר|מחיר מבצע)?\s*[:\s]*?(?:(?:US\s*)?([₪$€£]|USD|ILS|EUR|ש["״']ח)\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)|(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(?:[₪$€£]|USD|ILS|EUR|ש["״']ח))/i);
-        if (multiCurrencyMatch) {
-          const val = Number((multiCurrencyMatch[2] || multiCurrencyMatch[3]).replace(/,/g, ''));
-          if (val > 0.5 && val < 500000) {
-            result.price = val;
-            result.sourceMethod = 'זיהוי מחיר מ-Amazon / חנות גלובלית';
+        const candidateLines = mainText.split(/[\r\n]+/);
+        for (const line of candidateLines) {
+          if (/משלוח|הובלה|קומה|מוביל|פירוק|דלת|איסוף|מינימום|מקסימום|קופון|בקנייה מעל|בהזמנות מעל|תוספת|החלפה|החזרה|תשלומים|shipping|delivery/i.test(line)) {
+            continue;
+          }
+          const multiCurrencyMatch = line.match(/(?:Price|Deal Price|Our Price|מחיר|מחיר מבצע)?\s*[:\s]*?(?:(?:US\s*)?([₪$€£]|USD|ILS|EUR|ש["״']ח)\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)|(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(?:[₪$€£]|USD|ILS|EUR|ש["״']ח))/i);
+          if (multiCurrencyMatch) {
+            const val = Number((multiCurrencyMatch[2] || multiCurrencyMatch[3]).replace(/,/g, ''));
+            if (val > 0.5 && val < 500000) {
+              result.price = val;
+              result.sourceMethod = 'זיהוי מחיר מדף המוצר';
+              break;
+            }
           }
         }
       }
 
-      // 5. Check size/option price pairs in text (e.g., "40 - 269.90 ₪" or "2 ק"ג - 120 ₪")
-      const optionPairs = [...mainText.matchAll(/(\b\d{2}(?:\.5)?|\d+\s*ק["״']ג)\s*-\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*[₪$€£]/g)];
+      // 5. Check explicit weight/pack price pairs in text (only explicit weight units like "2 ק"ג - 120 ₪", never bare numbers like "40-50 ₪")
+      const optionPairs = [...mainText.matchAll(/(\d+(?:\.\d+)?\s*(?:ק["״']ג|גרם|ליטר|מ["״']ל|יח'|יחידות))\s*-\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*[₪$€£]/g)];
       if (optionPairs.length > 1 && result.variations.length === 0) {
         optionPairs.forEach((m, i) => {
           const lbl = m[1].trim();
@@ -2550,9 +2623,9 @@
         return extractPricesAndVariantsFromText(html, '', targetUrl);
       }
 
-      // Fast-path for huge HTML payloads (> 350KB, e.g. Amazon desktop HTML):
+      // Fast-path ONLY for huge Amazon desktop HTML payloads (> 350KB):
       // Extract title, image, and price via lightweight regex + text parser WITHOUT freezing the main thread in DOMParser!
-      if (html.length > 350000) {
+      if (html.length > 350000 && isAmazonUrlOrStore(targetUrl)) {
         const fastTitleMatch =
           html.match(/id=["']productTitle["'][^>]*>([\s\S]*?)<\/span>/i) ||
           html.match(/property=["']og:title["'][^>]*content=["']([^"']+)["']/i) ||
@@ -2699,7 +2772,42 @@
         }
       }
 
-      // 5. WooCommerce Variations JSON
+      // 5. WooCommerce GTM4WP Data, Main Summary Price & Variations JSON (MyRabbit, Israeli WooCommerce stores)
+      const gtmInput = doc.querySelector('input[name="gtm4wp_product_data"]');
+      if (gtmInput && gtmInput.value) {
+        try {
+          const gtmData = JSON.parse(gtmInput.value);
+          const gtmPrice = Number(gtmData.price || gtmData.item_price);
+          if (gtmPrice > 0) {
+            result.price = gtmPrice;
+            result.sourceMethod = 'זיהוי מחיר מדויק מ-WooCommerce';
+          }
+          if (!result.title && gtmData.item_name && !isBlockedTitle(gtmData.item_name)) {
+            result.title = String(gtmData.item_name).trim();
+          }
+        } catch (e) {}
+      }
+
+      if (!result.price) {
+        const wooPriceCandidates = [];
+        doc.querySelectorAll(
+          '.summary .price ins .woocommerce-Price-amount, .summary .price > .woocommerce-Price-amount, ' +
+          '.elementor-widget-woocommerce-product-price .price ins .woocommerce-Price-amount, ' +
+          '.elementor-widget-woocommerce-product-price .price > .woocommerce-Price-amount, ' +
+          '.product-info .price ins .woocommerce-Price-amount, .product-info .price > .woocommerce-Price-amount, ' +
+          'p.price ins .woocommerce-Price-amount, p.price > .woocommerce-Price-amount'
+        ).forEach(el => {
+          if (el.closest('del, .related, .upsells, .cross-sells, .woocommerce-store-notice, .demo_store, .widget_shopping_cart')) return;
+          const cleanWooText = (el.textContent || '').replace(/[^0-9.]/g, '');
+          const val = Number(cleanWooText);
+          if (val > 0.5) wooPriceCandidates.push(val);
+        });
+        if (wooPriceCandidates.length > 0) {
+          result.price = wooPriceCandidates[0];
+          result.sourceMethod = 'זיהוי מחיר מ-WooCommerce';
+        }
+      }
+
       const variationForm = doc.querySelector('[data-product_variations]');
       if (variationForm) {
         try {
@@ -2781,14 +2889,14 @@
       }
 
       // 8. Structured Text & DOM extraction (with RTL mark stripping)
-      if ((!result.price || kspUin || targetUrl.includes('payngo.co.il') || result.variations.length === 0) && doc.body) {
+      if ((!result.price || kspUin || targetUrl.includes('payngo.co.il') || targetUrl.includes('traklin.co.il') || result.variations.length === 0) && doc.body) {
         const cloned = doc.body.cloneNode(true);
-        cloned.querySelectorAll('script, style, noscript, del, s, strike, .old-price, [data-price-type="oldPrice"], .related, .upsells, footer, nav, header').forEach(el => el.remove());
+        cloned.querySelectorAll('script, style, noscript, del, s, strike, .old-price, [data-price-type="oldPrice"], .related, .upsells, .woocommerce-store-notice, .demo_store, footer, nav, header').forEach(el => el.remove());
         cloned.querySelectorAll('div, p, li, tr, br, h1, h2, h3, h4, section, article').forEach(el => {
           el.prepend(doc.createTextNode('\n'));
           el.append(doc.createTextNode('\n'));
         });
-        cloned.querySelectorAll('span, b, strong, td, th, a, label, ins').forEach(el => {
+        cloned.querySelectorAll('span, b, strong, bdi, td, th, a, label, ins').forEach(el => {
           el.prepend(doc.createTextNode(' '));
           el.append(doc.createTextNode(' '));
         });
@@ -3040,9 +3148,7 @@
     }
 
     let activeScanCancelResolver = null;
-    async function scanProductUrl(rawUrl) {
-      const cleanedUrl = cleanTrackingUrl(rawUrl);
-      const storeMeta = getStoreMeta(cleanedUrl);
+    async function scanProductUrl(rawInputUrl) {
       const progressBox = document.getElementById('scanProgressBox');
       const progressStep = document.getElementById('scanProgressStep');
 
@@ -3052,6 +3158,16 @@
           progressStep.textContent = text;
         }
       };
+
+      // Extract clean URL from shared text & resolve short redirect links (a.co, amzn.to, s.click.aliexpress.com, bit.ly, etc.)
+      let rawUrl = extractCleanUrlFromText(rawInputUrl) || String(rawInputUrl || '').trim();
+      if (isShortRedirectUrl(rawUrl)) {
+        updateStep('מפענח קישור מקוצר משיתוף...');
+        rawUrl = await resolveShortUrlIfNeeded(rawUrl);
+      }
+
+      const cleanedUrl = cleanTrackingUrl(rawUrl);
+      const storeMeta = getStoreMeta(cleanedUrl);
 
       updateStep(`שולף פרטי מוצר ומחיר מ-${storeMeta.name}...`);
 
@@ -4281,92 +4397,64 @@
           </div>
         ` : '';
 
-        const canvasId = `chart_${p.id}`;
         const primaryStoreName = isMultiStore ? bestOffer.store : p.store;
         const isThisStoreFiltered = state.ui.storeFilter === primaryStoreName;
 
         card.innerHTML = `
-          <div class="space-y-3.5">
+          <div class="space-y-3">
             <!-- Top Store Bar & Status Badge -->
-            <div class="flex items-center justify-between gap-2 flex-wrap">
-              <div class="flex items-center gap-1.5 flex-wrap">
-                <button type="button" data-action="filter_store" data-store="${escapeHtml(primaryStoreName)}" title="לחץ לסינון כל המוצרים מ-${escapeHtml(primaryStoreName)}" class="prod-action-btn flex items-center gap-1.5 px-2.5 py-1 rounded-xl ${isThisStoreFiltered ? 'bg-pink-500/35 border-pink-400 text-white shadow-md' : 'bg-white/10 hover:bg-pink-500/25 border-white/15 hover:border-pink-400/40 text-white'} border transition">
-                  <img src="${escapeHtml(storeMeta.favicon)}" alt="" class="w-3.5 h-3.5 rounded-sm object-contain max-w-full h-auto" onerror="this.style.display='none'" />
-                  <span class="text-[11px] font-extrabold">${escapeHtml(isMultiStore ? `${offers.length} חנויות (${bestOffer.store})` : p.store)}</span>
-                </button>
-                <span class="text-[11px] font-bold px-2 py-0.5 rounded-xl bg-gradient-to-r ${catStyle.gradient} border">
-                  ${catStyle.icon} ${catStyle.label}
-                </span>
+            <div class="flex items-center justify-between gap-2">
+              <button type="button" data-action="filter_store" data-store="${escapeHtml(primaryStoreName)}" title="לחץ לסינון כל המוצרים מ-${escapeHtml(primaryStoreName)}" class="prod-action-btn flex items-center gap-1.5 px-2.5 py-1 rounded-xl ${isThisStoreFiltered ? 'bg-pink-500/35 border-pink-400 text-white shadow-md' : 'bg-white/10 hover:bg-pink-500/25 border-white/15 hover:border-pink-400/40 text-white'} border transition min-w-0">
+                <img src="${escapeHtml(storeMeta.favicon)}" alt="" class="w-3.5 h-3.5 rounded-sm object-contain shrink-0" onerror="this.style.display='none'" />
+                <span class="text-[11px] font-extrabold truncate">${escapeHtml(isMultiStore ? `${offers.length} חנויות (${bestOffer.store})` : p.store)}</span>
+              </button>
+              <div class="shrink-0">
+                ${statusBadge}
               </div>
-              ${statusBadge}
             </div>
 
-            <!-- Product Image + Title Row -->
-            <div class="flex items-start gap-3.5">
-              <div class="relative w-18 h-18 sm:w-20 sm:h-20 rounded-2xl overflow-hidden product-stage border border-white/20 shrink-0 p-1 flex items-center justify-center" style="width:4.75rem;height:4.75rem;">
+            <!-- Product Image + Title + Price Row -->
+            <div class="flex items-center gap-3.5">
+              <div class="relative w-20 h-20 rounded-2xl overflow-hidden product-stage border border-white/20 shrink-0 p-1.5 flex items-center justify-center">
                 <img src="${escapeHtml(prodImg)}" alt="${escapeHtml(p.title)}" class="w-full h-full object-contain rounded-xl max-w-full h-auto" />
               </div>
               <div class="space-y-1.5 flex-1 min-w-0">
-                <div class="flex items-start justify-between gap-1">
-                  <h3 class="text-sm sm:text-base font-black text-white leading-snug line-clamp-2 group-hover:text-pink-200 transition">${escapeHtml(p.title)}</h3>
-                </div>
+                <h3 class="text-sm sm:text-base font-black text-white leading-snug line-clamp-2 group-hover:text-pink-200 transition">${escapeHtml(p.title)}</h3>
                 <div class="flex flex-wrap items-center gap-1.5">
                   ${freeShippingPill}
                   ${variantPill}
-                  ${p.targetPrice ? `<span class="text-[11px] font-bold px-2 py-0.5 rounded-lg bg-amber-400/20 text-amber-200 border border-amber-300/30">יעד: ${formatPrice(p.targetPrice)}</span>` : ''}
-                  ${!isMultiStore ? `<button type="button" data-action="add_store" data-id="${p.id}" class="prod-action-btn text-[11px] font-bold px-2 py-0.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-200 border border-cyan-400/30 transition">+ השווה חנות</button>` : ''}
+                  ${p.targetPrice ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-amber-400/20 text-amber-200 border border-amber-300/30">יעד: ${formatPrice(p.targetPrice)}</span>` : ''}
+                </div>
+                <div class="pt-0.5 flex items-baseline gap-2.5 flex-wrap">
+                  <span class="text-lg sm:text-xl font-black tabular-nums ${isDropped ? 'text-emerald-300' : 'text-white'}">${formatPrice(p.currentPrice)}</span>
+                  ${isDropped ? `<span class="text-xs font-bold text-slate-400 line-through tabular-nums">${formatPrice(p.initialPrice)}</span>` : `<span class="text-[11px] text-slate-400 font-semibold">התחיל ב-${formatPrice(p.initialPrice)}</span>`}
+                  ${(p.lowestPrice && p.lowestPrice < p.currentPrice) ? `<span class="text-[11px] text-cyan-300 font-bold">שפל: ${formatPrice(p.lowestPrice)}</span>` : ''}
                 </div>
               </div>
             </div>
 
             ${multiStoreComparisonHtml}
-
-            <!-- Price Metrics Glass Boxes -->
-            <div class="grid grid-cols-3 gap-2">
-              <div class="p-2.5 rounded-2xl liquid-glass-soft text-center">
-                <p class="text-[10px] sm:text-[11px] text-slate-400 font-bold">${isMultiStore ? 'הכי זול כעת' : 'מחיר כעת'}</p>
-                <p class="text-base sm:text-lg font-black tabular-nums ${isDropped ? 'text-emerald-300' : 'text-white'} mt-0.5">${formatPrice(p.currentPrice)}</p>
-              </div>
-              <div class="p-2.5 rounded-2xl liquid-glass-soft text-center">
-                <p class="text-[10px] sm:text-[11px] text-slate-400 font-bold">מחיר התחלתי</p>
-                <p class="text-xs sm:text-sm font-extrabold tabular-nums text-slate-200 mt-1">${formatPrice(p.initialPrice)}</p>
-              </div>
-              <div class="p-2.5 rounded-2xl liquid-glass-soft text-center">
-                <p class="text-[10px] sm:text-[11px] text-slate-400 font-bold">שיא השפל</p>
-                <p class="text-xs sm:text-sm font-extrabold tabular-nums text-cyan-300 mt-1">${formatPrice(p.lowestPrice || p.currentPrice)}</p>
-              </div>
-            </div>
-
-            <!-- Fixed-height Price Chart Container -->
-            <div class="relative h-28 sm:h-32 w-full rounded-2xl bg-black/40 p-2 border border-white/10">
-              <canvas id="${canvasId}"></canvas>
-            </div>
           </div>
 
-          <!-- Card Footer Controls -->
-          <div class="pt-2.5 border-t border-white/10 space-y-2">
-            <div class="flex items-center justify-between text-[11px] text-slate-300">
-              <button type="button" data-action="details" data-id="${p.id}" class="prod-action-btn text-pink-300 hover:text-pink-200 font-extrabold flex items-center gap-1">
-                <span>📊 דף מוצר מלא</span>
-                <span>←</span>
+          <!-- Clean Minimal Card Footer -->
+          <div class="pt-2.5 border-t border-white/10 flex items-center justify-between gap-2">
+            <div class="flex items-center gap-1.5">
+              <button type="button" data-action="check" data-id="${p.id}" class="prod-action-btn py-1.5 px-3 rounded-xl liquid-glass-soft hover:bg-white/20 text-white text-xs font-extrabold transition flex items-center gap-1">
+                <span>🔄</span>
+                <span>בדוק</span>
               </button>
-              <a href="${escapeHtml(bestOffer.url || p.url)}" target="_blank" rel="noopener noreferrer" class="prod-external-link text-cyan-300 hover:text-cyan-200 font-extrabold underline flex items-center gap-1">
-                <span>${isMultiStore ? `למחיר הזול ב-${escapeHtml(bestOffer.store)}` : 'לדף המוצר בחנות'}</span>
+              <a href="${escapeHtml(bestOffer.url || p.url)}" target="_blank" rel="noopener noreferrer" class="prod-external-link py-1.5 px-3 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-400/30 text-cyan-200 text-xs font-extrabold transition flex items-center gap-1">
+                <span>לחנות</span>
                 <span>↗</span>
               </a>
+              ${!isMultiStore ? `<button type="button" data-action="add_store" data-id="${p.id}" title="השווה מחיר מול חנות נוספת" class="prod-action-btn py-1.5 px-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200 text-[11px] font-bold transition">+ חנות</button>` : ''}
             </div>
 
-            <div class="flex items-center gap-1.5">
-              <button type="button" data-action="check" data-id="${p.id}" class="prod-action-btn flex-1 py-2 px-2.5 rounded-xl liquid-glass-soft hover:bg-white/20 text-white text-xs font-extrabold transition">
-                🔄 בדוק מחיר
-              </button>
-              <button type="button" data-action="simulate" data-id="${p.id}" class="prod-action-btn flex-1 py-2 px-2.5 rounded-xl btn-gradient-emerald text-white text-xs font-extrabold transition">
-                📉 הדמיית ירידה
-              </button>
-              <button type="button" data-action="edit" data-id="${p.id}" title="ערוך מוצר או אפשרות" class="prod-action-btn w-9 h-9 rounded-xl liquid-glass-soft hover:bg-white/20 text-white text-xs flex items-center justify-center shrink-0 transition">
+            <div class="flex items-center gap-1">
+              <button type="button" data-action="edit" data-id="${p.id}" title="ערוך מוצר" class="prod-action-btn w-8 h-8 rounded-xl liquid-glass-soft hover:bg-white/20 text-white text-xs flex items-center justify-center shrink-0 transition">
                 ✏️
               </button>
-              <button type="button" data-action="delete" data-id="${p.id}" title="הסר מוצר" class="prod-action-btn w-9 h-9 rounded-xl liquid-glass-soft hover:bg-rose-500/35 text-rose-300 text-xs flex items-center justify-center shrink-0 transition">
+              <button type="button" data-action="delete" data-id="${p.id}" title="מחק מוצר" class="prod-action-btn w-8 h-8 rounded-xl liquid-glass-soft hover:bg-rose-500/35 text-rose-300 text-xs flex items-center justify-center shrink-0 transition">
                 🗑️
               </button>
             </div>
@@ -4374,39 +4462,6 @@
         `;
 
         grid.appendChild(card);
-
-        const canvasEl = document.getElementById(canvasId);
-        if (canvasEl && window.Chart) {
-          const hist = Array.isArray(p.history) && p.history.length > 0
-            ? p.history
-            : [{ time: 'התחלה', price: p.initialPrice }, { time: 'כעת', price: p.currentPrice }];
-          chartInstances[p.id] = new Chart(canvasEl.getContext('2d'), {
-            type: 'line',
-            data: {
-              labels: hist.map(h => h.time),
-              datasets: [{
-                label: 'מחיר (₪)',
-                data: hist.map(h => h.price),
-                borderColor: isDropped ? '#34d399' : '#f472b6',
-                backgroundColor: isDropped ? 'rgba(52, 211, 153, 0.2)' : 'rgba(244, 114, 182, 0.2)',
-                borderWidth: 2.5,
-                pointRadius: 3.5,
-                pointBackgroundColor: '#ffffff',
-                fill: true,
-                tension: 0.35
-              }]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: { legend: { display: false } },
-              scales: {
-                x: { ticks: { color: '#cbd5e1', font: { size: 10 } }, grid: { display: false } },
-                y: { ticks: { color: '#cbd5e1', font: { size: 10 } }, grid: { color: 'rgba(255, 255, 255, 0.08)' } }
-              }
-            }
-          });
-        }
       });
     }
 
@@ -4524,23 +4579,32 @@
 
       const urlInput = document.getElementById('urlInput');
       const clearUrlBtn = document.getElementById('clearUrlInputBtn');
-      urlInput.addEventListener('input', () => {
-        clearUrlBtn.classList.toggle('hidden', !urlInput.value);
-      });
-      clearUrlBtn.addEventListener('click', () => {
-        urlInput.value = '';
-        clearUrlBtn.classList.add('hidden');
-        urlInput.focus();
-      });
+      const pasteBtn = document.getElementById('pasteFromClipboardBtn');
 
-      // Scan URL Form
-      document.getElementById('scanUrlForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const rawUrl = urlInput.value.trim();
-        if (!rawUrl) return;
+      const readDeviceClipboardText = async () => {
+        try {
+          if (window.AndroidNativeScraper && typeof window.AndroidNativeScraper.getClipboardText === 'function') {
+            const nativeClip = window.AndroidNativeScraper.getClipboardText();
+            if (nativeClip && String(nativeClip).trim()) return String(nativeClip).trim();
+          }
+        } catch (e) {}
+        try {
+          if (navigator.clipboard && typeof navigator.clipboard.readText === 'function') {
+            const webClip = await navigator.clipboard.readText();
+            if (webClip && String(webClip).trim()) return String(webClip).trim();
+          }
+        } catch (e) {}
+        return '';
+      };
+
+      const triggerScanForUrl = async (rawUrlToScan) => {
+        const cleanExtracted = extractCleanUrlFromText(rawUrlToScan) || String(rawUrlToScan || '').trim();
+        if (!cleanExtracted) return;
+        urlInput.value = cleanExtracted;
+        clearUrlBtn.classList.remove('hidden');
 
         // 1. Check immediately if this exact product URL from the same store is already tracked!
-        const duplicateHit = findExistingProductBySameUrl(rawUrl);
+        const duplicateHit = findExistingProductBySameUrl(cleanExtracted);
         if (duplicateHit) {
           playNotificationSound('daily');
           showToast(
@@ -4558,17 +4622,53 @@
         }
 
         const submitBtn = document.getElementById('scanUrlSubmitBtn');
-        submitBtn.disabled = true;
+        if (submitBtn) submitBtn.disabled = true;
         try {
-          const scannedData = await scanProductUrl(rawUrl);
+          const scannedData = await scanProductUrl(cleanExtracted);
           if (state.ui.pendingForceMergeId) {
             scannedData.forceMergeId = state.ui.pendingForceMergeId;
             state.ui.pendingForceMergeId = '';
           }
           openProductModalWithData(scannedData, '');
         } finally {
-          submitBtn.disabled = false;
+          if (submitBtn) submitBtn.disabled = false;
         }
+      };
+
+      urlInput.addEventListener('input', () => {
+        clearUrlBtn.classList.toggle('hidden', !urlInput.value);
+      });
+      clearUrlBtn.addEventListener('click', () => {
+        urlInput.value = '';
+        clearUrlBtn.classList.add('hidden');
+        urlInput.focus();
+      });
+
+      if (pasteBtn) {
+        pasteBtn.addEventListener('click', async () => {
+          const clipText = await readDeviceClipboardText();
+          const extracted = extractCleanUrlFromText(clipText);
+          if (extracted) {
+            localStorage.setItem('pr_last_prompted_clip_url', extracted);
+            const clipBanner = document.getElementById('clipboardDetectBanner');
+            if (clipBanner) clipBanner.classList.add('hidden');
+            await triggerScanForUrl(extracted);
+          } else {
+            urlInput.focus();
+            showToast('הדבק קישור למוצר 📋', 'לא זוהה קישור בלוח ההעתקה. לחץ לחיצה ארוכה בתיבה להדבקה.', 'info');
+          }
+        });
+      }
+
+      // Scan URL Form
+      document.getElementById('scanUrlForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const rawUrl = extractCleanUrlFromText(urlInput.value) || urlInput.value.trim();
+        if (!rawUrl || !/^https?:\/\//i.test(rawUrl)) {
+          showToast('קישור לא תקין', 'נא להדביק קישור תקין למוצר (המתחיל ב-http או https).', 'warning');
+          return;
+        }
+        await triggerScanForUrl(rawUrl);
       });
 
       document.getElementById('closeProductModalBtn').addEventListener('click', closeProductModal);
@@ -4981,31 +5081,73 @@
       // Incoming Share Handler (from Amazon App / Browser Share Sheet / Web Share Target)
       window.__handleIncomingSharedUrl = async function(rawSharedInput) {
         if (!rawSharedInput) return;
-        const m = String(rawSharedInput).match(/https?:\/\/[^\s"'<>]+/i);
-        const sharedUrl = m ? m[0] : '';
+        const sharedUrl = extractCleanUrlFromText(rawSharedInput);
         if (!sharedUrl) return;
         switchTab('dashboard');
+        const clipBanner = document.getElementById('clipboardDetectBanner');
+        if (clipBanner) clipBanner.classList.add('hidden');
+        localStorage.setItem('pr_last_prompted_clip_url', sharedUrl);
         urlInput.value = sharedUrl;
         clearUrlBtn.classList.remove('hidden');
         showToast('📲 התקבל קישור משיתוף!', 'סורק אוטומטית את המוצר ששיתפת...', 'info');
-        const duplicateHit = findExistingProductBySameUrl(sharedUrl);
-        if (duplicateHit) {
-          showToast(
-            '⚠️ המוצר כבר קיים במעקב מהחנות הזו!',
-            `הקישור ל-"${duplicateHit.product.title}" (${duplicateHit.storeName}) כבר נמצא ברשימה שלך.`,
-            'warning'
-          );
-          openProductDetailsModal(duplicateHit.product.id);
-          return;
+        await triggerScanForUrl(sharedUrl);
+      };
+
+      // Automatic Clipboard Product Link Detection on App Launch / Resume
+      let detectedClipboardUrl = '';
+      const clipBannerEl = document.getElementById('clipboardDetectBanner');
+      const clipUrlPreviewEl = document.getElementById('clipboardDetectUrlPreview');
+      const acceptClipBtn = document.getElementById('acceptClipboardBannerBtn');
+      const ignoreClipBtn = document.getElementById('ignoreClipboardBannerBtn');
+      const dismissClipBtn = document.getElementById('dismissClipboardBannerBtn');
+
+      const hideClipboardBanner = (rememberDismissed = false) => {
+        if (clipBannerEl) clipBannerEl.classList.add('hidden');
+        if (rememberDismissed && detectedClipboardUrl) {
+          localStorage.setItem('pr_last_prompted_clip_url', detectedClipboardUrl);
         }
-        const submitBtn = document.getElementById('scanUrlSubmitBtn');
-        if (submitBtn) submitBtn.disabled = true;
+      };
+
+      if (acceptClipBtn) {
+        acceptClipBtn.addEventListener('click', async () => {
+          const urlToScan = detectedClipboardUrl;
+          hideClipboardBanner(true);
+          if (urlToScan) {
+            await triggerScanForUrl(urlToScan);
+          }
+        });
+      }
+      if (ignoreClipBtn) {
+        ignoreClipBtn.addEventListener('click', () => hideClipboardBanner(true));
+      }
+      if (dismissClipBtn) {
+        dismissClipBtn.addEventListener('click', () => hideClipboardBanner(true));
+      }
+
+      const checkClipboardForProductUrl = async () => {
         try {
-          const scannedData = await scanProductUrl(sharedUrl);
-          openProductModalWithData(scannedData, '');
-        } finally {
-          if (submitBtn) submitBtn.disabled = false;
-        }
+          if (urlInput && urlInput.value.trim()) return;
+          const rawClip = await readDeviceClipboardText();
+          if (!rawClip) return;
+          const clipUrl = extractCleanUrlFromText(rawClip);
+          if (!clipUrl || clipUrl.length < 10) return;
+          // Ignore internal app or localhost URLs
+          if (/localhost|127\.0\.0\.1|github\.io\/Priceradar/i.test(clipUrl)) return;
+          // Skip if user already dismissed or scanned this exact clipboard URL
+          const lastPrompted = localStorage.getItem('pr_last_prompted_clip_url') || '';
+          if (lastPrompted === clipUrl) return;
+          // Skip if this exact URL is already tracked
+          if (findExistingProductBySameUrl(clipUrl)) return;
+
+          detectedClipboardUrl = clipUrl;
+          if (clipUrlPreviewEl) {
+            const storeMeta = getStoreMeta(clipUrl);
+            clipUrlPreviewEl.textContent = `${storeMeta.name}: ${clipUrl}`;
+          }
+          if (clipBannerEl) {
+            clipBannerEl.classList.remove('hidden');
+          }
+        } catch (e) {}
       };
 
       // Check URL query params (Web Share Target) or Native Android Share Bridge on startup & resume
@@ -5013,9 +5155,9 @@
         try {
           if (window.AndroidNativeScraper && typeof window.AndroidNativeScraper.consumePendingSharedUrl === 'function') {
             const nativeShared = window.AndroidNativeScraper.consumePendingSharedUrl();
-            if (nativeShared && nativeShared.startsWith('http')) {
+            if (nativeShared && /https?:\/\//i.test(nativeShared)) {
               window.__handleIncomingSharedUrl(nativeShared);
-              return;
+              return true;
             }
           }
           const params = new URLSearchParams(window.location.search);
@@ -5023,14 +5165,27 @@
           if (sharedCombined && /https?:\/\//i.test(sharedCombined)) {
             window.history.replaceState({}, document.title, window.location.pathname);
             window.__handleIncomingSharedUrl(sharedCombined);
+            return true;
           }
         } catch (e) {}
+        return false;
       };
-      setTimeout(checkIncomingShareSources, 350);
+      setTimeout(() => {
+        const hadShare = checkIncomingShareSources();
+        if (!hadShare) {
+          checkClipboardForProductUrl();
+        }
+      }, 350);
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
-          checkIncomingShareSources();
+          const hadShare = checkIncomingShareSources();
+          if (!hadShare) {
+            setTimeout(checkClipboardForProductUrl, 250);
+          }
         }
+      });
+      window.addEventListener('focus', () => {
+        setTimeout(checkClipboardForProductUrl, 250);
       });
 
       // Simulate Price Drop Modal

@@ -469,7 +469,17 @@ def extract_price_from_html(html: str, url: str, selected_variant: str = ""):
         except ValueError:
             pass
 
-    # 4. WooCommerce data-product_variations
+    # 4. WooCommerce GTM4WP Data, Main Summary Price & data-product_variations
+    gtm_input = soup.find("input", attrs={"name": "gtm4wp_product_data"})
+    if gtm_input and gtm_input.get("value"):
+        try:
+            gtm_data = json.loads(gtm_input["value"])
+            gtm_p = float(gtm_data.get("price") or gtm_data.get("item_price") or 0)
+            if gtm_p > 0:
+                return gtm_p
+        except Exception:
+            pass
+
     form = soup.find(attrs={"data-product_variations": True})
     if form:
         try:
@@ -481,6 +491,17 @@ def extract_price_from_html(html: str, url: str, selected_variant: str = ""):
             if variations:
                 return float(variations[0].get("display_price") or variations[0].get("display_regular_price"))
         except Exception:
+            pass
+
+    for woo_el in soup.select(".summary .price ins .woocommerce-Price-amount, .summary .price > .woocommerce-Price-amount, .elementor-widget-woocommerce-product-price .price ins .woocommerce-Price-amount, .elementor-widget-woocommerce-product-price .price > .woocommerce-Price-amount, p.price ins .woocommerce-Price-amount, p.price > .woocommerce-Price-amount"):
+        if woo_el.find_parent(["del", "s"]) or woo_el.find_parent(class_=["related", "upsells", "woocommerce-store-notice", "demo_store"]):
+            continue
+        woo_txt = re.sub(r"[^0-9.]", "", woo_el.get_text(strip=True))
+        try:
+            val = float(woo_txt)
+            if val > 0.5:
+                return val
+        except ValueError:
             pass
 
     # 5. Schema.org JSON-LD
@@ -517,9 +538,13 @@ def extract_price_from_html(html: str, url: str, selected_variant: str = ""):
                 pass
 
     # 7. Clean text extraction with Unicode RTL stripping & Multi-Currency support
-    for rel in soup.select("script, style, del, s, strike, .old-price, [data-price-type='oldPrice'], .related, .upsells, footer, nav, header"):
+    for rel in soup.select("script, style, del, s, strike, .old-price, [data-price-type='oldPrice'], .related, .upsells, .woocommerce-store-notice, .demo_store, footer, nav, header"):
         rel.decompose()
     full_text = re.sub(r"[\u200E\u200F\u202A-\u202E]", "", soup.get_text("\n", strip=True))
+    full_text = re.sub(r"&#8362;|&#x20aa;", "₪", full_text, flags=re.I)
+    full_text = re.sub(r"(?:משלוח(?:ים)?[^\r\n]{0,60}?)?(?:חינם\s+)?בהזמנות\s+מעל\s+\d+\s*(?:₪|ש[\"״']ח|ILS)", " ", full_text, flags=re.I)
+    full_text = re.sub(r"\*?\s*הובלה\s+לכל\s+קומה[^\r\n]+", " ", full_text, flags=re.I)
+    full_text = re.sub(r"תוספת\s+תשלום\s+בסך[^\r\n]+", " ", full_text, flags=re.I)
 
     # 7a. Pricedrop KSP mirror pattern
     pd1 = re.search(r"₪\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*מחיר\s+(?:נוכחי|אחרון)", full_text)
@@ -529,9 +554,9 @@ def extract_price_from_html(html: str, url: str, selected_variant: str = ""):
         if reg_val > 5:
             return float(round(reg_val / 1.18)) if "אילת" in selected_variant else reg_val
 
-    # 7b. Machsanei Hashmal (payngo) text pattern — prioritize special/sale price over regular price
+    # 7b. Machsanei Hashmal (payngo) & Traklin Hashmal text pattern — prioritize special/sale/buy price
     m_payngo_special = (
-        re.search(r"לרכישה עכשיו ב\s*:\s*₪?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*₪?", full_text)
+        re.search(r"לרכישה\s+(?:עכשיו\s+)?ב\s*[:\-\s\r\n]*?(?:₪\s*)?(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(?:₪|ש[\"״']ח)?", full_text)
         or re.search(r"מחיר\s+(?:מיוחד|מבצע|מועדון|לאחר הנחה)\s*:\s*(?:לרכישה עכשיו ב\s*:\s*)?₪?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*₪?", full_text)
     )
     m_payngo_all = re.findall(r"מחיר\s*(?:מיוחד|רגיל)?\s*:\s*(?:לרכישה עכשיו ב\s*:\s*)?₪?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*₪?", full_text)
@@ -546,7 +571,7 @@ def extract_price_from_html(html: str, url: str, selected_variant: str = ""):
         val = min(candidates) if candidates else 0
         if val > 5:
             if "אילת" in selected_variant:
-                m_eil = re.search(r"קנו באילת ב\s*:\s*₪?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*₪?", full_text)
+                m_eil = re.search(r"(?:קנו\s+באילת\s+ב|לרכישה\s+באילת\s+ב)\s*[:\-\s\r\n]*?(?:₪\s*)?(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(?:₪|ש[\"״']ח)?", full_text)
                 if m_eil:
                     return float(m_eil.group(1).replace(",", ""))
                 return float(round(val / 1.18))
@@ -569,12 +594,15 @@ def extract_price_from_html(html: str, url: str, selected_variant: str = ""):
             return float(round(reg_val / 1.18))
         return reg_val
 
-    # 7c. Multi-currency match for Amazon ($ / € / £ / ₪) and AliExpress
-    m_curr = re.search(r"(?:Price|Deal Price|Our Price|מחיר|מחיר מבצע)?\s*[:\s]*?(?:(?:US\s*)?([₪$€£]|USD|ILS|EUR)\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)|(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(?:[₪$€£]|USD|ILS|EUR))", full_text, re.I)
-    if m_curr:
-        val = float((m_curr.group(2) or m_curr.group(3)).replace(",", ""))
-        if 0.5 < val < 500000:
-            return val
+    # 7c. Multi-currency match for Amazon ($ / € / £ / ₪) and AliExpress (skip shipping/floor/threshold lines)
+    for line in full_text.splitlines():
+        if re.search(r"משלוח|הובלה|קומה|מוביל|פירוק|דלת|איסוף|מינימום|מקסימום|קופון|בקנייה מעל|בהזמנות מעל|תוספת|החלפה|החזרה|תשלומים|shipping|delivery", line, re.I):
+            continue
+        m_curr = re.search(r"(?:Price|Deal Price|Our Price|מחיר|מחיר מבצע)?\s*[:\s]*?(?:(?:US\s*)?([₪$€£]|USD|ILS|EUR|ש[\"״']ח)\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)|(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(?:[₪$€£]|USD|ILS|EUR|ש[\"״']ח))", line, re.I)
+        if m_curr:
+            val = float((m_curr.group(2) or m_curr.group(3)).replace(",", ""))
+            if 0.5 < val < 500000:
+                return val
 
     for line in full_text.splitlines():
         if re.search(r"משלוח|איסוף|מינימום|מקסימום|קופון|בקנייה מעל|תוספת|shipping|delivery", line, re.I):

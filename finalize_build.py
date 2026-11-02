@@ -162,6 +162,8 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.BroadcastReceiver;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -242,7 +244,7 @@ public class MainActivity extends BridgeActivity {
             if (candidateText != null && candidateText.contains("http")) {
                 Matcher m = Pattern.compile("(https?://[^\\\\s\\\"'<>]+)").matcher(candidateText);
                 if (m.find()) {
-                    final String extractedUrl = m.group(1);
+                    final String extractedUrl = m.group(1).replaceAll("[.,;!?\\\\)\\\\]]+$", "");
                     SharedPreferences sp = getSharedPreferences("PriceRadarPrefs", Context.MODE_PRIVATE);
                     sp.edit().putString("pendingSharedUrl", extractedUrl).commit();
                     new Handler(Looper.getMainLooper()).postDelayed(() -> {
@@ -925,6 +927,59 @@ public class MainActivity extends BridgeActivity {
                 }
             } catch (Exception ignored) {}
             return "";
+        }
+
+        @JavascriptInterface
+        public String getClipboardText() {
+            try {
+                ClipboardManager cm = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+                if (cm != null && cm.hasPrimaryClip()) {
+                    ClipData cd = cm.getPrimaryClip();
+                    if (cd != null && cd.getItemCount() > 0) {
+                        CharSequence cs = cd.getItemAt(0).coerceToText(context);
+                        if (cs != null) {
+                            return cs.toString();
+                        }
+                    }
+                }
+            } catch (Exception ignored) {}
+            return "";
+        }
+
+        @JavascriptInterface
+        public String resolveRedirectUrl(final String rawUrl) {
+            if (rawUrl == null || rawUrl.isEmpty()) return "";
+            String currentUrl = rawUrl;
+            try {
+                for (int hop = 0; hop < 6; hop++) {
+                    URL u = new URL(currentUrl);
+                    HttpURLConnection conn = (HttpURLConnection) u.openConnection();
+                    conn.setInstanceFollowRedirects(false);
+                    conn.setRequestMethod("GET");
+                    conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36");
+                    conn.setConnectTimeout(3500);
+                    conn.setReadTimeout(3500);
+                    int code = conn.getResponseCode();
+                    if (code >= 300 && code < 400) {
+                        String loc = conn.getHeaderField("Location");
+                        conn.disconnect();
+                        if (loc == null || loc.isEmpty()) break;
+                        if (loc.startsWith("/")) {
+                            currentUrl = u.getProtocol() + "://" + u.getHost() + loc;
+                        } else if (!loc.startsWith("http")) {
+                            currentUrl = new URL(u, loc).toString();
+                        } else {
+                            currentUrl = loc;
+                        }
+                    } else {
+                        String finalUrl = conn.getURL() != null ? conn.getURL().toString() : currentUrl;
+                        conn.disconnect();
+                        currentUrl = finalUrl;
+                        break;
+                    }
+                }
+            } catch (Exception ignored) {}
+            return currentUrl;
         }
 
         @JavascriptInterface
