@@ -118,9 +118,24 @@ def main():
 """
         if "BackgroundAlertReceiver" not in m:
             m = m.replace("</application>", rcvr + "</application>")
+        share_filter = """
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="priceradar" />
+            </intent-filter>
+"""
+        if "android.intent.action.SEND" not in m:
+            m = m.replace("</activity>", share_filter + "        </activity>", 1)
         with open(p_manifest, "w", encoding="utf-8") as f:
             f.write(m)
-        print("Updated AndroidManifest.xml with permissions, FCM default channel, and boot/alarm receiver")
+        print("Updated AndroidManifest.xml with permissions, Share Target intent-filter, FCM default channel, and boot/alarm receiver")
 
     # 5. Write MainActivity.java
     main_activity_dir = "android/app/src/main/java/com/priceradar/app"
@@ -191,6 +206,49 @@ public class MainActivity extends BridgeActivity {
         }
         scheduleNextBackgroundCheck(this, 15);
         startRadarMonitorService(this);
+        handleIncomingShareIntent(getIntent());
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleIncomingShareIntent(intent);
+    }
+
+    private void handleIncomingShareIntent(Intent intent) {
+        if (intent == null) return;
+        try {
+            String action = intent.getAction();
+            String type = intent.getType();
+            String candidateText = null;
+            if (Intent.ACTION_SEND.equals(action) && type != null && type.startsWith("text/")) {
+                String sharedText = intent.getStringExtra(Intent.EXTRA_TEXT);
+                String sharedSubj = intent.getStringExtra(Intent.EXTRA_SUBJECT);
+                candidateText = (sharedText != null ? sharedText : "") + " " + (sharedSubj != null ? sharedSubj : "");
+            } else if (Intent.ACTION_VIEW.equals(action) && intent.getDataString() != null) {
+                candidateText = intent.getDataString();
+            }
+            if (candidateText != null && candidateText.contains("http")) {
+                Matcher m = Pattern.compile("(https?://[^\\\\s\\\"'<>]+)").matcher(candidateText);
+                if (m.find()) {
+                    final String extractedUrl = m.group(1);
+                    SharedPreferences sp = getSharedPreferences("PriceRadarPrefs", Context.MODE_PRIVATE);
+                    sp.edit().putString("pendingSharedUrl", extractedUrl).commit();
+                    new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                        try {
+                            if (getBridge() != null && getBridge().getWebView() != null) {
+                                String safeUrl = JSONObject.quote(extractedUrl);
+                                getBridge().getWebView().evaluateJavascript(
+                                    "if (window.__handleIncomingSharedUrl) { window.__handleIncomingSharedUrl(" + safeUrl + "); }",
+                                    null
+                                );
+                            }
+                        } catch (Exception ignored) {}
+                    }, 900);
+                }
+            }
+        } catch (Exception ignored) {}
     }
 
     public static void startRadarMonitorService(Context ctx) {
@@ -844,6 +902,19 @@ public class MainActivity extends BridgeActivity {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+        }
+
+        @JavascriptInterface
+        public String consumePendingSharedUrl() {
+            try {
+                SharedPreferences sp = context.getSharedPreferences("PriceRadarPrefs", Context.MODE_PRIVATE);
+                String u = sp.getString("pendingSharedUrl", "");
+                if (u != null && !u.isEmpty()) {
+                    sp.edit().putString("pendingSharedUrl", "").commit();
+                    return u;
+                }
+            } catch (Exception ignored) {}
+            return "";
         }
 
         @JavascriptInterface

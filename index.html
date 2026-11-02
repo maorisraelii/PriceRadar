@@ -2,9 +2,9 @@
 <html lang="he" dir="rtl">
 <head>
   <script>
-    window.__APP_VERSION__ = "3.2.1";
-    window.__BUILD_TIMESTAMP__ = 1762146900;
-    window.__OTA_RELEASE_NOTES__ = "תיקון קומפילציית APK ב-GitHub Actions, הסרת כל כפתורי ההוספה הידנית ללא קישור לחנות, ושיפור מהירות סריקת קישורי Amazon וחנויות נוספות.";
+    window.__APP_VERSION__ = "3.3.0";
+    window.__BUILD_TIMESTAMP__ = 1762152000;
+    window.__OTA_RELEASE_NOTES__ = "שדרוג עיצוב מקיף (Obsidian Luxury UI), דף פרטי מוצר מלא בלחיצה על קובייה, תצוגת סטטוס משלוח חינם לישראל במוצרי Amazon, סינון מהיר בלחיצה על תגית חנות, ושיתוף ישיר (Share) מאפליקציית אמזון ומהדפדפן.";
 
     // =========================================================================
     // OVER-THE-AIR (OTA) LIVE UPDATE ENGINE FROM GITHUB
@@ -140,104 +140,118 @@
     }
     body {
       font-family: 'Heebo', 'Inter', sans-serif;
-      background-color: #090716;
+      background-color: #05050b;
       color: #f8fafc;
       overflow-x: hidden;
       min-height: 100vh;
     }
-    /* Liquid Aurora Background Orbs */
+    /* Obsidian Luxury Aurora Background */
     .aurora-bg {
       position: fixed;
       inset: 0;
       z-index: -1;
       overflow: hidden;
-      background: radial-gradient(circle at 15% 15%, #1e133c 0%, #090716 55%, #050a18 100%);
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -15%, rgba(124, 58, 237, 0.28), transparent),
+        radial-gradient(ellipse 60% 45% at 85% 20%, rgba(236, 72, 153, 0.16), transparent),
+        radial-gradient(ellipse 70% 50% at 15% 85%, rgba(6, 182, 212, 0.16), transparent),
+        linear-gradient(180deg, #070612 0%, #05050b 60%, #03040a 100%);
+    }
+    .aurora-bg::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+      background-size: 28px 28px;
+      mask-image: radial-gradient(ellipse at center, black 35%, transparent 85%);
+      -webkit-mask-image: radial-gradient(ellipse at center, black 35%, transparent 85%);
+      pointer-events: none;
     }
     .aurora-orb {
       position: absolute;
       border-radius: 9999px;
-      filter: blur(85px);
-      opacity: 0.52;
-      animation: floatOrb 18s ease-in-out infinite alternate;
+      filter: blur(95px);
+      opacity: 0.42;
+      animation: floatOrb 20s ease-in-out infinite alternate;
       pointer-events: none;
     }
     .orb-1 {
-      width: 380px;
-      height: 380px;
-      background: linear-gradient(135deg, #ec4899, #8b5cf6);
-      top: -100px;
-      right: -80px;
-    }
-    .orb-2 {
       width: 420px;
       height: 420px;
-      background: linear-gradient(135deg, #06b6d4, #6366f1);
-      bottom: -120px;
-      left: -100px;
+      background: linear-gradient(135deg, #ec4899, #7c3aed);
+      top: -130px;
+      right: -90px;
+    }
+    .orb-2 {
+      width: 440px;
+      height: 440px;
+      background: linear-gradient(135deg, #06b6d4, #4f46e5);
+      bottom: -140px;
+      left: -110px;
       animation-delay: -6s;
     }
     .orb-3 {
-      width: 300px;
-      height: 300px;
+      width: 320px;
+      height: 320px;
       background: linear-gradient(135deg, #10b981, #3b82f6);
-      top: 42%;
+      top: 40%;
       left: 35%;
-      opacity: 0.32;
+      opacity: 0.24;
       animation-delay: -11s;
     }
     @keyframes floatOrb {
       0% { transform: translate(0, 0) scale(1); }
-      50% { transform: translate(-25px, 20px) scale(1.08); }
+      50% { transform: translate(-25px, 20px) scale(1.06); }
       100% { transform: translate(20px, -20px) scale(0.95); }
     }
 
-    /* Ultra-Modern Liquid Glassmorphism */
+    /* High-Craft Obsidian Glass Surfaces */
     .liquid-glass {
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.04) 100%);
-      backdrop-filter: blur(26px) saturate(190%);
-      -webkit-backdrop-filter: blur(26px) saturate(190%);
-      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: linear-gradient(165deg, rgba(22, 24, 45, 0.84) 0%, rgba(11, 13, 26, 0.92) 100%);
+      backdrop-filter: blur(28px) saturate(190%);
+      -webkit-backdrop-filter: blur(28px) saturate(190%);
+      border: 1px solid rgba(255, 255, 255, 0.11);
       box-shadow:
-        inset 0 1px 1px rgba(255, 255, 255, 0.28),
-        0 20px 45px -15px rgba(0, 0, 0, 0.55);
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.18),
+        0 22px 48px -14px rgba(0, 0, 0, 0.72);
     }
     .liquid-glass-soft {
-      background: linear-gradient(145deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.03) 100%);
-      backdrop-filter: blur(20px) saturate(170%);
-      -webkit-backdrop-filter: blur(20px) saturate(170%);
-      border: 1px solid rgba(255, 255, 255, 0.13);
-      box-shadow: inset 0 1px 0.5px rgba(255, 255, 255, 0.2);
+      background: linear-gradient(160deg, rgba(255, 255, 255, 0.065) 0%, rgba(255, 255, 255, 0.02) 100%);
+      backdrop-filter: blur(18px) saturate(165%);
+      -webkit-backdrop-filter: blur(18px) saturate(165%);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
     }
     .liquid-glass-input {
-      background: rgba(10, 12, 28, 0.65);
+      background: rgba(6, 8, 19, 0.82);
       backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.16);
-      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.13);
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5);
     }
     .liquid-glass-input:focus {
-      border-color: rgba(236, 72, 153, 0.7);
-      box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.2), inset 0 2px 6px rgba(0, 0, 0, 0.35);
+      border-color: rgba(168, 85, 247, 0.75);
+      box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.22), inset 0 2px 6px rgba(0, 0, 0, 0.5);
     }
     .liquid-pill-active {
-      background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 50%, #6366f1 100%);
-      box-shadow: 0 8px 25px -4px rgba(236, 72, 153, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.4);
-      border: 1px solid rgba(255, 255, 255, 0.3);
+      background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 52%, #4f46e5 100%);
+      box-shadow: 0 8px 24px -4px rgba(139, 92, 246, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.42);
+      border: 1px solid rgba(255, 255, 255, 0.28);
     }
     .btn-gradient-primary {
-      background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 55%, #06b6d4 100%);
+      background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 50%, #06b6d4 100%);
       box-shadow: 0 10px 28px -6px rgba(139, 92, 246, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.45);
       transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .btn-gradient-primary:hover {
       transform: translateY(-1px) scale(1.01);
-      box-shadow: 0 14px 32px -6px rgba(236, 72, 153, 0.7), inset 0 1px 1px rgba(255, 255, 255, 0.6);
+      box-shadow: 0 14px 32px -6px rgba(236, 72, 153, 0.65), inset 0 1px 1px rgba(255, 255, 255, 0.6);
     }
     .btn-gradient-primary:active {
       transform: translateY(0) scale(0.98);
     }
     .btn-gradient-emerald {
       background: linear-gradient(135deg, #10b981 0%, #059669 55%, #06b6d4 100%);
-      box-shadow: 0 8px 22px -5px rgba(16, 185, 129, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.4);
+      box-shadow: 0 8px 22px -5px rgba(16, 185, 129, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.38);
     }
     .pulse-dot {
       animation: pulseRing 2s infinite;
@@ -248,11 +262,19 @@
       100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
     }
     .card-hover {
-      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease;
     }
     .card-hover:hover {
       transform: translateY(-3px);
+      border-color: rgba(255, 255, 255, 0.24);
     }
+    .product-stage {
+      background: radial-gradient(circle at center, rgba(255, 255, 255, 0.14) 0%, rgba(15, 23, 42, 0.9) 100%);
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.2), 0 8px 20px -4px rgba(0, 0, 0, 0.5);
+    }
+    .tabular-nums { font-variant-numeric: tabular-nums; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 9999px; }
@@ -367,16 +389,22 @@
         <div class="absolute -bottom-20 -right-20 w-52 h-52 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none"></div>
 
         <div class="relative z-10 space-y-4">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-pink-500 via-purple-500 to-cyan-400 flex items-center justify-center text-xl shadow-md shadow-pink-500/25 shrink-0">
-              ✨
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+            <div class="flex items-center gap-3">
+              <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-pink-500 via-purple-600 to-cyan-500 flex items-center justify-center text-xl shadow-lg shadow-purple-500/30 shrink-0 border border-white/25">
+                ✨
+              </div>
+              <div>
+                <h2 class="text-base sm:text-lg font-black text-white tracking-tight">הוסף מוצר למעקב חכם</h2>
+                <p class="text-xs text-slate-300/90">
+                  הדבק קישור מכל חנות — או שתף ישירות מאפליקציית Amazon / הדפדפן אל PriceRadar
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 class="text-base sm:text-lg font-extrabold text-white">הדבק קישור למוצר מכל חנות</h2>
-              <p class="text-xs text-slate-300">
-                האפליקציה תזהה אוטומטית את התמונה, החנות, המחיר והאפשרויות (משקל, מידה או דגם)
-              </p>
-            </div>
+            <span class="self-start sm:self-auto inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/15 border border-cyan-400/30 text-[11px] font-extrabold text-cyan-200">
+              <span>📲</span>
+              <span>תומך בשיתוף מהיר (Share)</span>
+            </span>
           </div>
 
           <form id="scanUrlForm" class="flex flex-col sm:flex-row gap-2.5">
@@ -385,7 +413,7 @@
                 id="urlInput"
                 type="url"
                 required
-                placeholder="הדבק כאן קישור (טרקלין חשמל, MyRabbit, פוט לוקר, KSP, אמזון...)"
+                placeholder="הדבק קישור (Amazon, KSP, מחסני חשמל, טרקלין, פוט לוקר, MyRabbit...)"
                 class="w-full pl-10 pr-4 py-3.5 rounded-2xl liquid-glass-input text-sm text-white placeholder-slate-400 outline-none transition dir-ltr"
               />
               <button id="clearUrlInputBtn" type="button" title="נקה שדה" class="hidden absolute left-3.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white/15 hover:bg-white/25 text-white text-xs flex items-center justify-center">
@@ -398,7 +426,7 @@
               class="px-6 py-3.5 rounded-2xl btn-gradient-primary text-white font-extrabold text-sm flex items-center justify-center gap-2 shrink-0"
             >
               <span>🔍</span>
-              <span>סרוק קישור והוסף</span>
+              <span>סרוק והוסף למעקב</span>
             </button>
           </form>
 
@@ -414,52 +442,68 @@
         </div>
       </div>
 
-      <!-- Compact & Organized KPI Strip -->
+      <!-- High-Craft KPI Strip -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
-        <div class="liquid-glass-soft rounded-2xl p-3.5 flex items-center justify-between border-r-4 border-r-purple-400">
+        <div class="liquid-glass rounded-2xl p-3.5 sm:p-4 flex items-center justify-between relative overflow-hidden group">
+          <div class="absolute top-0 right-0 w-1 h-full bg-gradient-to-b from-purple-400 to-indigo-600"></div>
           <div>
-            <p class="text-[11px] font-bold text-slate-300">מוצרים במעקב</p>
-            <p id="statTotalProducts" class="text-xl sm:text-2xl font-black text-white mt-0.5">0</p>
+            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">מוצרים במעקב</p>
+            <p id="statTotalProducts" class="text-2xl sm:text-3xl font-black text-white mt-0.5 tabular-nums">0</p>
           </div>
-          <div class="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-400/30 flex items-center justify-center text-lg">
+          <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-purple-500/25 to-indigo-600/20 border border-purple-400/30 flex items-center justify-center text-xl shadow-inner">
             🛍️
           </div>
         </div>
 
-        <div class="liquid-glass-soft rounded-2xl p-3.5 flex items-center justify-between border-r-4 border-r-emerald-400">
+        <div class="liquid-glass rounded-2xl p-3.5 sm:p-4 flex items-center justify-between relative overflow-hidden group">
+          <div class="absolute top-0 right-0 w-1 h-full bg-gradient-to-b from-emerald-400 to-teal-500"></div>
           <div>
-            <p class="text-[11px] font-bold text-slate-300">ירידות מחיר</p>
-            <p id="statPriceDrops" class="text-xl sm:text-2xl font-black text-emerald-300 mt-0.5">0</p>
+            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">ירידות מחיר</p>
+            <p id="statPriceDrops" class="text-2xl sm:text-3xl font-black text-emerald-300 mt-0.5 tabular-nums">0</p>
           </div>
-          <div class="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-lg">
+          <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-500/25 to-teal-500/20 border border-emerald-400/30 flex items-center justify-center text-xl shadow-inner">
             📉
           </div>
         </div>
 
-        <div class="liquid-glass-soft rounded-2xl p-3.5 flex items-center justify-between border-r-4 border-r-cyan-400">
+        <div class="liquid-glass rounded-2xl p-3.5 sm:p-4 flex items-center justify-between relative overflow-hidden group">
+          <div class="absolute top-0 right-0 w-1 h-full bg-gradient-to-b from-cyan-400 to-blue-500"></div>
           <div>
-            <p class="text-[11px] font-bold text-slate-300">חיסכון שזוהה</p>
-            <p id="statTotalSavings" class="text-xl sm:text-2xl font-black text-cyan-300 mt-0.5">0 ₪</p>
+            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">חיסכון שזוהה</p>
+            <p id="statTotalSavings" class="text-2xl sm:text-3xl font-black text-cyan-300 mt-0.5 tabular-nums">0 ₪</p>
           </div>
-          <div class="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-400/30 flex items-center justify-center text-lg">
+          <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-cyan-500/25 to-blue-500/20 border border-cyan-400/30 flex items-center justify-center text-xl shadow-inner">
             💎
           </div>
         </div>
 
-        <div class="liquid-glass-soft rounded-2xl p-3.5 flex items-center justify-between border-r-4 border-r-amber-400">
+        <div class="liquid-glass rounded-2xl p-3.5 sm:p-4 flex items-center justify-between relative overflow-hidden group">
+          <div class="absolute top-0 right-0 w-1 h-full bg-gradient-to-b from-amber-400 to-orange-500"></div>
           <div>
-            <p class="text-[11px] font-bold text-slate-300">דו"ח יומי</p>
+            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">דו"ח יומי</p>
             <div class="flex items-center gap-1.5 mt-0.5">
-              <p id="statDailyHour" class="text-lg sm:text-xl font-black text-amber-300 font-mono">09:00</p>
+              <p id="statDailyHour" class="text-xl sm:text-2xl font-black text-amber-300 font-mono tabular-nums">09:00</p>
               <button id="sendDailyReportQuickBtn" type="button" class="text-[10px] font-extrabold px-2 py-0.5 rounded-lg bg-amber-400/20 hover:bg-amber-400/35 text-amber-200 border border-amber-300/30 transition">
                 שלח
               </button>
             </div>
           </div>
-          <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400/30 flex items-center justify-center text-lg">
+          <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-500/25 to-orange-500/20 border border-amber-400/30 flex items-center justify-center text-xl shadow-inner">
             ⏰
           </div>
         </div>
+      </div>
+
+      <!-- Active Store Filter Banner (Appears when clicking a store pill on any product card) -->
+      <div id="activeStoreFilterBanner" class="hidden rounded-2xl bg-gradient-to-r from-pink-500/20 via-purple-500/20 to-cyan-500/20 border border-pink-400/40 px-4 py-2.5 flex items-center justify-between gap-3 shadow-lg">
+        <div class="flex items-center gap-2 text-xs font-extrabold text-white">
+          <span>🏪</span>
+          <span>מציג מוצרים מהחנות:</span>
+          <span id="activeStoreFilterName" class="px-2.5 py-0.5 rounded-full bg-pink-500 text-white font-black"></span>
+        </div>
+        <button id="clearStoreFilterBannerBtn" type="button" class="px-3 py-1 rounded-xl bg-white/15 hover:bg-white/25 text-xs font-extrabold text-cyan-200 border border-white/20 transition">
+          הצג את כל החנויות ✕
+        </button>
       </div>
 
       <!-- Clean & Compact Filter, Store, Category & Sort Bar -->
@@ -1019,16 +1063,24 @@
           </div>
         </div>
 
-        <!-- Amazon Free Shipping over $49 Toggle -->
-        <div id="modalFreeShippingBox" class="hidden p-3 rounded-2xl bg-cyan-950/40 border border-cyan-400/40 flex items-center justify-between">
-          <div class="flex items-center gap-2.5">
-            <span class="text-xl">✈️</span>
-            <div>
-              <p class="text-xs font-bold text-cyan-200">משלוח חינם לישראל מעל 49$ (Amazon)</p>
-              <p class="text-[10px] text-cyan-300/80">קבל התראה ברגע שהמוצר מצטרף למשלוח חינם, גם ללא ירידת מחיר</p>
+        <!-- Amazon Free Shipping over $49 Status & Toggle -->
+        <div id="modalFreeShippingBox" class="hidden p-3.5 rounded-2xl bg-gradient-to-r from-cyan-950/70 via-slate-900/80 to-indigo-950/60 border border-cyan-400/40 space-y-2.5">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <span class="text-lg">✈️</span>
+              <span class="text-xs font-extrabold text-white">סטטוס משלוח לישראל (Amazon):</span>
             </div>
+            <span id="modalFreeShippingDetectedBadge" class="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-emerald-500/25 text-emerald-200 border border-emerald-400/40">
+              נבדק...
+            </span>
           </div>
-          <input id="modalTrackFreeShipping" type="checkbox" checked class="w-5 h-5 accent-cyan-400 cursor-pointer" />
+          <div class="flex items-center justify-between gap-3 pt-2 border-t border-white/10">
+            <div>
+              <p class="text-xs font-bold text-cyan-200">עקוב אחרי זכאות למשלוח חינם לישראל (מעל $49)</p>
+              <p class="text-[10px] text-slate-300">קבל התראה ברגע שהמוצר הופך לזכאי למשלוח חינם לישראל</p>
+            </div>
+            <input id="modalTrackFreeShipping" type="checkbox" checked class="w-5 h-5 accent-cyan-400 cursor-pointer shrink-0" />
+          </div>
         </div>
 
         <div class="grid grid-cols-2 gap-3">
@@ -1155,6 +1207,141 @@
       <button id="closeOtaUpdateModalBtn" type="button" class="w-full py-3 rounded-2xl btn-gradient-primary text-white text-xs sm:text-sm font-extrabold shadow-lg">
         מעולה, הבנתי! 👍
       </button>
+    </div>
+  </div>
+
+  <!-- MODAL: PROFESSIONAL PRODUCT DEEP-DIVE DETAILS SHEET -->
+  <div id="productDetailsModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-xl flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
+    <div class="liquid-glass rounded-t-3xl sm:rounded-3xl max-w-2xl w-full max-h-[92vh] overflow-y-auto p-5 sm:p-6 space-y-5 border border-white/20 shadow-2xl relative">
+      <!-- Top Bar -->
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex items-center gap-2 flex-wrap">
+          <button id="detailsStoreFilterBtn" type="button" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/10 hover:bg-pink-500/25 border border-white/15 hover:border-pink-400/40 text-xs font-extrabold text-white transition" title="לחץ לסינון כל המוצרים מחנות זו">
+            <img id="detailsStoreFavicon" src="" alt="" class="w-4 h-4 rounded-sm object-contain" onerror="this.style.display='none'" />
+            <span id="detailsStoreName">חנות</span>
+            <span class="text-[10px] text-cyan-300 font-bold">🔍 סנן</span>
+          </button>
+          <span id="detailsCategoryBadge" class="text-[11px] font-bold px-2.5 py-1 rounded-xl border"></span>
+          <span id="detailsStatusBadge" class="text-[11px] font-black px-3 py-1 rounded-full"></span>
+        </div>
+        <button id="closeProductDetailsModalBtn" type="button" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-sm shrink-0 transition">✕</button>
+      </div>
+
+      <!-- Product Hero Section -->
+      <div class="flex flex-col sm:flex-row items-center sm:items-start gap-4 p-4 rounded-2xl liquid-glass-soft border border-white/10">
+        <div class="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden product-stage border border-white/20 shrink-0 flex items-center justify-center p-1.5">
+          <img id="detailsProductImage" src="" alt="" class="w-full h-full object-contain rounded-xl" />
+        </div>
+        <div class="flex-1 min-w-0 space-y-2.5 text-center sm:text-right w-full">
+          <h3 id="detailsProductTitle" class="text-base sm:text-xl font-black text-white leading-snug"></h3>
+          <div id="detailsMetaPills" class="flex flex-wrap items-center justify-center sm:justify-start gap-1.5"></div>
+          <div class="pt-1 flex flex-wrap items-center justify-center sm:justify-start gap-2">
+            <a id="detailsBuyNowBtn" href="#" target="_blank" rel="noopener noreferrer" class="px-4 py-2 rounded-xl btn-gradient-primary text-white text-xs font-extrabold inline-flex items-center gap-1.5 shadow-lg">
+              <span>🛒</span>
+              <span id="detailsBuyNowText">פתח מוצר בחנות</span>
+              <span>↗</span>
+            </a>
+            <button id="detailsCopyLinkBtn" type="button" class="px-3 py-2 rounded-xl liquid-glass-soft hover:bg-white/15 text-xs font-bold text-slate-200 inline-flex items-center gap-1 transition">
+              <span>📋</span>
+              <span>העתק קישור</span>
+            </button>
+            <button id="detailsAddStoreCompareBtn" type="button" class="px-3 py-2 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-400/35 text-xs font-extrabold text-cyan-200 inline-flex items-center gap-1 transition">
+              <span>+ השווה חנות נוספת</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Amazon Free Shipping Live Control Card (Shown for Amazon products) -->
+      <div id="detailsAmazonShippingCard" class="hidden p-4 rounded-2xl bg-gradient-to-r from-cyan-950/80 via-slate-900/85 to-indigo-950/75 border border-cyan-400/40 space-y-3">
+        <div class="flex items-center justify-between gap-2 flex-wrap">
+          <div class="flex items-center gap-2">
+            <span class="text-xl">✈️</span>
+            <div>
+              <h4 class="text-xs sm:text-sm font-black text-white">משלוח מאמזון לישראל (סף משלוח חינם $49)</h4>
+              <p id="detailsAmazonShippingSubtext" class="text-[11px] text-cyan-200/90 mt-0.5"></p>
+            </div>
+          </div>
+          <span id="detailsAmazonShippingBadge" class="text-xs font-black px-3 py-1 rounded-full"></span>
+        </div>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-2.5 border-t border-white/10 text-xs">
+          <label class="flex items-center gap-2 cursor-pointer text-slate-200 font-bold">
+            <input id="detailsAmazonTrackShippingToggle" type="checkbox" class="w-4 h-4 accent-cyan-400 cursor-pointer" />
+            <span>שלח לי התראה ברגע שהמוצר נכנס למשלוח חינם לישראל</span>
+          </label>
+          <button id="detailsAmazonToggleStatusBtn" type="button" class="self-start sm:self-auto text-[11px] font-extrabold text-cyan-300 hover:text-cyan-200 underline">
+            עדכן סטטוס משלוח ידנית
+          </button>
+        </div>
+      </div>
+
+      <!-- 4 Key Price Analytics Boxes -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        <div class="p-3 rounded-2xl liquid-glass-soft text-center border border-white/10">
+          <p class="text-[11px] text-slate-400 font-bold">מחיר נוכחי</p>
+          <p id="detailsCurrentPrice" class="text-lg sm:text-xl font-black text-emerald-300 mt-0.5 tabular-nums"></p>
+        </div>
+        <div class="p-3 rounded-2xl liquid-glass-soft text-center border border-white/10">
+          <p class="text-[11px] text-slate-400 font-bold">מחיר התחלתי</p>
+          <p id="detailsInitialPrice" class="text-base sm:text-lg font-extrabold text-slate-200 mt-0.5 tabular-nums"></p>
+        </div>
+        <div class="p-3 rounded-2xl liquid-glass-soft text-center border border-white/10">
+          <p class="text-[11px] text-slate-400 font-bold">שיא השפל</p>
+          <p id="detailsLowestPrice" class="text-base sm:text-lg font-extrabold text-cyan-300 mt-0.5 tabular-nums"></p>
+        </div>
+        <div class="p-3 rounded-2xl liquid-glass-soft text-center border border-amber-400/30 bg-amber-500/10">
+          <p class="text-[11px] text-amber-200 font-bold">מחיר יעד להתראה</p>
+          <p id="detailsTargetPrice" class="text-base sm:text-lg font-extrabold text-amber-300 mt-0.5 tabular-nums"></p>
+        </div>
+      </div>
+
+      <!-- Multi-Store Offers Comparison Table inside Details -->
+      <div id="detailsStoresSection" class="space-y-2">
+        <div class="flex items-center justify-between">
+          <h4 class="text-xs sm:text-sm font-black text-white flex items-center gap-1.5">
+            <span>🏪</span>
+            <span id="detailsStoresTitle">חנויות ומחירים במעקב</span>
+          </h4>
+        </div>
+        <div id="detailsStoresList" class="space-y-2"></div>
+      </div>
+
+      <!-- Large Interactive Price History Chart & Timeline Log -->
+      <div class="space-y-2.5">
+        <div class="flex items-center justify-between">
+          <h4 class="text-xs sm:text-sm font-black text-white flex items-center gap-1.5">
+            <span>📈</span>
+            <span>גרף והיסטוריית בדיקות מחיר</span>
+          </h4>
+          <span id="detailsLastChecked" class="text-[11px] text-slate-400 font-mono"></span>
+        </div>
+        <div class="relative h-48 sm:h-56 w-full rounded-2xl bg-black/45 p-3 border border-white/10">
+          <canvas id="detailsPriceChartCanvas"></canvas>
+        </div>
+        <div id="detailsHistoryLogList" class="max-h-36 overflow-y-auto space-y-1.5 pr-1"></div>
+      </div>
+
+      <!-- Bottom Quick Action Bar -->
+      <div class="pt-3 border-t border-white/15 flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center gap-2 flex-1">
+          <button id="detailsCheckNowBtn" type="button" class="flex-1 py-2.5 px-4 rounded-2xl btn-gradient-primary text-white text-xs font-extrabold transition flex items-center justify-center gap-1.5">
+            <span>🔄</span>
+            <span>בדוק מחיר עכשיו</span>
+          </button>
+          <button id="detailsSimulateBtn" type="button" class="flex-1 py-2.5 px-4 rounded-2xl btn-gradient-emerald text-white text-xs font-extrabold transition flex items-center justify-center gap-1.5">
+            <span>📉</span>
+            <span>הדמיית ירידת מחיר</span>
+          </button>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="detailsEditBtn" type="button" class="py-2.5 px-3.5 rounded-2xl liquid-glass-soft hover:bg-white/20 text-white text-xs font-bold transition">
+            ✏️ ערוך
+          </button>
+          <button id="detailsDeleteBtn" type="button" class="py-2.5 px-3.5 rounded-2xl liquid-glass-soft hover:bg-rose-500/35 text-rose-300 text-xs font-bold transition">
+            🗑️ מחק
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1792,7 +1979,7 @@
     function checkAmazonFreeShippingToIsrael(rawText) {
       if (!rawText) return false;
       const clean = String(rawText).replace(/[\u200E\u200F\u202A-\u202E]/g, '');
-      return /(?:FREE Shipping|משלוח חינם|זכאי למשלוח חינם).*(?:to Israel|לישראל|מעל\s*\$?49|49\$)|qualif(?:y|ies) for FREE Shipping to Israel|eligible for FREE Shipping to Israel/i.test(clean);
+      return /(?:FREE\s+(?:International\s+)?(?:Shipping|Delivery)|משלוח\s+חינם|זכאי\s+למשלוח\s+חינם)[\s\S]{0,90}?(?:to\s+Israel|לישראל|מעל\s*\$?49|49\$|\$49\s+of\s+eligible)|(?:to\s+Israel|לישראל)[\s\S]{0,60}?(?:FREE\s+(?:Shipping|Delivery)|משלוח\s+חינם)|qualif(?:y|ies)\s+for\s+FREE\s+(?:Shipping|Delivery)|eligible\s+for\s+FREE\s+(?:Shipping|Delivery)|FREE\s+delivery[\s\S]{0,40}?on\s+\$49/i.test(clean);
     }
 
     function extractKspUin(rawUrl) {
@@ -2926,14 +3113,26 @@
       document.getElementById('modalTargetPrice').value = data.targetPrice || '';
       const fsBox = document.getElementById('modalFreeShippingBox');
       const fsCheck = document.getElementById('modalTrackFreeShipping');
-      const isAmazonProd = (data.url || '').includes('amazon.');
+      const fsDetectedBadge = document.getElementById('modalFreeShippingDetectedBadge');
+      const isAmazonProd = (data.url || '').includes('amazon.') || (data.store || '').toLowerCase().includes('amazon');
       if (fsBox) {
-        fsBox.className = isAmazonProd ? 'p-3 rounded-2xl bg-cyan-950/40 border border-cyan-400/40 flex items-center justify-between' : 'hidden';
+        fsBox.className = isAmazonProd
+          ? 'p-3.5 rounded-2xl bg-gradient-to-r from-cyan-950/70 via-slate-900/80 to-indigo-950/60 border border-cyan-400/40 space-y-2.5'
+          : 'hidden';
+      }
+      if (fsDetectedBadge && isAmazonProd) {
+        if (data.freeShippingEligible) {
+          fsDetectedBadge.className = 'text-[11px] font-black px-2.5 py-0.5 rounded-full bg-emerald-500/25 text-emerald-200 border border-emerald-400/40';
+          fsDetectedBadge.textContent = '✈️ זכאי למשלוח חינם לישראל!';
+        } else {
+          fsDetectedBadge.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-200 border border-amber-400/35';
+          fsDetectedBadge.textContent = '📦 כרגע ללא משלוח חינם (במעקב)';
+        }
       }
       if (fsCheck) {
         fsCheck.checked = data.trackFreeShipping !== false;
       }
-      state.ui.pendingFreeShipping = data.freeShippingEligible || false;
+      state.ui.pendingFreeShipping = Boolean(data.freeShippingEligible);
       document.getElementById('modalSelectedVariantText').value = data.SelectedVariant || '';
       document.getElementById('modalCategorySelect').value = data.category || 'other';
 
@@ -3030,6 +3229,226 @@
 
     function closeProductModal() {
       document.getElementById('productModal').classList.add('hidden');
+    }
+
+    // =========================================================================
+    // PRODUCT DEEP-DIVE DETAILS SHEET & STORE FILTER HELPER
+    // =========================================================================
+    let detailsChartInstance = null;
+    let activeDetailsProductId = '';
+
+    function applyStoreFilterByName(storeName) {
+      if (!storeName) return;
+      if (state.ui.storeFilter === storeName) {
+        state.ui.storeFilter = 'all';
+        showToast('🏪 מוצגות כל החנויות', 'סינון החנות בוטל.', 'info');
+      } else {
+        state.ui.storeFilter = storeName;
+        showToast(`🏪 מסנן לפי: ${storeName}`, `מציג רק מוצרים מהחנות "${storeName}". לחץ שוב לביטול.`, 'info');
+      }
+      const storeSelectEl = document.getElementById('filterStoreSelect');
+      if (storeSelectEl) storeSelectEl.value = state.ui.storeFilter;
+      renderProductsGrid();
+    }
+
+    function closeProductDetailsModal() {
+      const m = document.getElementById('productDetailsModal');
+      if (m) m.classList.add('hidden');
+      activeDetailsProductId = '';
+    }
+
+    function openProductDetailsModal(productId) {
+      const p = state.products.find(item => item.id === productId);
+      if (!p) return;
+      activeDetailsProductId = p.id;
+      ensureProductOffersSynced(p);
+
+      const modal = document.getElementById('productDetailsModal');
+      if (!modal) return;
+
+      const offers = Array.isArray(p.storeOffers) ? p.storeOffers.slice().sort((a, b) => Number(a.currentPrice || 0) - Number(b.currentPrice || 0)) : [];
+      const bestOffer = offers.length > 0 ? offers[0] : { store: p.store, url: p.url, currentPrice: p.currentPrice };
+      const storeMeta = getStoreMeta(bestOffer.url || p.url);
+      const catStyle = CATEGORY_STYLES[p.category] || CATEGORY_STYLES.other;
+      const diff = p.currentPrice - p.initialPrice;
+      const pct = p.initialPrice > 0 ? Math.round((Math.abs(diff) / p.initialPrice) * 100) : 0;
+      const isDropped = diff < 0;
+      const isAmz = (p.url || '').includes('amazon.') || (p.store || '').toLowerCase().includes('amazon') || offers.some(o => (o.url || '').includes('amazon.'));
+
+      const storeFav = document.getElementById('detailsStoreFavicon');
+      if (storeFav) {
+        storeFav.style.display = '';
+        storeFav.src = storeMeta.favicon;
+      }
+      document.getElementById('detailsStoreName').textContent = bestOffer.store || p.store;
+      const catBadge = document.getElementById('detailsCategoryBadge');
+      if (catBadge) {
+        catBadge.className = `text-[11px] font-bold px-2.5 py-1 rounded-xl bg-gradient-to-r ${catStyle.gradient} border`;
+        catBadge.textContent = `${catStyle.icon} ${catStyle.label}`;
+      }
+
+      const statusBadge = document.getElementById('detailsStatusBadge');
+      if (statusBadge) {
+        if (isDropped) {
+          statusBadge.className = 'text-[11px] font-black px-3 py-1 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md';
+          statusBadge.textContent = `🔥 ירד ב-${formatPrice(Math.abs(diff))} (-${pct}%)`;
+        } else {
+          statusBadge.className = 'text-[11px] font-bold px-3 py-1 rounded-full bg-white/10 text-slate-200 border border-white/15';
+          statusBadge.textContent = 'מחיר יציב';
+        }
+      }
+
+      const imgEl = document.getElementById('detailsProductImage');
+      if (imgEl) {
+        imgEl.src = p.image || getFallbackProductImage(p.url, p.category);
+        imgEl.onerror = () => { imgEl.src = getFallbackProductImage(p.url, p.category); };
+      }
+      document.getElementById('detailsProductTitle').textContent = p.title;
+
+      // Meta pills (Variant, ASIN/UIN, Multi-store count)
+      const pillsBox = document.getElementById('detailsMetaPills');
+      if (pillsBox) {
+        const pills = [];
+        if (p.SelectedVariant) {
+          pills.push(`<span class="px-2.5 py-1 rounded-lg bg-pink-500/20 border border-pink-400/40 text-pink-200 text-xs font-extrabold">🎯 אפשרות: ${escapeHtml(p.SelectedVariant)}</span>`);
+        }
+        const asin = extractAmazonAsin(p.url);
+        if (asin) {
+          pills.push(`<span class="px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-400/35 text-amber-200 text-xs font-mono font-bold">ASIN: ${escapeHtml(asin)}</span>`);
+        }
+        const kspUin = extractKspUin(p.url);
+        if (kspUin) {
+          pills.push(`<span class="px-2.5 py-1 rounded-lg bg-red-500/15 border border-red-400/35 text-red-200 text-xs font-mono font-bold">מק״ט KSP: ${escapeHtml(kspUin)}</span>`);
+        }
+        if (offers.length > 1) {
+          pills.push(`<span class="px-2.5 py-1 rounded-lg bg-cyan-500/20 border border-cyan-400/40 text-cyan-200 text-xs font-extrabold">🏪 מושווה ב-${offers.length} חנויות</span>`);
+        }
+        pillsBox.innerHTML = pills.join('');
+      }
+
+      const buyBtn = document.getElementById('detailsBuyNowBtn');
+      const buyTxt = document.getElementById('detailsBuyNowText');
+      if (buyBtn) buyBtn.href = bestOffer.url || p.url;
+      if (buyTxt) buyTxt.textContent = offers.length > 1 ? `למחיר הזול ב-${bestOffer.store} (${formatPrice(bestOffer.currentPrice)})` : `פתח מוצר ב-${p.store}`;
+
+      // Amazon Free Shipping Card
+      const amzCard = document.getElementById('detailsAmazonShippingCard');
+      if (amzCard) {
+        if (isAmz) {
+          amzCard.classList.remove('hidden');
+          const amzBadge = document.getElementById('detailsAmazonShippingBadge');
+          const amzSub = document.getElementById('detailsAmazonShippingSubtext');
+          const amzToggle = document.getElementById('detailsAmazonTrackShippingToggle');
+          if (amzToggle) amzToggle.checked = p.trackFreeShipping !== false;
+          if (p.freeShippingEligible) {
+            amzBadge.className = 'text-xs font-black px-3 py-1 rounded-full bg-emerald-500/25 text-emerald-200 border border-emerald-400/40';
+            amzBadge.textContent = '✈️ זכאי למשלוח חינם לישראל!';
+            amzSub.textContent = 'המוצר משתתף במשלוח חינם של אמזון לישראל בקנייה מעל $49.';
+          } else {
+            amzBadge.className = 'text-xs font-bold px-3 py-1 rounded-full bg-amber-500/20 text-amber-200 border border-amber-400/35';
+            amzBadge.textContent = '📦 כרגע ללא משלוח חינם';
+            amzSub.textContent = p.trackFreeShipping !== false
+              ? 'האפליקציה בודקת בכל סריקה אם המוצר נכנס למשלוח חינם לישראל ותשלח לך התראה!'
+              : 'סמן את התיבה למטה אם תרצה לקבל התראה ברגע שהמוצר ייכנס למשלוח חינם לישראל.';
+          }
+        } else {
+          amzCard.classList.add('hidden');
+        }
+      }
+
+      // 4 Price Boxes
+      document.getElementById('detailsCurrentPrice').textContent = formatPrice(p.currentPrice);
+      document.getElementById('detailsInitialPrice').textContent = formatPrice(p.initialPrice);
+      document.getElementById('detailsLowestPrice').textContent = formatPrice(p.lowestPrice || p.currentPrice);
+      document.getElementById('detailsTargetPrice').textContent = p.targetPrice ? formatPrice(p.targetPrice) : 'כל ירידה 🔔';
+      document.getElementById('detailsLastChecked').textContent = `בדיקה אחרונה: ${p.lastChecked || 'כעת'}`;
+
+      // Stores Comparison List
+      const storesListEl = document.getElementById('detailsStoresList');
+      const storesTitleEl = document.getElementById('detailsStoresTitle');
+      if (storesTitleEl) {
+        storesTitleEl.textContent = offers.length > 1 ? `השוואת מחירים חיה (${offers.length} חנויות באותה קובייה)` : 'פרטי החנות במעקב';
+      }
+      if (storesListEl) {
+        storesListEl.innerHTML = offers.map((off, idx) => {
+          const isCheapest = idx === 0 && offers.length > 1;
+          const offMeta = getStoreMeta(off.url);
+          const offSaving = Number(off.initialPrice || 0) - Number(off.currentPrice || 0);
+          return `
+            <div class="flex items-center justify-between gap-3 p-3 rounded-2xl ${isCheapest ? 'bg-emerald-500/15 border border-emerald-400/40' : 'liquid-glass-soft'}">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <img src="${escapeHtml(off.favicon || offMeta.favicon)}" alt="" class="w-5 h-5 rounded-sm object-contain shrink-0" onerror="this.style.display='none'" />
+                <div class="min-w-0">
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-xs sm:text-sm font-black text-white truncate">${escapeHtml(off.store)}</span>
+                    ${isCheapest ? `<span class="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950">הכי זול 🏆</span>` : ''}
+                  </div>
+                  <p class="text-[11px] text-slate-400">התחלתי: ${formatPrice(off.initialPrice || off.currentPrice)} | שפל: ${formatPrice(off.lowestPrice || off.currentPrice)}</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2.5 shrink-0">
+                <div class="text-left">
+                  <p class="text-sm sm:text-base font-black tabular-nums ${isCheapest ? 'text-emerald-300' : 'text-white'}">${formatPrice(off.currentPrice)}</p>
+                  ${offSaving > 0 ? `<p class="text-[10px] font-bold text-emerald-300">חיסכון ${formatPrice(offSaving)}</p>` : ''}
+                </div>
+                <a href="${escapeHtml(off.url)}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-extrabold text-cyan-200 transition">
+                  לחנות ↗
+                </a>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // Render Large Price History Chart & Timeline Log
+      const hist = Array.isArray(p.history) && p.history.length > 0
+        ? p.history
+        : [{ time: 'התחלה', price: p.initialPrice }, { time: 'כעת', price: p.currentPrice }];
+
+      const chartCanvas = document.getElementById('detailsPriceChartCanvas');
+      if (chartCanvas && window.Chart) {
+        if (detailsChartInstance) {
+          try { detailsChartInstance.destroy(); } catch (e) {}
+        }
+        detailsChartInstance = new Chart(chartCanvas.getContext('2d'), {
+          type: 'line',
+          data: {
+            labels: hist.map(h => h.time),
+            datasets: [{
+              label: 'מחיר (₪)',
+              data: hist.map(h => h.price),
+              borderColor: isDropped ? '#34d399' : '#c084fc',
+              backgroundColor: isDropped ? 'rgba(52, 211, 153, 0.22)' : 'rgba(192, 132, 252, 0.22)',
+              borderWidth: 3,
+              pointRadius: 4.5,
+              pointBackgroundColor: '#ffffff',
+              fill: true,
+              tension: 0.35
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { ticks: { color: '#cbd5e1', font: { size: 11 } }, grid: { display: false } },
+              y: { ticks: { color: '#cbd5e1', font: { size: 11 } }, grid: { color: 'rgba(255, 255, 255, 0.08)' } }
+            }
+          }
+        });
+      }
+
+      const histListEl = document.getElementById('detailsHistoryLogList');
+      if (histListEl) {
+        histListEl.innerHTML = hist.slice().reverse().map((h, i) => `
+          <div class="flex items-center justify-between px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs">
+            <span class="text-slate-300 font-mono">${escapeHtml(h.time || 'בדיקה')}</span>
+            <span class="font-black tabular-nums ${i === 0 ? 'text-emerald-300' : 'text-white'}">${formatPrice(h.price)}</span>
+          </div>
+        `).join('');
+      }
+
+      modal.classList.remove('hidden');
     }
 
     // =========================================================================
@@ -3628,6 +4047,17 @@
         state.ui.storeFilter = storeSelectEl.value;
       }
 
+      const activeStoreBanner = document.getElementById('activeStoreFilterBanner');
+      const activeStoreNameEl = document.getElementById('activeStoreFilterName');
+      if (activeStoreBanner && activeStoreNameEl) {
+        if (state.ui.storeFilter && state.ui.storeFilter !== 'all') {
+          activeStoreNameEl.textContent = state.ui.storeFilter;
+          activeStoreBanner.classList.remove('hidden');
+        } else {
+          activeStoreBanner.classList.add('hidden');
+        }
+      }
+
       const catSelectEl = document.getElementById('filterCategorySelect');
       if (catSelectEl) {
         catSelectEl.value = state.ui.categoryFilter || 'all';
@@ -3710,9 +4140,12 @@
         const catStyle = CATEGORY_STYLES[p.category] || CATEGORY_STYLES.other;
         const prodImg = p.image || getFallbackProductImage(p.url, p.category);
 
+        const isAmazonProduct = (p.url || '').includes('amazon.') || (p.store || '').toLowerCase().includes('amazon') || offers.some(o => (o.url || '').includes('amazon.'));
+
         const card = document.createElement('div');
         card.id = `prod_card_${p.id}`;
-        card.className = `liquid-glass card-hover rounded-3xl p-4 sm:p-5 flex flex-col justify-between gap-3.5 relative overflow-hidden transition-all duration-300 ${
+        card.setAttribute('data-card-id', p.id);
+        card.className = `liquid-glass card-hover cursor-pointer rounded-3xl p-4 sm:p-5 flex flex-col justify-between gap-3.5 relative overflow-hidden transition-all duration-300 ${
           isDropped ? 'border-emerald-400/60 shadow-xl shadow-emerald-950/40' : (isMultiStore ? 'border-cyan-400/45 shadow-xl shadow-cyan-950/30' : '')
         }`;
 
@@ -3722,10 +4155,17 @@
               ? `<span class="px-2.5 py-1 rounded-full text-[11px] font-black bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md">🏆 חיסכון ${formatPrice(highestOfferPrice - bestOffer.currentPrice)}</span>`
               : `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-white/10 text-slate-200 border border-white/15">מחיר יציב</span>`);
 
-        const freeShippingPill = p.freeShippingEligible
-          ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-cyan-500/20 border border-cyan-400/40 text-cyan-200 text-[11px] font-extrabold">
-               <span>✈️ משלוח חינם</span>
-             </span>`
+        // For Amazon products: ALWAYS show Free Shipping status & whether tracking is active!
+        const freeShippingPill = isAmazonProduct
+          ? (p.freeShippingEligible
+              ? `<button type="button" data-action="toggle_fs_track" data-id="${p.id}" title="לחץ להפעלה/כיבוי מעקב משלוח חינם" class="prod-action-btn inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/45 text-emerald-200 text-[11px] font-extrabold transition">
+                   <span>✈️ משלוח חינם לישראל</span>
+                   <span class="text-[10px] opacity-85">(${p.trackFreeShipping !== false ? 'מעקב פעיל 🔔' : 'מעקב כבוי'})</span>
+                 </button>`
+              : `<button type="button" data-action="toggle_fs_track" data-id="${p.id}" title="לחץ להפעלה/כיבוי התראה כשייכנס למשלוח חינם" class="prod-action-btn inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg ${p.trackFreeShipping !== false ? 'bg-cyan-500/15 border-cyan-400/40 text-cyan-200' : 'bg-white/10 border-white/15 text-slate-300'} border text-[11px] font-extrabold hover:bg-cyan-500/25 transition">
+                   <span>📦 ללא משלוח חינם כרגע</span>
+                   <span class="text-[10px] ${p.trackFreeShipping !== false ? 'text-amber-300' : 'opacity-75'}">(${p.trackFreeShipping !== false ? 'במעקב משלוח 🔔' : 'ללא מעקב'})</span>
+                 </button>`)
           : '';
 
         const variantPill = p.SelectedVariant
@@ -3751,14 +4191,14 @@
                 const offMeta = getStoreMeta(off.url);
                 return `
                   <div class="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-xl ${isCheapest ? 'bg-emerald-500/20 border border-emerald-400/40' : 'bg-white/5 border border-white/10'}">
-                    <div class="flex items-center gap-1.5 min-w-0">
+                    <button type="button" data-action="filter_store" data-store="${escapeHtml(off.store)}" title="סנן את כל המוצרים מ-${escapeHtml(off.store)}" class="prod-action-btn flex items-center gap-1.5 min-w-0 hover:underline text-right">
                       <img src="${escapeHtml(off.favicon || offMeta.favicon)}" alt="" class="w-4 h-4 rounded-sm object-contain shrink-0" onerror="this.style.display='none'" />
                       <span class="text-xs font-extrabold ${isCheapest ? 'text-emerald-200' : 'text-slate-200'} truncate">${escapeHtml(off.store)}</span>
                       ${isCheapest ? `<span class="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-emerald-500 text-slate-950 shrink-0">הכי זול 🏆</span>` : ''}
-                    </div>
+                    </button>
                     <div class="flex items-center gap-2 shrink-0">
-                      <span class="text-xs font-black ${isCheapest ? 'text-emerald-300' : 'text-white'}">${formatPrice(off.currentPrice)}</span>
-                      <a href="${escapeHtml(off.url)}" target="_blank" rel="noopener noreferrer" class="text-[11px] font-extrabold px-2 py-0.5 rounded-lg bg-white/10 hover:bg-white/20 text-cyan-200 transition">
+                      <span class="text-xs font-black tabular-nums ${isCheapest ? 'text-emerald-300' : 'text-white'}">${formatPrice(off.currentPrice)}</span>
+                      <a href="${escapeHtml(off.url)}" target="_blank" rel="noopener noreferrer" class="prod-external-link text-[11px] font-extrabold px-2 py-0.5 rounded-lg bg-white/10 hover:bg-white/20 text-cyan-200 transition">
                         לחנות ↗
                       </a>
                       <button type="button" data-action="remove_offer" data-id="${p.id}" data-offer-url="${escapeHtml(off.url)}" title="הסר חנות זו מהקובייה" class="prod-action-btn text-[11px] text-slate-400 hover:text-rose-300 px-1">
@@ -3773,16 +4213,18 @@
         ` : '';
 
         const canvasId = `chart_${p.id}`;
+        const primaryStoreName = isMultiStore ? bestOffer.store : p.store;
+        const isThisStoreFiltered = state.ui.storeFilter === primaryStoreName;
 
         card.innerHTML = `
           <div class="space-y-3.5">
             <!-- Top Store Bar & Status Badge -->
             <div class="flex items-center justify-between gap-2 flex-wrap">
               <div class="flex items-center gap-1.5 flex-wrap">
-                <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/10 border border-white/15">
+                <button type="button" data-action="filter_store" data-store="${escapeHtml(primaryStoreName)}" title="לחץ לסינון כל המוצרים מ-${escapeHtml(primaryStoreName)}" class="prod-action-btn flex items-center gap-1.5 px-2.5 py-1 rounded-xl ${isThisStoreFiltered ? 'bg-pink-500/35 border-pink-400 text-white shadow-md' : 'bg-white/10 hover:bg-pink-500/25 border-white/15 hover:border-pink-400/40 text-white'} border transition">
                   <img src="${escapeHtml(storeMeta.favicon)}" alt="" class="w-3.5 h-3.5 rounded-sm object-contain max-w-full h-auto" onerror="this.style.display='none'" />
-                  <span class="text-[11px] font-extrabold text-white">${escapeHtml(isMultiStore ? `${offers.length} חנויות (${bestOffer.store})` : p.store)}</span>
-                </div>
+                  <span class="text-[11px] font-extrabold">${escapeHtml(isMultiStore ? `${offers.length} חנויות (${bestOffer.store})` : p.store)}</span>
+                </button>
                 <span class="text-[11px] font-bold px-2 py-0.5 rounded-xl bg-gradient-to-r ${catStyle.gradient} border">
                   ${catStyle.icon} ${catStyle.label}
                 </span>
@@ -3792,11 +4234,13 @@
 
             <!-- Product Image + Title Row -->
             <div class="flex items-start gap-3.5">
-              <div class="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-slate-900/90 border border-white/20 shadow-md shrink-0">
-                <img src="${escapeHtml(prodImg)}" alt="${escapeHtml(p.title)}" class="w-full h-full object-cover max-w-full h-auto" />
+              <div class="relative w-18 h-18 sm:w-20 sm:h-20 rounded-2xl overflow-hidden product-stage border border-white/20 shrink-0 p-1 flex items-center justify-center" style="width:4.75rem;height:4.75rem;">
+                <img src="${escapeHtml(prodImg)}" alt="${escapeHtml(p.title)}" class="w-full h-full object-contain rounded-xl max-w-full h-auto" />
               </div>
               <div class="space-y-1.5 flex-1 min-w-0">
-                <h3 class="text-sm sm:text-base font-black text-white leading-snug line-clamp-2">${escapeHtml(p.title)}</h3>
+                <div class="flex items-start justify-between gap-1">
+                  <h3 class="text-sm sm:text-base font-black text-white leading-snug line-clamp-2 group-hover:text-pink-200 transition">${escapeHtml(p.title)}</h3>
+                </div>
                 <div class="flex flex-wrap items-center gap-1.5">
                   ${freeShippingPill}
                   ${variantPill}
@@ -3811,30 +4255,33 @@
             <!-- Price Metrics Glass Boxes -->
             <div class="grid grid-cols-3 gap-2">
               <div class="p-2.5 rounded-2xl liquid-glass-soft text-center">
-                <p class="text-[10px] sm:text-[11px] text-slate-300 font-medium">${isMultiStore ? 'הכי זול כעת' : 'מחיר כעת'}</p>
-                <p class="text-base sm:text-lg font-black ${isDropped ? 'text-emerald-300' : 'text-white'} mt-0.5">${formatPrice(p.currentPrice)}</p>
+                <p class="text-[10px] sm:text-[11px] text-slate-400 font-bold">${isMultiStore ? 'הכי זול כעת' : 'מחיר כעת'}</p>
+                <p class="text-base sm:text-lg font-black tabular-nums ${isDropped ? 'text-emerald-300' : 'text-white'} mt-0.5">${formatPrice(p.currentPrice)}</p>
               </div>
               <div class="p-2.5 rounded-2xl liquid-glass-soft text-center">
-                <p class="text-[10px] sm:text-[11px] text-slate-300 font-medium">מחיר התחלתי</p>
-                <p class="text-xs sm:text-sm font-extrabold text-slate-200 mt-1">${formatPrice(p.initialPrice)}</p>
+                <p class="text-[10px] sm:text-[11px] text-slate-400 font-bold">מחיר התחלתי</p>
+                <p class="text-xs sm:text-sm font-extrabold tabular-nums text-slate-200 mt-1">${formatPrice(p.initialPrice)}</p>
               </div>
               <div class="p-2.5 rounded-2xl liquid-glass-soft text-center">
-                <p class="text-[10px] sm:text-[11px] text-slate-300 font-medium">שיא השפל</p>
-                <p class="text-xs sm:text-sm font-extrabold text-cyan-300 mt-1">${formatPrice(p.lowestPrice || p.currentPrice)}</p>
+                <p class="text-[10px] sm:text-[11px] text-slate-400 font-bold">שיא השפל</p>
+                <p class="text-xs sm:text-sm font-extrabold tabular-nums text-cyan-300 mt-1">${formatPrice(p.lowestPrice || p.currentPrice)}</p>
               </div>
             </div>
 
             <!-- Fixed-height Price Chart Container -->
-            <div class="relative h-28 sm:h-32 w-full rounded-2xl bg-black/35 p-2 border border-white/10">
+            <div class="relative h-28 sm:h-32 w-full rounded-2xl bg-black/40 p-2 border border-white/10">
               <canvas id="${canvasId}"></canvas>
             </div>
           </div>
 
           <!-- Card Footer Controls -->
-          <div class="pt-2.5 border-t border-white/15 space-y-2">
+          <div class="pt-2.5 border-t border-white/10 space-y-2">
             <div class="flex items-center justify-between text-[11px] text-slate-300">
-              <span>עודכן: ${escapeHtml(p.lastChecked || 'כעת')}</span>
-              <a href="${escapeHtml(bestOffer.url || p.url)}" target="_blank" rel="noopener noreferrer" class="text-cyan-300 hover:text-cyan-200 font-extrabold underline flex items-center gap-1">
+              <button type="button" data-action="details" data-id="${p.id}" class="prod-action-btn text-pink-300 hover:text-pink-200 font-extrabold flex items-center gap-1">
+                <span>📊 דף מוצר מלא</span>
+                <span>←</span>
+              </button>
+              <a href="${escapeHtml(bestOffer.url || p.url)}" target="_blank" rel="noopener noreferrer" class="prod-external-link text-cyan-300 hover:text-cyan-200 font-extrabold underline flex items-center gap-1">
                 <span>${isMultiStore ? `למחיר הזול ב-${escapeHtml(bestOffer.store)}` : 'לדף המוצר בחנות'}</span>
                 <span>↗</span>
               </a>
@@ -4207,16 +4654,44 @@
         renderAll();
       });
 
-      // Product Card Actions
+      // Product Card Actions & Whole-Card Click to Open Deep-Dive Details
       document.getElementById('productsGrid').addEventListener('click', (e) => {
+        if (e.target.closest('.prod-external-link')) return;
+
         const btn = e.target.closest('.prod-action-btn');
-        if (!btn) return;
+        if (!btn) {
+          const clickedCard = e.target.closest('[data-card-id]');
+          if (clickedCard) {
+            openProductDetailsModal(clickedCard.getAttribute('data-card-id'));
+          }
+          return;
+        }
+
         const action = btn.getAttribute('data-action');
+        if (action === 'filter_store') {
+          const storeName = btn.getAttribute('data-store');
+          applyStoreFilterByName(storeName);
+          return;
+        }
+
         const id = btn.getAttribute('data-id');
         const prod = state.products.find(p => p.id === id);
         if (!prod) return;
 
-        if (action === 'check') {
+        if (action === 'details') {
+          openProductDetailsModal(id);
+        } else if (action === 'toggle_fs_track') {
+          prod.trackFreeShipping = prod.trackFreeShipping === false ? true : false;
+          saveState(false, true);
+          renderAll();
+          showToast(
+            prod.trackFreeShipping ? '✈️ מעקב משלוח חינם הופעל!' : 'מעקב משלוח חינם כובה',
+            prod.trackFreeShipping
+              ? `תקבל התראה ברגע ש-"${prod.title}" יהיה זכאי למשלוח חינם לישראל באמזון.`
+              : `לא יישלחו התראות על שינוי במשלוח חינם עבור מוצר זה.`,
+            'info'
+          );
+        } else if (action === 'check') {
           checkSingleProductNow(id, false);
         } else if (action === 'add_store') {
           state.ui.pendingForceMergeId = prod.id;
@@ -4252,6 +4727,8 @@
             price: prod.currentPrice,
             image: prod.image,
             targetPrice: prod.targetPrice || '',
+            freeShippingEligible: prod.freeShippingEligible || false,
+            trackFreeShipping: prod.trackFreeShipping !== false,
             SelectedVariant: prod.SelectedVariant || '',
             variations: prod.variations || [],
             sourceMethod: 'עריכת מוצר ואפשרויות',
@@ -4269,6 +4746,221 @@
               showToast('המוצר הוסר', 'המוצר נמחק מרשימת המעקב.', 'info');
             }
           );
+        }
+      });
+
+      // Product Deep-Dive Details Modal Controls
+      const closeDetailsBtn = document.getElementById('closeProductDetailsModalBtn');
+      if (closeDetailsBtn) closeDetailsBtn.addEventListener('click', closeProductDetailsModal);
+      const detailsModalEl = document.getElementById('productDetailsModal');
+      if (detailsModalEl) {
+        detailsModalEl.addEventListener('click', (e) => {
+          if (e.target === detailsModalEl) closeProductDetailsModal();
+        });
+      }
+
+      const clearStoreBannerBtn = document.getElementById('clearStoreFilterBannerBtn');
+      if (clearStoreBannerBtn) {
+        clearStoreBannerBtn.addEventListener('click', () => {
+          state.ui.storeFilter = 'all';
+          const storeSelectEl = document.getElementById('filterStoreSelect');
+          if (storeSelectEl) storeSelectEl.value = 'all';
+          renderProductsGrid();
+        });
+      }
+
+      const detailsStoreFilterBtn = document.getElementById('detailsStoreFilterBtn');
+      if (detailsStoreFilterBtn) {
+        detailsStoreFilterBtn.addEventListener('click', () => {
+          const p = state.products.find(item => item.id === activeDetailsProductId);
+          if (p) {
+            closeProductDetailsModal();
+            applyStoreFilterByName(p.store);
+          }
+        });
+      }
+
+      const detailsCopyLinkBtn = document.getElementById('detailsCopyLinkBtn');
+      if (detailsCopyLinkBtn) {
+        detailsCopyLinkBtn.addEventListener('click', async () => {
+          const p = state.products.find(item => item.id === activeDetailsProductId);
+          if (!p) return;
+          try {
+            await navigator.clipboard.writeText(p.url);
+            showToast('הקישור הועתק! 📋', 'קישור המוצר הועתק ללוח.', 'success');
+          } catch (e) {
+            showToast('קישור המוצר', p.url, 'info');
+          }
+        });
+      }
+
+      const detailsAddStoreBtn = document.getElementById('detailsAddStoreCompareBtn');
+      if (detailsAddStoreBtn) {
+        detailsAddStoreBtn.addEventListener('click', () => {
+          const p = state.products.find(item => item.id === activeDetailsProductId);
+          if (!p) return;
+          closeProductDetailsModal();
+          state.ui.pendingForceMergeId = p.id;
+          urlInput.value = '';
+          urlInput.placeholder = `הדבק כאן קישור ל-"${p.title}" מחנות אחרת לאיחוד...`;
+          urlInput.focus();
+          urlInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          showToast('🔗 הדבק קישור מהחנות השנייה למעלה', `הקישור הבא שתסרוק יאוחד אוטומטית לתוך הקובייה של "${p.title}"!`, 'info');
+        });
+      }
+
+      const detailsAmzTrackToggle = document.getElementById('detailsAmazonTrackShippingToggle');
+      if (detailsAmzTrackToggle) {
+        detailsAmzTrackToggle.addEventListener('change', (e) => {
+          const p = state.products.find(item => item.id === activeDetailsProductId);
+          if (!p) return;
+          p.trackFreeShipping = e.target.checked;
+          saveState(false, true);
+          openProductDetailsModal(p.id);
+          renderProductsGrid();
+          showToast(
+            p.trackFreeShipping ? '✈️ מעקב משלוח חינם לישראל פעיל!' : 'מעקב משלוח חינם כובה',
+            p.trackFreeShipping ? 'תקבל התראה ברגע שהמוצר ייכנס למשלוח חינם לישראל.' : 'התראות משלוח חינם כובו למוצר זה.',
+            'success'
+          );
+        });
+      }
+
+      const detailsAmzToggleStatusBtn = document.getElementById('detailsAmazonToggleStatusBtn');
+      if (detailsAmzToggleStatusBtn) {
+        detailsAmzToggleStatusBtn.addEventListener('click', () => {
+          const p = state.products.find(item => item.id === activeDetailsProductId);
+          if (!p) return;
+          p.freeShippingEligible = !p.freeShippingEligible;
+          saveState(false, true);
+          openProductDetailsModal(p.id);
+          renderProductsGrid();
+          showToast(
+            p.freeShippingEligible ? '✈️ סומן כזכאי למשלוח חינם!' : '📦 סומן כללא משלוח חינם כרגע',
+            'סטטוס המשלוח עודכן וייבדק אוטומטית בסריקות הבאות.',
+            'info'
+          );
+        });
+      }
+
+      const detailsCheckBtn = document.getElementById('detailsCheckNowBtn');
+      if (detailsCheckBtn) {
+        detailsCheckBtn.addEventListener('click', async () => {
+          const id = activeDetailsProductId;
+          if (!id) return;
+          await checkSingleProductNow(id, false);
+          if (activeDetailsProductId === id) openProductDetailsModal(id);
+        });
+      }
+
+      const detailsSimBtn = document.getElementById('detailsSimulateBtn');
+      if (detailsSimBtn) {
+        detailsSimBtn.addEventListener('click', () => {
+          const p = state.products.find(item => item.id === activeDetailsProductId);
+          if (!p) return;
+          closeProductDetailsModal();
+          document.getElementById('simulateProductId').value = p.id;
+          document.getElementById('simulateProductName').textContent = `${p.title}${p.SelectedVariant ? ' (' + p.SelectedVariant + ')' : ''} — כעת: ${formatPrice(p.currentPrice)}`;
+          document.getElementById('simulateNewPriceInput').value = Math.max(1, Math.round(p.currentPrice * 0.88));
+          document.getElementById('simulateModal').classList.remove('hidden');
+        });
+      }
+
+      const detailsEditBtn = document.getElementById('detailsEditBtn');
+      if (detailsEditBtn) {
+        detailsEditBtn.addEventListener('click', () => {
+          const p = state.products.find(item => item.id === activeDetailsProductId);
+          if (!p) return;
+          closeProductDetailsModal();
+          openProductModalWithData({
+            url: p.url,
+            store: p.store,
+            title: p.title,
+            price: p.currentPrice,
+            image: p.image,
+            targetPrice: p.targetPrice || '',
+            freeShippingEligible: p.freeShippingEligible || false,
+            trackFreeShipping: p.trackFreeShipping !== false,
+            SelectedVariant: p.SelectedVariant || '',
+            variations: p.variations || [],
+            sourceMethod: 'עריכת מוצר ואפשרויות',
+            category: p.category
+          }, p.id);
+        });
+      }
+
+      const detailsDelBtn = document.getElementById('detailsDeleteBtn');
+      if (detailsDelBtn) {
+        detailsDelBtn.addEventListener('click', () => {
+          const p = state.products.find(item => item.id === activeDetailsProductId);
+          if (!p) return;
+          closeProductDetailsModal();
+          openConfirmModal(
+            'הסרת מוצר מהמעקב',
+            `האם להסיר את "${p.title}" מרשימת המעקב שלך?`,
+            async () => {
+              state.products = state.products.filter(item => item.id !== p.id);
+              saveState(true);
+              await pushStateToGithubCloud(true);
+              renderAll();
+              showToast('המוצר הוסר', 'המוצר נמחק מרשימת המעקב.', 'info');
+            }
+          );
+        });
+      }
+
+      // Incoming Share Handler (from Amazon App / Browser Share Sheet / Web Share Target)
+      window.__handleIncomingSharedUrl = async function(rawSharedInput) {
+        if (!rawSharedInput) return;
+        const m = String(rawSharedInput).match(/https?:\/\/[^\s"'<>]+/i);
+        const sharedUrl = m ? m[0] : '';
+        if (!sharedUrl) return;
+        switchTab('dashboard');
+        urlInput.value = sharedUrl;
+        clearUrlBtn.classList.remove('hidden');
+        showToast('📲 התקבל קישור משיתוף!', 'סורק אוטומטית את המוצר ששיתפת...', 'info');
+        const duplicateHit = findExistingProductBySameUrl(sharedUrl);
+        if (duplicateHit) {
+          showToast(
+            '⚠️ המוצר כבר קיים במעקב מהחנות הזו!',
+            `הקישור ל-"${duplicateHit.product.title}" (${duplicateHit.storeName}) כבר נמצא ברשימה שלך.`,
+            'warning'
+          );
+          openProductDetailsModal(duplicateHit.product.id);
+          return;
+        }
+        const submitBtn = document.getElementById('scanUrlSubmitBtn');
+        if (submitBtn) submitBtn.disabled = true;
+        try {
+          const scannedData = await scanProductUrl(sharedUrl);
+          openProductModalWithData(scannedData, '');
+        } finally {
+          if (submitBtn) submitBtn.disabled = false;
+        }
+      };
+
+      // Check URL query params (Web Share Target) or Native Android Share Bridge on startup & resume
+      const checkIncomingShareSources = () => {
+        try {
+          if (window.AndroidNativeScraper && typeof window.AndroidNativeScraper.consumePendingSharedUrl === 'function') {
+            const nativeShared = window.AndroidNativeScraper.consumePendingSharedUrl();
+            if (nativeShared && nativeShared.startsWith('http')) {
+              window.__handleIncomingSharedUrl(nativeShared);
+              return;
+            }
+          }
+          const params = new URLSearchParams(window.location.search);
+          const sharedCombined = [params.get('url'), params.get('text'), params.get('title')].filter(Boolean).join(' ');
+          if (sharedCombined && /https?:\/\//i.test(sharedCombined)) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+            window.__handleIncomingSharedUrl(sharedCombined);
+          }
+        } catch (e) {}
+      };
+      setTimeout(checkIncomingShareSources, 350);
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          checkIncomingShareSources();
         }
       });
 

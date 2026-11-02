@@ -4,11 +4,21 @@
   "description": "אפליקציה חכמה למעקב מחירים אוניברסלי, זיהוי וריאציות והתראות ירידת מחיר",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#090716",
-  "theme_color": "#0d0b1e",
+  "background_color": "#05050b",
+  "theme_color": "#080714",
   "orientation": "portrait",
   "dir": "rtl",
   "lang": "he-IL",
+  "share_target": {
+    "action": "./index.html",
+    "method": "GET",
+    "enctype": "application/x-www-form-urlencoded",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
   "icons": [
     {
       "src": "icon-192.png",
