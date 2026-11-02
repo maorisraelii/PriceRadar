@@ -2,8 +2,8 @@
 <html lang="he" dir="rtl">
 <head>
   <script>
-    window.__APP_VERSION__ = "2.4.0";
-    window.__BUILD_TIMESTAMP__ = 1762109000;
+    window.__APP_VERSION__ = "2.5.0";
+    window.__BUILD_TIMESTAMP__ = 1762112000;
 
     // =========================================================================
     // OVER-THE-AIR (OTA) LIVE UPDATE ENGINE FROM GITHUB
@@ -1241,6 +1241,7 @@
             settings: {
               dailyTime: state.settings.dailyTime,
               checkIntervalMinutes: state.settings.checkIntervalMinutes,
+              lastDailySentDate: state.settings.lastDailySentDate || '',
               fcmToken: state.settings.fcmToken || ''
             }
           };

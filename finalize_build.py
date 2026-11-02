@@ -97,9 +97,11 @@ def main():
             m = m.replace("</manifest>", perms + "</manifest>")
         rcvr = """
         <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="price_radar_alerts" />
+        <service android:name=".MainActivity$TaskRemovedWatchdogService" android:enabled="true" android:exported="false" android:stopWithTask="false" />
         <receiver android:name=".MainActivity$BackgroundAlertReceiver" android:enabled="true" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
                 <action android:name="com.priceradar.app.CHECK_ALERTS" />
             </intent-filter>
@@ -124,6 +126,7 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -133,7 +136,9 @@ import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Looper;
+import android.os.PowerManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -171,6 +176,51 @@ public class MainActivity extends BridgeActivity {
             e.printStackTrace();
         }
         scheduleNextBackgroundCheck(this, 15);
+        try {
+            startService(new Intent(this, TaskRemovedWatchdogService.class));
+        } catch (Exception ignored) {}
+    }
+
+    public static class TaskRemovedWatchdogService extends Service {
+        @Override
+        public int onStartCommand(Intent intent, int flags, int startId) {
+            return START_STICKY;
+        }
+
+        @Override
+        public IBinder onBind(Intent intent) {
+            return null;
+        }
+
+        @Override
+        public void onTaskRemoved(Intent rootIntent) {
+            try {
+                SharedPreferences sp = getSharedPreferences("PriceRadarPrefs", Context.MODE_PRIVATE);
+                int mins = sp.getInt("checkIntervalMinutes", 15);
+                scheduleNextBackgroundCheck(getApplicationContext(), mins);
+                // Also schedule a quick 60-second wakeup check after swipe-away from multitasking
+                AlarmManager am = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+                if (am != null) {
+                    Intent i = new Intent(getApplicationContext(), BackgroundAlertReceiver.class);
+                    i.setAction("com.priceradar.app.CHECK_ALERTS");
+                    PendingIntent pi = PendingIntent.getBroadcast(
+                        getApplicationContext(),
+                        102,
+                        i,
+                        PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT
+                    );
+                    long triggerSoon = System.currentTimeMillis() + 60000L;
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && am.canScheduleExactAlarms()) {
+                        am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerSoon, pi);
+                    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerSoon, pi);
+                    } else {
+                        am.set(AlarmManager.RTC_WAKEUP, triggerSoon, pi);
+                    }
+                }
+            } catch (Exception ignored) {}
+            super.onTaskRemoved(rootIntent);
+        }
     }
 
     private void requestNotificationPermissionIfNeeded() {
@@ -239,7 +289,7 @@ public class MainActivity extends BridgeActivity {
 
     public static void scheduleNextBackgroundCheck(Context context, int intervalMinutes) {
         try {
-            int mins = Math.max(15, intervalMinutes);
+            int mins = Math.max(5, intervalMinutes);
             long triggerAt = System.currentTimeMillis() + (mins * 60L * 1000L);
             AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
             if (am == null) return;
@@ -253,10 +303,12 @@ public class MainActivity extends BridgeActivity {
                 PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT
             );
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && am.canScheduleExactAlarms()) {
+                am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pi);
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pi);
             } else {
-                am.set(AlarmManager.RTC_WAKEUP, triggerAt, pi);
+                am.setExact(AlarmManager.RTC_WAKEUP, triggerAt, pi);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -268,7 +320,13 @@ public class MainActivity extends BridgeActivity {
         public void onReceive(Context context, Intent intent) {
             final PendingResult pendingResult = goAsync();
             new Thread(() -> {
+                PowerManager.WakeLock wl = null;
                 try {
+                    PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+                    if (pm != null) {
+                        wl = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "PriceRadar::BgCheckWakeLock");
+                        wl.acquire(45000L);
+                    }
                     SharedPreferences sp = context.getSharedPreferences("PriceRadarPrefs", Context.MODE_PRIVATE);
                     int intervalMins = sp.getInt("checkIntervalMinutes", 15);
                     scheduleNextBackgroundCheck(context, intervalMins);
@@ -320,17 +378,50 @@ public class MainActivity extends BridgeActivity {
 
                                 // 2. Also perform lightweight background check on tracked products directly from device
                                 JSONArray products = payload.optJSONArray("products");
+                                boolean updated = false;
                                 if (products != null && products.length() > 0 && deviceSecret != null && !deviceSecret.isEmpty()) {
-                                    boolean updated = checkProductsInBackground(context, sp, products, alerts != null ? alerts : new JSONArray(), payload);
-                                    if (updated) {
-                                        pushUpdatedPayloadToSupabase(deviceId, deviceSecret, payload);
+                                    updated = checkProductsInBackground(context, sp, products, alerts != null ? alerts : new JSONArray(), payload);
+                                }
+
+                                // 3. Check if Daily Summary Report is due while app is closed
+                                JSONObject settings = payload.optJSONObject("settings");
+                                if (settings != null && products != null && products.length() > 0) {
+                                    String dailyTime = settings.optString("dailyTime", "09:00");
+                                    java.text.SimpleDateFormat sdfDate = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US);
+                                    java.text.SimpleDateFormat sdfTime = new java.text.SimpleDateFormat("HH:mm", java.util.Locale.US);
+                                    java.util.Date nowDate = new java.util.Date();
+                                    String todayStr = sdfDate.format(nowDate);
+                                    String nowHm = sdfTime.format(nowDate);
+                                    String lastDailySent = settings.optString("lastDailySentDate", "");
+                                    String spLastDaily = sp.getString("lastDailySentDate", "");
+                                    if (nowHm.compareTo(dailyTime) >= 0 && !todayStr.equals(lastDailySent) && !todayStr.equals(spLastDaily)) {
+                                        sp.edit().putString("lastDailySentDate", todayStr).apply();
+                                        settings.put("lastDailySentDate", todayStr);
+                                        int dropsCount = 0;
+                                        for (int p = 0; p < products.length(); p++) {
+                                            JSONObject pr = products.optJSONObject(p);
+                                            if (pr != null && pr.optDouble("currentPrice", 0) < pr.optDouble("initialPrice", 0)) {
+                                                dropsCount++;
+                                            }
+                                        }
+                                        String dTitle = "📊 דו\\"ח מחירים יומי (" + products.length() + " מוצרים)";
+                                        String dMsg = "סיכום יומי: " + dropsCount + " מוצרים בירידת מחיר מתוך " + products.length() + " במעקב.";
+                                        showSystemNotification(context, dTitle, dMsg, 99001);
+                                        updated = true;
                                     }
+                                }
+
+                                if (updated && deviceSecret != null && !deviceSecret.isEmpty()) {
+                                    pushUpdatedPayloadToSupabase(deviceId, deviceSecret, payload);
                                 }
                             }
                         }
                     }
                 } catch (Exception ignored) {
                 } finally {
+                    try {
+                        if (wl != null && wl.isHeld()) wl.release();
+                    } catch (Exception ignored) {}
                     try {
                         pendingResult.finish();
                     } catch (Exception ignored) {}

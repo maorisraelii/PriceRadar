@@ -451,6 +451,20 @@ def process_profile(page, data: dict, chat_id: str, now_il: datetime, fcm_token:
             + "\n".join(lines)
         )
         send_telegram(daily_msg, chat_id)
+        daily_title = f"📊 דו\"ח מחירים יומי ({len(products)} מוצרים)"
+        daily_plain = f"סיכום יומי: {drops} מוצרים בירידת מחיר מתוך {len(products)} במעקב."
+        if fcm_token:
+            send_fcm_notification(fcm_token, daily_title, daily_plain, "")
+        alerts = data.get("alerts") or []
+        alerts.insert(0, {
+            "id": f"daily_{int(now_il.timestamp())}",
+            "type": "daily",
+            "timestamp": f"{time_str} {date_str}",
+            "title": daily_title,
+            "messagePlain": daily_plain,
+            "telegramText": daily_msg
+        })
+        data["alerts"] = alerts[:100]
 
     return True
 
