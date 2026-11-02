@@ -31,17 +31,18 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Calculate Dynamic App Version (+0.1 per build)
+      - name: Extract App Version from index.html
         id: versioning
         run: |
           RUN_NUM="${{ github.run_number }}"
-          VERSION_NAME="1.${RUN_NUM}.0"
-          VERSION_CODE=$((100 + RUN_NUM))
+          BASE_VER=$(grep -oP 'window\.__APP_VERSION__\s*=\s*"\K[^"]+' index.html || echo "2.9.0")
+          VERSION_NAME="${BASE_VER}"
+          VERSION_CODE=$((200 + RUN_NUM))
           TAG_NAME="v${VERSION_NAME}"
           echo "VERSION_NAME=${VERSION_NAME}" >> $GITHUB_ENV
           echo "VERSION_CODE=${VERSION_CODE}" >> $GITHUB_ENV
           echo "TAG_NAME=${TAG_NAME}" >> $GITHUB_ENV
-          echo "Calculated Dynamic Version: ${VERSION_NAME} (code: ${VERSION_CODE}, tag: ${TAG_NAME})"
+          echo "Synced Release Version from index.html: ${VERSION_NAME} (code: ${VERSION_CODE}, tag: ${TAG_NAME})"
 
       - name: Prepare Web Assets & Setup Android Project
         run: |

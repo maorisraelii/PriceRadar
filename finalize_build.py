@@ -4,9 +4,15 @@ import time
 import shutil
 
 def main():
-    version_name = os.environ.get("VERSION_NAME", "1.1.0")
-    version_code = os.environ.get("VERSION_CODE", "101")
-    ts = int(time.time())
+    version_name = os.environ.get("VERSION_NAME", "")
+    version_code = os.environ.get("VERSION_CODE", "201")
+    if not version_name and os.path.exists("index.html"):
+        with open("index.html", "r", encoding="utf-8") as f:
+            m_ver = re.search(r'window\.__APP_VERSION__\s*=\s*"([^"]+)"', f.read())
+            if m_ver:
+                version_name = m_ver.group(1)
+    if not version_name:
+        version_name = "2.9.0"
 
     print(f"=== Running finalize_build.py (Version: {version_name}, Code: {version_code}) ===")
 
@@ -41,16 +47,15 @@ def main():
                 print("Configured gradle.properties with optimized memory limits")
         print(f"Configured {p_gradle} with versionCode={version_code}, versionName={version_name}")
 
-    # 2. Update www/index.html version and timestamp
+    # 2. Update www/index.html version while preserving __BUILD_TIMESTAMP__ from index.html
     p_html = "www/index.html"
     if os.path.exists(p_html):
         with open(p_html, "r", encoding="utf-8") as f:
             ch = f.read()
         ch = re.sub(r'window\.__APP_VERSION__\s*=\s*"[^"]+"', f'window.__APP_VERSION__ = "{version_name}"', ch)
-        ch = re.sub(r'window\.__BUILD_TIMESTAMP__\s*=\s*\d+', f'window.__BUILD_TIMESTAMP__ = {ts}', ch)
         with open(p_html, "w", encoding="utf-8") as f:
             f.write(ch)
-        print(f"Injected into {p_html}: version={version_name}, timestamp={ts}")
+        print(f"Injected into {p_html}: version={version_name}")
 
     # 3. Setup Google FCM if google-services.json exists
     if os.path.exists("google-services.json"):
@@ -416,6 +421,42 @@ public class MainActivity extends BridgeActivity {
         }
     }
 
+    public static void scheduleNextDailyReportAlarm(Context context) {
+        try {
+            SharedPreferences sp = context.getSharedPreferences("PriceRadarPrefs", Context.MODE_PRIVATE);
+            int hour = sp.getInt("dailyHour", 9);
+            int minute = sp.getInt("dailyMinute", 0);
+            java.util.Calendar cal = java.util.Calendar.getInstance();
+            cal.set(java.util.Calendar.HOUR_OF_DAY, hour);
+            cal.set(java.util.Calendar.MINUTE, minute);
+            cal.set(java.util.Calendar.SECOND, 0);
+            cal.set(java.util.Calendar.MILLISECOND, 0);
+            if (cal.getTimeInMillis() <= System.currentTimeMillis() + 2000L) {
+                cal.add(java.util.Calendar.DAY_OF_YEAR, 1);
+            }
+            long triggerAt = cal.getTimeInMillis();
+            AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+            if (am == null) return;
+            Intent i = new Intent(context, BackgroundAlertReceiver.class);
+            i.setAction("com.priceradar.app.DAILY_REPORT_ALARM");
+            PendingIntent pi = PendingIntent.getBroadcast(
+                context,
+                205,
+                i,
+                PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT
+            );
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && am.canScheduleExactAlarms()) {
+                am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pi);
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pi);
+            } else {
+                am.setExact(AlarmManager.RTC_WAKEUP, triggerAt, pi);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     public static class BackgroundAlertReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -430,6 +471,14 @@ public class MainActivity extends BridgeActivity {
                 );
                 startRadarMonitorService(context);
                 return;
+            }
+            if (intent != null && "com.priceradar.app.DAILY_REPORT_ALARM".equals(intent.getAction())) {
+                SharedPreferences sp = context.getSharedPreferences("PriceRadarPrefs", Context.MODE_PRIVATE);
+                String dTitle = sp.getString("dailyTitle", "📊 דו\\"ח מחירים יומי — PriceRadar");
+                String dMsg = sp.getString("dailyMessage", "הדו\\"ח היומי של המוצרים שלך במעקב מוכן!");
+                showSystemNotification(context, dTitle, dMsg, 99001);
+                scheduleNextDailyReportAlarm(context);
+                startRadarMonitorService(context);
             }
             startRadarMonitorService(context);
             final PendingResult pendingResult = goAsync();
@@ -738,6 +787,23 @@ public class MainActivity extends BridgeActivity {
                 int id = (int) (System.currentTimeMillis() & 0x7fffffff);
                 showSystemNotification(context, title, message, id);
             });
+        }
+
+        @JavascriptInterface
+        public void scheduleDailyAlarm(final int hour, final int minute, final String title, final String message) {
+            try {
+                SharedPreferences sp = context.getSharedPreferences("PriceRadarPrefs", Context.MODE_PRIVATE);
+                sp.edit()
+                    .putInt("dailyHour", hour)
+                    .putInt("dailyMinute", minute)
+                    .putString("dailyTitle", title != null ? title : "📊 דו\\"ח מחירים יומי — PriceRadar")
+                    .putString("dailyMessage", message != null ? message : "מעקב המחירים היומי שלך פעיל!")
+                    .putString("lastDailySentDate", "")
+                    .commit();
+                scheduleNextDailyReportAlarm(context);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
 
         @JavascriptInterface

@@ -2,9 +2,9 @@
 <html lang="he" dir="rtl">
 <head>
   <script>
-    window.__APP_VERSION__ = "2.8.0";
-    window.__BUILD_TIMESTAMP__ = 1762122000;
-    window.__OTA_RELEASE_NOTES__ = "נוסף פופ-אפ אישור עדכון אוטומטי (OTA), כפתור בדיקת התראות כשהאפליקציה סגורה, ושמירה מלאה של רשימת המוצרים בסגירה מהמולטיטאסקינג.";
+    window.__APP_VERSION__ = "2.9.0";
+    window.__BUILD_TIMESTAMP__ = 1762126000;
+    window.__OTA_RELEASE_NOTES__ = "תיקון מלא של התראות מתוזמנות לפי שעה (פועלות גם כשהאפליקציה סגורה מהמולטיטאסקינג!) וסנכרון מספרי הגרסאות מול GitHub Releases.";
 
     // =========================================================================
     // OVER-THE-AIR (OTA) LIVE UPDATE ENGINE FROM GITHUB
@@ -1238,6 +1238,7 @@
         }
       } catch (e) {}
       syncNativeAndroidCredentials();
+      scheduleNativeDailyAndPeriodicNotifications();
       if (!skipCloudPush && ((state.settings.supabaseUrl && state.settings.supabaseAnonKey) || (state.settings.ghRepo && state.settings.ghToken))) {
         clearTimeout(ghSyncTimer);
         if (immediateCloudPush) {
@@ -2790,6 +2791,99 @@
         }
       } catch (e) {}
     }
+
+    async function scheduleNativeDailyAndPeriodicNotifications() {
+      try {
+        const timeStr = (state.settings && state.settings.dailyTime) || '09:00';
+        const parts = timeStr.split(':');
+        const hour = Math.max(0, Math.min(23, parseInt(parts[0], 10) || 9));
+        const minute = Math.max(0, Math.min(59, parseInt(parts[1], 10) || 0));
+
+        const now = new Date();
+        const targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minute, 0, 0);
+        if (targetDate.getTime() <= Date.now() + 1000) {
+          targetDate.setDate(targetDate.getDate() + 1);
+        }
+        const delaySeconds = Math.max(3, Math.round((targetDate.getTime() - Date.now()) / 1000));
+
+        const totalProds = Array.isArray(state.products) ? state.products.length : 0;
+        let dropsCount = 0;
+        const previewLines = [];
+        if (totalProds > 0) {
+          state.products.forEach((p, idx) => {
+            const diff = Number(p.currentPrice || 0) - Number(p.initialPrice || 0);
+            if (diff < 0) dropsCount++;
+            if (idx < 3) {
+              previewLines.push(`• ${p.title}: ${formatPrice(p.currentPrice)}`);
+            }
+          });
+        }
+
+        const notifTitle = totalProds > 0
+          ? `📊 דו"ח מחירים יומי (${totalProds} מוצרים במעקב)`
+          : `📊 תזכורת מעקב מחירים יומית (${timeStr})`;
+        const notifBody = totalProds > 0
+          ? (dropsCount > 0
+              ? `🔥 נמצאו ${dropsCount} ירידות מחיר! ${previewLines.join(' | ')}`
+              : `נבדקו ${totalProds} מוצרים (${timeStr}): ${previewLines.join(' | ')}`)
+          : `הדבק קישור למוצר ב-PriceRadar כדי לקבל עדכוני מחירים יומיים ב-${timeStr}.`;
+
+        // 1. Schedule exact OS-level LocalNotifications (proven to fire even when app is closed from multitasking!)
+        if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications) {
+          try {
+            const LN = window.Capacitor.Plugins.LocalNotifications;
+            try {
+              await LN.createChannel({
+                id: 'price_radar_alerts',
+                name: 'התראות מחיר PriceRadar',
+                description: 'התראות מיידיות על ירידות מחיר ודו"ח יומי',
+                importance: 5,
+                visibility: 1,
+                vibration: true
+              });
+            } catch (e) {}
+
+            try {
+              await LN.cancel({
+                notifications: [{ id: 88001 }, { id: 88002 }, { id: 88003 }]
+              });
+            } catch (e) {}
+
+            const next3Days = [0, 1, 2].map((dayOffset) => {
+              const dt = new Date(targetDate.getTime() + dayOffset * 86400000);
+              return {
+                title: notifTitle,
+                body: notifBody,
+                id: 88001 + dayOffset,
+                channelId: 'price_radar_alerts',
+                smallIcon: 'ic_launcher',
+                allowWhileIdle: true,
+                schedule: { at: dt, allowWhileIdle: true }
+              };
+            });
+
+            await LN.schedule({ notifications: next3Days });
+          } catch (capErr) {
+            console.warn('Capacitor daily schedule error:', capErr);
+          }
+        }
+
+        // 2. Also schedule via Native Android AlarmManager bridge if present
+        if (window.AndroidNativeScraper) {
+          try {
+            if (typeof window.AndroidNativeScraper.scheduleDailyAlarm === 'function') {
+              window.AndroidNativeScraper.scheduleDailyAlarm(hour, minute, notifTitle, notifBody);
+            } else if (typeof window.AndroidNativeScraper.scheduleDelayedNotification === 'function') {
+              window.AndroidNativeScraper.scheduleDelayedNotification(notifTitle, notifBody, delaySeconds);
+            }
+          } catch (e) {}
+        }
+
+        return { targetDate, delaySeconds, notifTitle, notifBody };
+      } catch (e) {
+        return null;
+      }
+    }
     // =========================================================================
     // ALERTS & DAILY REPORT ENGINE
     // =========================================================================
@@ -3567,13 +3661,21 @@
         showToast('היומן נוקה', 'כל ההתראות נמחקו.', 'info');
       });
 
-      document.getElementById('saveScheduleBtn').addEventListener('click', () => {
+      document.getElementById('saveScheduleBtn').addEventListener('click', async () => {
         state.settings.dailyTime = document.getElementById('dailyTimeInput').value || '09:00';
         state.settings.checkIntervalMinutes = Number(document.getElementById('checkIntervalSelect').value) || 60;
+        state.settings.lastDailySentDate = '';
         state.ui.nextCheckSeconds = state.settings.checkIntervalMinutes * 60;
-        saveState();
+        await requestDeviceNotificationPermission();
+        saveState(false, true);
+        const schedInfo = await scheduleNativeDailyAndPeriodicNotifications();
         renderAll();
-        showToast('ההגדרות נשמרו! ⏰', `עדכון יומי ב-${state.settings.dailyTime}, ובדיקת מחירים כל ${state.settings.checkIntervalMinutes} דקות.`, 'success');
+        const minsLeft = schedInfo ? Math.max(1, Math.round(schedInfo.delaySeconds / 60)) : 0;
+        showToast(
+          `⏰ התראה יומית תוזמנה ל-${state.settings.dailyTime}!`,
+          `תתקבל התראה במכשיר גם אם האפליקציה סגורה לגמרי מהמולטיטאסקינג (בעוד כ-${minsLeft} דקות).`,
+          'success'
+        );
       });
 
       document.getElementById('enableBrowserNotifBtn').addEventListener('click', async () => {
@@ -3769,10 +3871,12 @@
       });
 
       // Finish onboarding
-      document.getElementById('finishOnboardingBtn').addEventListener('click', () => {
+      document.getElementById('finishOnboardingBtn').addEventListener('click', async () => {
         const chosenTime = document.getElementById('onboardingDailyTimeInput').value || '09:00';
         state.settings.dailyTime = chosenTime;
-        saveState();
+        state.settings.lastDailySentDate = '';
+        saveState(false, true);
+        await scheduleNativeDailyAndPeriodicNotifications();
         renderAll();
         closeOnboardingModal();
         showToast('ברוך הבא ל-PriceRadar! 🎉', 'המערכת מוכנה! הדבק קישור למוצר כדי להתחיל לעקוב.', 'success');
@@ -3784,6 +3888,7 @@
         try {
           syncNativeAndroidCredentials();
           await requestDeviceNotificationPermission();
+          await scheduleNativeDailyAndPeriodicNotifications();
         } catch (e) {}
       }, 800);
 
