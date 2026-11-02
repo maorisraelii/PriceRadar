@@ -79,28 +79,37 @@ def main():
     else:
         print("No google-services.json found — building in native LocalNotifications mode.")
 
-    # 4. Update AndroidManifest.xml
+    # 4. Update AndroidManifest.xml with full background notification & alarm permissions
     p_manifest = "android/app/src/main/AndroidManifest.xml"
     if os.path.exists(p_manifest):
         with open(p_manifest, "r", encoding="utf-8") as f:
             m = f.read()
         perms = """
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
 """
         if "POST_NOTIFICATIONS" not in m:
             m = m.replace("</manifest>", perms + "</manifest>")
         rcvr = """
-        <receiver android:name=".MainActivity$BackgroundAlertReceiver" android:exported="false" />
+        <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="price_radar_alerts" />
+        <receiver android:name=".MainActivity$BackgroundAlertReceiver" android:enabled="true" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="com.priceradar.app.CHECK_ALERTS" />
+            </intent-filter>
+        </receiver>
 """
         if "BackgroundAlertReceiver" not in m:
             m = m.replace("</application>", rcvr + "</application>")
         with open(p_manifest, "w", encoding="utf-8") as f:
             f.write(m)
-        print("Updated AndroidManifest.xml with permissions and receiver")
+        print("Updated AndroidManifest.xml with permissions, FCM default channel, and boot/alarm receiver")
 
     # 5. Write MainActivity.java
     main_activity_dir = "android/app/src/main/java/com/priceradar/app"
@@ -109,6 +118,7 @@ def main():
 
     java_code = """package com.priceradar.app;
 
+import android.Manifest;
 import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -118,6 +128,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -126,14 +138,19 @@ import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
+import androidx.core.content.ContextCompat;
 import com.getcapacitor.BridgeActivity;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class MainActivity extends BridgeActivity {
     public static final String CHANNEL_ID = "price_radar_alerts";
@@ -142,40 +159,122 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        createNotificationChannel();
+        createNotificationChannel(this);
+        requestNotificationPermissionIfNeeded();
         try {
             WebView mainWv = this.getBridge().getWebView();
+            WebSettings ws = mainWv.getSettings();
+            ws.setJavaScriptEnabled(true);
+            ws.setDomStorageEnabled(true);
             mainWv.addJavascriptInterface(new NativeScraperBridge(mainWv, this), "AndroidNativeScraper");
         } catch (Exception e) {
             e.printStackTrace();
         }
+        scheduleNextBackgroundCheck(this, 15);
     }
 
-    private void createNotificationChannel() {
+    private void requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= 33) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.POST_NOTIFICATIONS}, 1001);
+            }
+        }
+    }
+
+    public static void createNotificationChannel(Context ctx) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
                 CHANNEL_ID,
                 "התראות מחיר PriceRadar",
                 NotificationManager.IMPORTANCE_HIGH
             );
-            channel.setDescription("התראות מיידיות על ירידות מחיר מחוץ לאפליקציה");
+            channel.setDescription("התראות מיידיות על ירידות מחיר ומשלוח חינם");
             channel.enableVibration(true);
             channel.enableLights(true);
             channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
-            NotificationManager nm = getSystemService(NotificationManager.class);
+            NotificationManager nm = ctx.getSystemService(NotificationManager.class);
             if (nm != null) {
                 nm.createNotificationChannel(channel);
             }
         }
     }
 
+    public static void showSystemNotification(Context context, String title, String message, int notifId) {
+        try {
+            createNotificationChannel(context);
+            Intent tapIntent = new Intent(context, MainActivity.class);
+            tapIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            PendingIntent pi = PendingIntent.getActivity(
+                context,
+                notifId,
+                tapIntent,
+                PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT
+            );
+
+            int smallIconId = context.getApplicationInfo().icon;
+            if (smallIconId == 0) {
+                smallIconId = android.R.drawable.ic_dialog_info;
+            }
+
+            NotificationCompat.Builder b = new NotificationCompat.Builder(context, CHANNEL_ID)
+                .setSmallIcon(smallIconId)
+                .setLargeIcon(BitmapFactory.decodeResource(context.getResources(), context.getApplicationInfo().icon))
+                .setContentTitle(title)
+                .setContentText(message)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(message))
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setCategory(NotificationCompat.CATEGORY_PROMO)
+                .setDefaults(NotificationCompat.DEFAULT_ALL)
+                .setAutoCancel(true)
+                .setContentIntent(pi);
+
+            NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm != null) {
+                nm.notify(notifId, b.build());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void scheduleNextBackgroundCheck(Context context, int intervalMinutes) {
+        try {
+            int mins = Math.max(15, intervalMinutes);
+            long triggerAt = System.currentTimeMillis() + (mins * 60L * 1000L);
+            AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+            if (am == null) return;
+
+            Intent i = new Intent(context, BackgroundAlertReceiver.class);
+            i.setAction("com.priceradar.app.CHECK_ALERTS");
+            PendingIntent pi = PendingIntent.getBroadcast(
+                context,
+                101,
+                i,
+                PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT
+            );
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pi);
+            } else {
+                am.set(AlarmManager.RTC_WAKEUP, triggerAt, pi);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     public static class BackgroundAlertReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
+            final PendingResult pendingResult = goAsync();
             new Thread(() -> {
                 try {
                     SharedPreferences sp = context.getSharedPreferences("PriceRadarPrefs", Context.MODE_PRIVATE);
+                    int intervalMins = sp.getInt("checkIntervalMinutes", 15);
+                    scheduleNextBackgroundCheck(context, intervalMins);
+
                     String deviceId = sp.getString("deviceId", "");
+                    String deviceSecret = sp.getString("deviceSecret", "");
                     if (deviceId == null || deviceId.isEmpty()) return;
 
                     String sbUrl = "https://ljggqatmryzfvvveefiz.supabase.co/rest/v1/user_profiles?device_id=eq." + deviceId + "&select=payload";
@@ -185,11 +284,15 @@ public class MainActivity extends BridgeActivity {
                     conn.setRequestMethod("GET");
                     conn.setRequestProperty("apikey", sbKey);
                     conn.setRequestProperty("Authorization", "Bearer " + sbKey);
-                    conn.setConnectTimeout(8000);
-                    conn.setReadTimeout(8000);
+                    conn.setRequestProperty("x-device-id", deviceId);
+                    if (deviceSecret != null && !deviceSecret.isEmpty()) {
+                        conn.setRequestProperty("x-device-secret", deviceSecret);
+                    }
+                    conn.setConnectTimeout(10000);
+                    conn.setReadTimeout(10000);
 
                     if (conn.getResponseCode() == 200) {
-                        BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
                         StringBuilder sb = new StringBuilder();
                         String line;
                         while ((line = reader.readLine()) != null) sb.append(line);
@@ -200,6 +303,7 @@ public class MainActivity extends BridgeActivity {
                             JSONObject row = arr.getJSONObject(0);
                             JSONObject payload = row.optJSONObject("payload");
                             if (payload != null) {
+                                // 1. Check if cloud scraper added a new alert
                                 JSONArray alerts = payload.optJSONArray("alerts");
                                 if (alerts != null && alerts.length() > 0) {
                                     JSONObject latest = alerts.getJSONObject(0);
@@ -210,31 +314,138 @@ public class MainActivity extends BridgeActivity {
                                         sp.edit().putString("lastAlertId", alertId).apply();
                                         String title = latest.optString("title", "🔥 המחיר ירד!");
                                         String msg = latest.optString("messagePlain", "נמצאה ירידת מחיר באחד המוצרים שלך");
+                                        showSystemNotification(context, title, msg, Math.abs(alertId.hashCode()));
+                                    }
+                                }
 
-                                        Intent tapIntent = new Intent(context, MainActivity.class);
-                                        tapIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                                        PendingIntent pi = PendingIntent.getActivity(context, 0, tapIntent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
-
-                                        NotificationCompat.Builder b = new NotificationCompat.Builder(context, CHANNEL_ID)
-                                            .setSmallIcon(context.getApplicationInfo().icon)
-                                            .setContentTitle(title)
-                                            .setContentText(msg)
-                                            .setPriority(NotificationCompat.PRIORITY_HIGH)
-                                            .setDefaults(NotificationCompat.DEFAULT_ALL)
-                                            .setAutoCancel(true)
-                                            .setContentIntent(pi);
-
-                                        NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-                                        if (nm != null) {
-                                            nm.notify(Math.abs(alertId.hashCode()), b.build());
-                                        }
+                                // 2. Also perform lightweight background check on tracked products directly from device
+                                JSONArray products = payload.optJSONArray("products");
+                                if (products != null && products.length() > 0 && deviceSecret != null && !deviceSecret.isEmpty()) {
+                                    boolean updated = checkProductsInBackground(context, sp, products, alerts != null ? alerts : new JSONArray(), payload);
+                                    if (updated) {
+                                        pushUpdatedPayloadToSupabase(deviceId, deviceSecret, payload);
                                     }
                                 }
                             }
                         }
                     }
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) {
+                } finally {
+                    try {
+                        pendingResult.finish();
+                    } catch (Exception ignored) {}
+                }
             }).start();
+        }
+
+        private boolean checkProductsInBackground(Context ctx, SharedPreferences sp, JSONArray products, JSONArray alerts, JSONObject payload) {
+            boolean anyChange = false;
+            int count = Math.min(products.length(), 6);
+            for (int i = 0; i < count; i++) {
+                try {
+                    JSONObject prod = products.optJSONObject(i);
+                    if (prod == null) continue;
+                    String rawUrl = prod.optString("url", "");
+                    double oldPrice = prod.optDouble("currentPrice", 0);
+                    if (rawUrl.isEmpty() || oldPrice <= 0) continue;
+
+                    String targetUrl = rawUrl;
+                    Matcher kspM = Pattern.compile("ksp\\\\.co\\\\.il/(?:web/|mob/)?item/(\\\\d+)").matcher(rawUrl);
+                    if (kspM.find()) {
+                        targetUrl = "https://pricedrop.co.il/item/" + kspM.group(1);
+                    }
+
+                    URL u = new URL(targetUrl);
+                    HttpURLConnection c = (HttpURLConnection) u.openConnection();
+                    c.setRequestMethod("GET");
+                    c.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Chrome/126.0.0.0 Mobile Safari/537.36");
+                    c.setConnectTimeout(8000);
+                    c.setReadTimeout(8000);
+                    if (c.getResponseCode() != 200) continue;
+
+                    BufferedReader r = new BufferedReader(new InputStreamReader(c.getInputStream(), "UTF-8"));
+                    StringBuilder htmlSb = new StringBuilder();
+                    String ln;
+                    while ((ln = r.readLine()) != null && htmlSb.length() < 250000) {
+                        htmlSb.append(ln).append("\\n");
+                    }
+                    r.close();
+                    String html = htmlSb.toString().replaceAll("[\\u200E\\u200F\\u202A-\\u202E]", "");
+                    if (html.contains("Just a moment...") || html.length() < 200) continue;
+
+                    Double detected = extractQuickPrice(html, prod.optString("SelectedVariant", ""));
+                    if (detected != null && detected > 1 && detected < oldPrice) {
+                        double saved = Math.round((oldPrice - detected) * 100.0) / 100.0;
+                        prod.put("currentPrice", detected);
+                        double lowest = prod.optDouble("lowestPrice", oldPrice);
+                        if (detected < lowest) prod.put("lowestPrice", detected);
+
+                        String alertId = "bg_drop_" + System.currentTimeMillis();
+                        String title = "🔥 המחיר ירד! " + prod.optString("title", "מוצר במעקב");
+                        String msg = "ירד מ-" + oldPrice + " ₪ ל-" + detected + " ₪ (חיסכון של " + saved + " ₪)!";
+
+                        JSONObject newAlert = new JSONObject();
+                        newAlert.put("id", alertId);
+                        newAlert.put("type", "drop");
+                        newAlert.put("title", title);
+                        newAlert.put("messagePlain", msg);
+                        newAlert.put("url", rawUrl);
+
+                        JSONArray newAlerts = new JSONArray();
+                        newAlerts.put(newAlert);
+                        for (int a = 0; a < Math.min(alerts.length(), 99); a++) {
+                            newAlerts.put(alerts.get(a));
+                        }
+                        payload.put("alerts", newAlerts);
+                        sp.edit().putString("lastAlertId", alertId).apply();
+                        showSystemNotification(ctx, title, msg, Math.abs(alertId.hashCode()));
+                        anyChange = true;
+                    }
+                } catch (Exception ignored) {}
+            }
+            return anyChange;
+        }
+
+        private Double extractQuickPrice(String html, String variant) {
+            try {
+                Matcher mPd = Pattern.compile("₪\\\\s*(\\\\d{1,3}(?:,\\\\d{3})*(?:\\\\.\\\\d{1,2})?)\\\\s*מחיר\\\\s+(?:נוכחי|אחרון)").matcher(html);
+                if (mPd.find()) {
+                    double v = Double.parseDouble(mPd.group(1).replace(",", ""));
+                    return variant.contains("אילת") ? (double) Math.round(v / 1.18) : v;
+                }
+                Matcher mMeta = Pattern.compile("property=[\\"'](?:product|og):price:amount[\\"'][^>]*content=[\\"']([0-9.]+)[\\"']").matcher(html);
+                if (mMeta.find()) {
+                    return Double.parseDouble(mMeta.group(1));
+                }
+                Matcher mSchema = Pattern.compile("\\"price\\"\\\\s*:\\\\s*[\\"']?(\\\\d+(?:\\\\.\\\\d{1,2})?)[\\"']?").matcher(html);
+                if (mSchema.find()) {
+                    double v = Double.parseDouble(mSchema.group(1));
+                    if (v > 1) return v;
+                }
+            } catch (Exception ignored) {}
+            return null;
+        }
+
+        private void pushUpdatedPayloadToSupabase(String deviceId, String deviceSecret, JSONObject payload) {
+            try {
+                String sbUrl = "https://ljggqatmryzfvvveefiz.supabase.co/rest/v1/user_profiles?device_id=eq." + deviceId;
+                String sbKey = "sb_publishable_BEFtsujmDeFgYfUicT0aTA_e5H2f6bx";
+                URL u = new URL(sbUrl);
+                HttpURLConnection conn = (HttpURLConnection) u.openConnection();
+                conn.setRequestMethod("PATCH");
+                conn.setRequestProperty("apikey", sbKey);
+                conn.setRequestProperty("Authorization", "Bearer " + sbKey);
+                conn.setRequestProperty("Content-Type", "application/json");
+                conn.setRequestProperty("x-device-id", deviceId);
+                conn.setRequestProperty("x-device-secret", deviceSecret);
+                conn.setDoOutput(true);
+                JSONObject body = new JSONObject();
+                body.put("payload", payload);
+                try (OutputStream os = conn.getOutputStream()) {
+                    os.write(body.toString().getBytes("UTF-8"));
+                }
+                conn.getResponseCode();
+            } catch (Exception ignored) {}
         }
     }
 
@@ -250,19 +461,28 @@ public class MainActivity extends BridgeActivity {
 
         @JavascriptInterface
         public void saveDeviceId(final String deviceId) {
+            saveDeviceCredentials(deviceId, "", 15);
+        }
+
+        @JavascriptInterface
+        public void saveDeviceCredentials(final String deviceId, final String deviceSecret, final int intervalMinutes) {
             if (deviceId == null || deviceId.isEmpty()) return;
             SharedPreferences sp = context.getSharedPreferences("PriceRadarPrefs", Context.MODE_PRIVATE);
-            sp.edit().putString("deviceId", deviceId).apply();
+            SharedPreferences.Editor ed = sp.edit();
+            ed.putString("deviceId", deviceId);
+            if (deviceSecret != null && !deviceSecret.isEmpty()) {
+                ed.putString("deviceSecret", deviceSecret);
+            }
+            if (intervalMinutes > 0) {
+                ed.putInt("checkIntervalMinutes", intervalMinutes);
+            }
+            ed.apply();
 
+            scheduleNextBackgroundCheck(context, intervalMinutes > 0 ? intervalMinutes : 15);
             try {
-                AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
                 Intent i = new Intent(context, BackgroundAlertReceiver.class);
-                PendingIntent pi = PendingIntent.getBroadcast(context, 101, i, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
-                if (am != null) {
-                    long interval = 15 * 60 * 1000;
-                    am.setInexactRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + interval, interval, pi);
-                          context.sendBroadcast(i);
-                }
+                i.setAction("com.priceradar.app.CHECK_ALERTS");
+                context.sendBroadcast(i);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -271,27 +491,9 @@ public class MainActivity extends BridgeActivity {
         @JavascriptInterface
         public void sendNativeNotification(final String title, final String message) {
             mainHandler.post(() -> {
-                try {
-                    NotificationCompat.Builder b = new NotificationCompat.Builder(context, CHANNEL_ID)
-                        .setSmallIcon(context.getApplicationInfo().icon)
-                        .setContentTitle(title)
-                        .setContentText(message)
-                        .setPriority(NotificationCompat.PRIORITY_HIGH)
-                        .setDefaults(NotificationCompat.DEFAULT_ALL)
-                        .setAutoCancel(true);
-
-                    Intent tapIntent = new Intent(context, MainActivity.class);
-                    tapIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                    PendingIntent pi = PendingIntent.getActivity(context, (int) System.currentTimeMillis(), tapIntent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
-                    b.setContentIntent(pi);
-
-                    NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-                    if (nm != null) {
-                        nm.notify((int) System.currentTimeMillis(), b.build());
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+                requestNotificationPermissionIfNeeded();
+                int id = (int) (System.currentTimeMillis() & 0x7fffffff);
+                showSystemNotification(context, title, message, id);
             });
         }
 
@@ -354,14 +556,26 @@ public class MainActivity extends BridgeActivity {
         f.write(java_code)
     print(f"Generated clean {main_activity_path}")
 
-    # 6. Copy launcher icons
+    # 6. Replace ALL launcher icons (including Adaptive Icons foreground & removing default Capacitor vector override)
+    anydpi_dir = "android/app/src/main/res/mipmap-anydpi-v26"
+    if os.path.exists(anydpi_dir):
+        shutil.rmtree(anydpi_dir, ignore_errors=True)
+        print(f"Removed {anydpi_dir} so Android uses the custom PNG launcher icons directly without Capacitor's default adaptive icon override")
+
+    # Also update ic_launcher_background color to match #090716 dark aurora theme if referenced anywhere
+    bg_xml_path = "android/app/src/main/res/values/ic_launcher_background.xml"
+    if os.path.exists(bg_xml_path):
+        with open(bg_xml_path, "w", encoding="utf-8") as f:
+            f.write('<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <color name="ic_launcher_background">#090716</color>\n</resources>\n')
+
     for density in ["hdpi", "mdpi", "xhdpi", "xxhdpi", "xxxhdpi"]:
         folder = f"android/app/src/main/res/mipmap-{density}"
         os.makedirs(folder, exist_ok=True)
         if os.path.exists("icon-512.png"):
             shutil.copy("icon-512.png", f"{folder}/ic_launcher.png")
             shutil.copy("icon-512.png", f"{folder}/ic_launcher_round.png")
-    print("Copied all launcher icons successfully!")
+            shutil.copy("icon-512.png", f"{folder}/ic_launcher_foreground.png")
+    print("Copied icon-512.png to all mipmap-* folders (ic_launcher, ic_launcher_round, ic_launcher_foreground)!")
 
 if __name__ == "__main__":
     main()
