@@ -2,7 +2,9 @@ name: PriceRadar 24/7 Multi-User Price Checker
 
 on:
   schedule:
-    - cron: '*/15 * * * *'
+    - cron: '*/5 * * * *'
+  push:
+    branches: [ main ]
   workflow_dispatch:
 
 permissions:

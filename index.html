@@ -2,9 +2,9 @@
 <html lang="he" dir="rtl">
 <head>
   <script>
-    window.__APP_VERSION__ = "3.0.1";
-    window.__BUILD_TIMESTAMP__ = 1762138000;
-    window.__OTA_RELEASE_NOTES__ = "תיקון זיהוי מחירי מבצע ומחיר סופי במחסני חשמל (PayNGo) ורשתות נוספות — מתעדף מחיר מיוחד/מבצע על פני מחיר רגיל מחוק.";
+    window.__APP_VERSION__ = "3.1.0";
+    window.__BUILD_TIMESTAMP__ = 1762142000;
+    window.__OTA_RELEASE_NOTES__ = "שדרוג בוט הטלגרם האינטראקטיבי: תפריט כפתורים בעברית לצפייה בכל המוצרים והמחירים כרגע, ירידות מחיר, השוואת חנויות, דו\"ח יומי ויומן התראות, וחיווי חיבור חי באפליקציה.";
 
     // =========================================================================
     // OVER-THE-AIR (OTA) LIVE UPDATE ENGINE FROM GITHUB
@@ -692,18 +692,35 @@
               <span id="userAnonymousIdBadge" class="font-mono font-extrabold px-2.5 py-0.5 rounded-lg bg-black/40 text-cyan-300 border border-white/15">PR-XXXX</span>
             </div>
             <p class="text-xs text-slate-200 leading-relaxed">
-              לא צריך להגדיר כלום! לחץ על הכפתור למטה, לחץ על <strong>Start</strong> בבוט הטלגרם שייפתח, והמכשיר שלך יחובר אוטומטית להתראות 24/7:
+              לא צריך להגדיר כלום! לחץ על הכפתור למטה, לחץ על <strong>Start</strong> בבוט הטלגרם שייפתח, ותוכל גם <strong>ללחוץ על כפתורי התפריט בבוט</strong> כדי לראות את כל המוצרים והמחירים שלך בכל רגע:
             </p>
-            <a
-              id="oneClickTelegramLink"
-              href="https://t.me/Priceradar_maorisr_bot"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="w-full py-3 px-4 rounded-2xl btn-gradient-primary text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg"
-            >
-              <span>📲</span>
-              <span>חבר את הטלגרם שלי בלחיצה אחת</span>
-            </a>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <a
+                id="oneClickTelegramLink"
+                href="https://t.me/Priceradar_maorisr_bot"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="w-full py-3 px-4 rounded-2xl btn-gradient-primary text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg"
+              >
+                <span>📲</span>
+                <span>חבר / פתח את בוט הטלגרם</span>
+              </a>
+              <button
+                id="verifyTelegramConnectionBtn"
+                type="button"
+                class="w-full py-3 px-4 rounded-2xl liquid-glass-soft hover:bg-white/20 text-cyan-200 border border-cyan-400/35 font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 transition"
+              >
+                <span>🔄</span>
+                <span>בדוק סטטוס חיבור לבוט</span>
+              </button>
+            </div>
+            <div class="pt-2 border-t border-white/10 text-[11px] text-slate-300 space-y-1">
+              <p class="font-extrabold text-sky-200">🤖 מה אפשר לעשות בתוך בוט הטלגרם החדש?</p>
+              <p>• <strong>📦 המוצרים שלי והמחירים כרגע</strong> — צפייה ברשימה המלאה והמחירים העדכניים</p>
+              <p>• <strong>🔥 ירידות מחיר וחיסכון</strong> — סינון מהיר של מוצרים שמחירם ירד</p>
+              <p>• <strong>🏪 השוואת חנויות</strong> — צפייה במוצרים שמאוחדים ממספר חנויות והחנות הזולה ביותר</p>
+              <p>• <strong>📊 דו"ח יומי & היסטוריית התראות</strong> — קבלת דו"ח מלא בלחיצת כפתור</p>
+            </div>
           </div>
 
           <!-- Collapsible Advanced Custom Bot Section -->
@@ -1366,6 +1383,9 @@
           if (res.ok) {
             const rows = await res.json();
             if (Array.isArray(rows) && rows.length > 0 && rows[0].payload) {
+              if (rows[0].telegram_chat_id) {
+                state.settings.cloudTgChatId = String(rows[0].telegram_chat_id);
+              }
               const cloudData = rows[0].payload;
               const prevLatestAlertId = (state.alerts && state.alerts.length > 0) ? state.alerts[0].id : localStorage.getItem('pr_last_notified_alert_id');
               if (Array.isArray(cloudData.products)) {
@@ -2912,17 +2932,34 @@
     }
 
     // =========================================================================
-    // TELEGRAM BOT LIVE SENDER & BROWSER PUSH
+    // TELEGRAM BOT LIVE SENDER & INTERACTIVE KEYBOARD
     // =========================================================================
+    function getTelegramReplyKeyboard() {
+      return {
+        keyboard: [
+          [{ text: '📦 המוצרים שלי והמחירים כרגע' }, { text: '🔥 ירידות מחיר וחיסכון' }],
+          [{ text: '🏪 השוואת חנויות' }, { text: '📊 שלח דו"ח יומי עכשיו' }],
+          [{ text: '🔔 היסטוריית התראות' }, { text: 'ℹ️ סטטוס חשבון ועזרה' }]
+        ],
+        resize_keyboard: true,
+        is_persistent: true
+      };
+    }
+
     async function sendTelegramMessage(text) {
       const token = (state.settings.tgBotToken || '').trim();
-      const chatId = (state.settings.tgChatId || '').trim();
+      const chatId = (state.settings.tgChatId || state.settings.cloudTgChatId || '').trim();
       if (!token || !chatId) return { sent: false, reason: 'לא הוגדר טלגרם' };
       try {
         const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chat_id: chatId, text: text, disable_web_page_preview: false })
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: text,
+            disable_web_page_preview: false,
+            reply_markup: getTelegramReplyKeyboard()
+          })
         });
         const data = await res.json();
         if (data && data.ok) return { sent: true };
@@ -3434,8 +3471,8 @@
         }
       }
       const tgBadge = document.getElementById('tgConnectionBadge');
-      if (state.settings.tgBotToken && state.settings.tgChatId) {
-        tgBadge.textContent = 'מחובר ✈️';
+      if (state.settings.cloudTgChatId || (state.settings.tgBotToken && state.settings.tgChatId)) {
+        tgBadge.textContent = 'מחובר לבוט ✈️';
         tgBadge.className = 'text-[11px] font-extrabold px-3 py-1 rounded-full bg-emerald-500/25 text-emerald-200 border border-emerald-400/40';
       } else {
         tgBadge.textContent = 'לא מחובר';
@@ -4381,6 +4418,28 @@
           showToast('שגיאה בשליחה', res.reason, 'error');
         }
       });
+
+      const verifyTgBtn = document.getElementById('verifyTelegramConnectionBtn');
+      if (verifyTgBtn) {
+        verifyTgBtn.addEventListener('click', async () => {
+          showToast('בודק חיבור מול הענן והבוט...', 'מסנכרן את המוצרים ובודק אם לחצת Start בבוט.', 'info');
+          await pushStateToGithubCloud(true);
+          await pullStateFromGithubCloud(true);
+          renderAll();
+          if (state.settings.cloudTgChatId || (state.settings.tgBotToken && state.settings.tgChatId)) {
+            showToast('✅ הטלגרם שלך מחובר לבוט!', 'תוכל להשתמש בכפתורי התפריט בבוט כדי לצפות במוצרים ובמחירים.', 'success');
+          } else {
+            showToast('⏳ ממתין ללחיצה על Start בבוט', 'לחץ על "חבר / פתח את בוט הטלגרם", שלח Start, והבוט יחבר אותך אוטומטית עם תפריט כפתורים מלא!', 'warning');
+          }
+        });
+      }
+
+      const oneClickTgEl = document.getElementById('oneClickTelegramLink');
+      if (oneClickTgEl) {
+        oneClickTgEl.addEventListener('click', () => {
+          pushStateToGithubCloud(true);
+        });
+      }
 
       document.getElementById('toggleAdvancedTgBtn').addEventListener('click', () => {
         document.getElementById('advancedTgBox').classList.toggle('hidden');

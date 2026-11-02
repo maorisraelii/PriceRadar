@@ -110,17 +110,51 @@ def is_blocked_html(html: str) -> bool:
     return any(marker in html for marker in blocked_markers)
 
 
-def send_telegram(text: str, chat_id: str = ""):
+def get_bot_menu_keyboard() -> dict:
+    """Returns a persistent Telegram ReplyKeyboardMarkup with interactive Hebrew action buttons."""
+    return {
+        "keyboard": [
+            [{"text": "📦 המוצרים שלי והמחירים כרגע"}, {"text": "🔥 ירידות מחיר וחיסכון"}],
+            [{"text": "🏪 השוואת חנויות"}, {"text": "📊 שלח דו\"ח יומי עכשיו"}],
+            [{"text": "🔔 היסטוריית התראות"}, {"text": "ℹ️ סטטוס חשבון ועזרה"}]
+        ],
+        "resize_keyboard": True,
+        "is_persistent": True
+    }
+
+
+def get_inline_dashboard_buttons() -> dict:
+    return {
+        "inline_keyboard": [
+            [
+                {"text": "📦 כל המוצרים והמחירים", "callback_data": "cmd_products"},
+                {"text": "🔥 ירידות מחיר", "callback_data": "cmd_drops"}
+            ],
+            [
+                {"text": "🏪 השוואת חנויות", "callback_data": "cmd_compare"},
+                {"text": "📊 דו\"ח יומי מלא", "callback_data": "cmd_daily"}
+            ],
+            [
+                {"text": "🔔 התראות אחרונות", "callback_data": "cmd_alerts"},
+                {"text": "ℹ️ סטטוס המכשיר שלי", "callback_data": "cmd_status"}
+            ]
+        ]
+    }
+
+
+def send_telegram(text: str, chat_id: str = "", reply_markup: dict | None = None):
     target_chat = (chat_id or TELEGRAM_CHAT_ID).strip()
     if not TELEGRAM_BOT_TOKEN or not target_chat:
         print("Telegram not configured for target, message:\n", text)
         return
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-    payload = json.dumps({
+    body_dict = {
         "chat_id": target_chat,
         "text": text,
-        "disable_web_page_preview": False
-    }).encode("utf-8")
+        "disable_web_page_preview": True,
+        "reply_markup": reply_markup if reply_markup is not None else get_bot_menu_keyboard()
+    }
+    payload = json.dumps(body_dict).encode("utf-8")
     req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
     try:
         urllib.request.urlopen(req, timeout=12)
@@ -128,21 +162,188 @@ def send_telegram(text: str, chat_id: str = ""):
         print("Telegram send error:", exc)
 
 
+def answer_callback_query(callback_id: str, text: str = ""):
+    if not TELEGRAM_BOT_TOKEN or not callback_id:
+        return
+    try:
+        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/answerCallbackQuery"
+        payload = json.dumps({"callback_query_id": callback_id, "text": text}).encode("utf-8")
+        req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
+        urllib.request.urlopen(req, timeout=8)
+    except Exception:
+        pass
+
+
+def format_user_products_message(payload: dict, mode: str = "all") -> tuple[str, dict | None]:
+    products = (payload or {}).get("products") or []
+    alerts = (payload or {}).get("alerts") or []
+    settings = (payload or {}).get("settings") or {}
+
+    if mode == "status":
+        drops = sum(1 for p in products if float(p.get("currentPrice") or 0) < float(p.get("initialPrice") or 0))
+        total_saved = sum(
+            max(0.0, float(p.get("initialPrice") or 0) - float(p.get("currentPrice") or 0))
+            for p in products
+        )
+        txt = (
+            f"✅ *בוט PriceRadar שלך פעיל ומחובר!*\n\n"
+            f"🛍️ מוצרים במעקב כרגע: {len(products)}\n"
+            f"🔥 מוצרים בירידת מחיר: {drops}\n"
+            f"💰 סך חיסכון מצטבר: {round(total_saved, 2)} ₪\n"
+            f"⏰ שעת דו\"ח יומי קבועה: {settings.get('dailyTime', '09:00')}\n"
+            f"🔄 תדירות בדיקה: כל {settings.get('checkIntervalMinutes', 15)} דקות\n\n"
+            f"👇 *בחר פעולה מהכפתורים למטה כדי לראות מחירים בזמן אמת:*"
+        )
+        return txt, get_inline_dashboard_buttons()
+
+    if mode == "alerts":
+        if not alerts:
+            return "🔔 אין עדיין התראות שמורות ביומן שלך.\nברגע שמחיר של מוצר יירד, תקבל לכאן הודעה מיידית!", get_inline_dashboard_buttons()
+        lines = ["🔔 *5 ההתראות האחרונות שלך ב-PriceRadar:*\n"]
+        for idx, a in enumerate(alerts[:5], 1):
+            lines.append(f"{idx}. *{a.get('title', 'התראה')}* ({a.get('timestamp', '')})\n   {a.get('messagePlain', '')}")
+            if a.get("url"):
+                lines.append(f"   🔗 {a.get('url')}")
+            lines.append("")
+        return "\n".join(lines), get_inline_dashboard_buttons()
+
+    if not products:
+        return (
+            "📭 *רשימת המוצרים שלך ריקה כרגע.*\n\n"
+            "היכנס לאפליקציית PriceRadar והדבק קישור למוצר (מ-KSP, מחסני חשמל, אמזון, עליאקספרס ועוד) כדי להתחיל לעקוב!"
+        ), get_inline_dashboard_buttons()
+
+    if mode == "drops":
+        dropped_prods = [p for p in products if float(p.get("currentPrice") or 0) < float(p.get("initialPrice") or 0)]
+        if not dropped_prods:
+            return (
+                f"📊 מתוך {len(products)} מוצרים במעקב, אף מוצר עדיין לא ירד מתחת למחיר ההתחלתי שלו.\n"
+                "הסורק ממשיך לבדוק עבורך 24/7 ויתריע ברגע שתהיה ירידה!"
+            ), get_inline_dashboard_buttons()
+        total_saved = sum(float(p.get("initialPrice") or 0) - float(p.get("currentPrice") or 0) for p in dropped_prods)
+        lines = [f"🔥 *נמצאו {len(dropped_prods)} מוצרים בירידת מחיר! (חיסכון כולל: {round(total_saved, 2)} ₪)*\n"]
+        for idx, p in enumerate(dropped_prods, 1):
+            curr = float(p.get("currentPrice") or 0)
+            init = float(p.get("initialPrice") or curr)
+            saved = round(init - curr, 2)
+            pct = round((saved / init) * 100) if init > 0 else 0
+            lines.append(
+                f"{idx}. 🛍️ *{p.get('title', 'מוצר')}*\n"
+                f"   🏪 חנות: {p.get('store', 'אונליין')}\n"
+                f"   💰 מחיר כעת: *{curr} ₪* (במקום {init} ₪)\n"
+                f"   📉 חיסכון: *{saved} ₪ (-{pct}%)*\n"
+                f"   🛒 קישור: {p.get('url', '')}\n"
+            )
+        return "\n".join(lines), get_inline_dashboard_buttons()
+
+    if mode == "compare":
+        multi_prods = [p for p in products if isinstance(p.get("storeOffers"), list) and len(p.get("storeOffers")) > 1]
+        if not multi_prods:
+            return (
+                "🏪 *אין כרגע מוצרים עם השוואת מספר חנויות באותה קובייה.*\n\n"
+                "💡 טיפ: באפליקציה תוכל להוסיף את אותו מוצר מחנות נוספת (למשל גם מ-KSP וגם ממחסני חשמל) והם יתאחדו אוטומטית להשוואת מחירים חיה!"
+            ), get_inline_dashboard_buttons()
+        lines = [f"🏪 *השוואת מחירים בין חנויות ({len(multi_prods)} מוצרים מאוחדים):*\n"]
+        for idx, p in enumerate(multi_prods, 1):
+            offers = sorted(p.get("storeOffers") or [], key=lambda o: float(o.get("currentPrice") or 999999))
+            lines.append(f"{idx}. 📦 *{p.get('title', 'מוצר')}*")
+            for o_idx, off in enumerate(offers):
+                badge = "🏆 הכי זול!" if o_idx == 0 else "   •"
+                lines.append(f"   {badge} {off.get('store', 'חנות')}: *{off.get('currentPrice')} ₪* ({off.get('url', '')})")
+            lines.append("")
+        return "\n".join(lines), get_inline_dashboard_buttons()
+
+    # Default: all products & current prices
+    drops_count = 0
+    lines = [f"📦 *המוצרים שלך במעקב כרגע ({len(products)} מוצרים):*\n"]
+    for idx, p in enumerate(products, 1):
+        curr = float(p.get("currentPrice") or 0)
+        init = float(p.get("initialPrice") or curr)
+        lowest = float(p.get("lowestPrice") or curr)
+        diff = round(curr - init, 2)
+        if diff < 0:
+            drops_count += 1
+            status = f"🔥 ירד ב-{abs(diff)} ₪! (התחלתי: {init} ₪)"
+        elif diff > 0:
+            status = f"⬆️ עלה ב-{diff} ₪ (התחלתי: {init} ₪)"
+        else:
+            status = f"➖ מחיר יציב ({init} ₪)"
+
+        var_txt = f" [{p.get('SelectedVariant')}]" if p.get("SelectedVariant") else ""
+        offers = p.get("storeOffers") if isinstance(p.get("storeOffers"), list) else []
+        store_label = f"{p.get('store', 'חנות')} (הכי זול מתוך {len(offers)} חנויות)" if len(offers) > 1 else p.get("store", "חנות")
+        lines.append(
+            f"{idx}. 🛍️ *{p.get('title', 'מוצר')}{var_txt}*\n"
+            f"   🏪 חנות: {store_label}\n"
+            f"   💰 מחיר כעת: *{curr} ₪* | {status}\n"
+            f"   🏆 שיא השפל: {lowest} ₪ | 🕒 נבדק: {p.get('lastChecked', 'כעת')}\n"
+            f"   🔗 {p.get('url', '')}\n"
+        )
+    lines.append(f"📊 *סיכום:* {len(products)} מוצרים במעקב | {drops_count} בירידת מחיר.")
+    return "\n".join(lines), get_inline_dashboard_buttons()
+
+
 def sync_telegram_bot_subscribers():
-    """Links users who clicked /start PR-XXXX in Telegram to their device_id in Supabase."""
+    """Links users who clicked /start PR-XXXX in Telegram and responds to interactive bot commands/buttons."""
     if not TELEGRAM_BOT_TOKEN or not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
         return
     try:
-        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/getUpdates"
-        res = urllib.request.urlopen(url, timeout=10).read().decode("utf-8")
+        # Load all user profiles once so we can match by device_id or telegram_chat_id
+        req_profiles = urllib.request.Request(f"{SUPABASE_URL}/rest/v1/user_profiles?select=*", headers={
+            "apikey": SUPABASE_SERVICE_KEY,
+            "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}"
+        })
+        all_rows = json.loads(urllib.request.urlopen(req_profiles, timeout=15).read().decode("utf-8"))
+        by_device = {row.get("device_id"): row for row in all_rows if row.get("device_id")}
+        by_chat = {str(row.get("telegram_chat_id")): row for row in all_rows if row.get("telegram_chat_id")}
+
+        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/getUpdates?timeout=1"
+        res = urllib.request.urlopen(url, timeout=12).read().decode("utf-8")
         updates = json.loads(res).get("result", [])
+        max_update_id = None
+
         for upd in updates:
+            upd_id = upd.get("update_id")
+            if upd_id is not None:
+                max_update_id = max(max_update_id or upd_id, upd_id)
+
+            # 1. Handle Inline Button Callback Queries
+            cb = upd.get("callback_query")
+            if cb:
+                cb_id = cb.get("id")
+                cb_data = (cb.get("data") or "").strip()
+                cb_msg = cb.get("message") or {}
+                cb_chat_id = str((cb_msg.get("chat") or {}).get("id") or "")
+                answer_callback_query(cb_id, "טוען נתונים מ-PriceRadar...")
+                user_row = by_chat.get(cb_chat_id)
+                if not user_row and all_rows:
+                    user_row = all_rows[0]
+                if user_row:
+                    payload = user_row.get("payload") or {}
+                    mode_map = {
+                        "cmd_products": "all",
+                        "cmd_drops": "drops",
+                        "cmd_compare": "compare",
+                        "cmd_daily": "all",
+                        "cmd_alerts": "alerts",
+                        "cmd_status": "status"
+                    }
+                    reply_txt, inline_kb = format_user_products_message(payload, mode_map.get(cb_data, "all"))
+                    send_telegram(reply_txt, cb_chat_id, reply_markup=inline_kb)
+                continue
+
+            # 2. Handle Text Messages & Reply Keyboard Buttons
             msg = upd.get("message") or {}
             txt = (msg.get("text") or "").strip()
             chat = msg.get("chat") or {}
             chat_id = str(chat.get("id") or "")
-            if txt.startswith("/start ") and chat_id:
-                device_id = txt.split("/start ", 1)[1].strip()
+            if not chat_id or not txt:
+                continue
+
+            if txt.startswith("/start"):
+                parts = txt.split(maxsplit=1)
+                device_id = parts[1].strip() if len(parts) > 1 else ""
+                matched_row = None
                 if device_id.startswith("PR-"):
                     sb_url = f"{SUPABASE_URL}/rest/v1/user_profiles?device_id=eq.{device_id}"
                     body = json.dumps({"telegram_chat_id": chat_id}).encode("utf-8")
@@ -152,6 +353,60 @@ def sync_telegram_bot_subscribers():
                         "Content-Type": "application/json"
                     })
                     urllib.request.urlopen(req, timeout=10)
+                    matched_row = by_device.get(device_id)
+                    if matched_row:
+                        matched_row["telegram_chat_id"] = chat_id
+                        by_chat[chat_id] = matched_row
+                else:
+                    matched_row = by_chat.get(chat_id) or (all_rows[0] if all_rows else None)
+
+                payload = (matched_row or {}).get("payload") or {}
+                prods_count = len(payload.get("products") or [])
+                welcome_msg = (
+                    f"🎉 *ברוך הבא לבוט הרשמי של PriceRadar!*\n\n"
+                    f"✅ המכשיר שלך (`{device_id or (matched_row or {}).get('device_id', 'מחובר')}`) סונכרן בהצלחה!\n"
+                    f"🛍️ כרגע יש לך *{prods_count} מוצרים* במעקב חי.\n\n"
+                    f"בכל פעם שמחיר של מוצר יירד או ייכנס למשלוח חינם, תקבל לכאן התראה מיידית.\n\n"
+                    f"👇 *השתמש בכפתורים למטה בכל רגע כדי לראות את המוצרים והמחירים שלך:*"
+                )
+                send_telegram(welcome_msg, chat_id, reply_markup=get_bot_menu_keyboard())
+                summary_txt, inline_kb = format_user_products_message(payload, "all")
+                send_telegram(summary_txt, chat_id, reply_markup=inline_kb)
+                continue
+
+            # Match user by chat_id (or fallback to primary row)
+            user_row = by_chat.get(chat_id) or (all_rows[0] if all_rows else None)
+            if not user_row:
+                send_telegram("🔗 עדיין לא חיברת את המכשיר שלך. לחץ על 'חבר את הטלגרם שלי בלחיצה אחת' מתוך אפליקציית PriceRadar!", chat_id)
+                continue
+
+            payload = user_row.get("payload") or {}
+            if "המוצרים שלי" in txt or "מחירים" in txt or txt in ("/products", "/list"):
+                reply_txt, inline_kb = format_user_products_message(payload, "all")
+                send_telegram(reply_txt, chat_id, reply_markup=inline_kb)
+            elif "ירידות מחיר" in txt or "חיסכון" in txt or txt == "/drops":
+                reply_txt, inline_kb = format_user_products_message(payload, "drops")
+                send_telegram(reply_txt, chat_id, reply_markup=inline_kb)
+            elif "השוואת חנויות" in txt or txt == "/compare":
+                reply_txt, inline_kb = format_user_products_message(payload, "compare")
+                send_telegram(reply_txt, chat_id, reply_markup=inline_kb)
+            elif "דו\"ח יומי" in txt or "דוח יומי" in txt or txt == "/daily":
+                reply_txt, inline_kb = format_user_products_message(payload, "all")
+                send_telegram("📊 *דו\"ח מחירים יומי לפי בקשתך:*\n\n" + reply_txt, chat_id, reply_markup=inline_kb)
+            elif "התראות" in txt or txt == "/alerts":
+                reply_txt, inline_kb = format_user_products_message(payload, "alerts")
+                send_telegram(reply_txt, chat_id, reply_markup=inline_kb)
+            elif "סטטוס" in txt or "עזרה" in txt or txt in ("/status", "/help"):
+                reply_txt, inline_kb = format_user_products_message(payload, "status")
+                send_telegram(reply_txt, chat_id, reply_markup=inline_kb)
+            else:
+                reply_txt, inline_kb = format_user_products_message(payload, "status")
+                send_telegram(reply_txt, chat_id, reply_markup=inline_kb)
+
+        # Acknowledge processed updates so we never reply twice to the same button click!
+        if max_update_id is not None:
+            ack_url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/getUpdates?offset={max_update_id + 1}&timeout=1"
+            urllib.request.urlopen(ack_url, timeout=8)
     except Exception as exc:
         print("Telegram sync warning:", exc)
 
@@ -571,6 +826,9 @@ def main():
                     json.dump(data, f, ensure_ascii=False, indent=2)
 
         browser.close()
+
+    # Check again at the end of the run for any button clicks that arrived during scraping
+    sync_telegram_bot_subscribers()
 
 
 if __name__ == "__main__":
