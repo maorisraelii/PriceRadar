@@ -2,9 +2,9 @@
 <html lang="he" dir="rtl">
 <head>
   <script>
-    window.__APP_VERSION__ = "3.2.0";
-    window.__BUILD_TIMESTAMP__ = 1762146000;
-    window.__OTA_RELEASE_NOTES__ = "תיקון מלא לסריקת קישורי Amazon ללא תקיעה, החלפת פס ההתקדמות הישן בחיווי סריקה נקי עם אפשרות דילוג מיידי, וסידור מקיף של עיצוב ה-UI והכרטיסים.";
+    window.__APP_VERSION__ = "3.2.1";
+    window.__BUILD_TIMESTAMP__ = 1762146900;
+    window.__OTA_RELEASE_NOTES__ = "תיקון קומפילציית APK ב-GitHub Actions, הסרת כל כפתורי ההוספה הידנית ללא קישור לחנות, ושיפור מהירות סריקת קישורי Amazon וחנויות נוספות.";
 
     // =========================================================================
     // OVER-THE-AIR (OTA) LIVE UPDATE ENGINE FROM GITHUB
@@ -367,21 +367,16 @@
         <div class="absolute -bottom-20 -right-20 w-52 h-52 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none"></div>
 
         <div class="relative z-10 space-y-4">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-pink-500 via-purple-500 to-cyan-400 flex items-center justify-center text-xl shadow-md shadow-pink-500/25 shrink-0">
-                ✨
-              </div>
-              <div>
-                <h2 class="text-base sm:text-lg font-extrabold text-white">הדבק קישור למוצר מכל חנות</h2>
-                <p class="text-xs text-slate-300">
-                  האפליקציה תזהה אוטומטית את התמונה, החנות, המחיר והאפשרויות (משקל, מידה או דגם)
-                </p>
-              </div>
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-pink-500 via-purple-500 to-cyan-400 flex items-center justify-center text-xl shadow-md shadow-pink-500/25 shrink-0">
+              ✨
             </div>
-            <button id="openManualAddBtn" type="button" class="self-start sm:self-auto px-3 py-1.5 rounded-xl liquid-glass-soft hover:bg-white/15 text-xs font-bold text-pink-200 transition">
-              + או הוספה ידנית
-            </button>
+            <div>
+              <h2 class="text-base sm:text-lg font-extrabold text-white">הדבק קישור למוצר מכל חנות</h2>
+              <p class="text-xs text-slate-300">
+                האפליקציה תזהה אוטומטית את התמונה, החנות, המחיר והאפשרויות (משקל, מידה או דגם)
+              </p>
+            </div>
           </div>
 
           <form id="scanUrlForm" class="flex flex-col sm:flex-row gap-2.5">
@@ -407,7 +402,7 @@
             </button>
           </form>
 
-          <!-- Clean Non-Blocking Live Scan Indicator (Replaces fake percentage bar) -->
+          <!-- Clean Non-Blocking Live Scan Indicator -->
           <div id="scanProgressBox" class="hidden rounded-2xl liquid-glass-soft px-4 py-3 flex items-center justify-between gap-3 border border-pink-400/40">
             <div class="flex items-center gap-2.5 min-w-0">
               <span class="inline-block w-4 h-4 border-2 border-pink-400 border-t-transparent rounded-full animate-spin shrink-0"></span>
@@ -415,9 +410,6 @@
                 שולף פרטי מוצר ומחיר מהחנות...
               </span>
             </div>
-            <button id="skipLiveScanBtn" type="button" class="px-3 py-1 rounded-xl bg-white/15 hover:bg-white/25 text-[11px] font-extrabold text-cyan-200 border border-white/20 shrink-0 transition">
-              הזן ידנית ➔
-            </button>
           </div>
         </div>
       </div>
@@ -1007,23 +999,13 @@
           <div class="flex items-center justify-between">
             <label class="text-xs font-extrabold text-pink-200 flex items-center gap-1.5">
               <span>🎯</span>
-              <span>בחר אפשרות / מידה / משקל למעקב:</span>
+              <span>אפשרויות / מידות / משקלים שזוהו בדף המוצר:</span>
             </label>
-            <button id="addCustomVariantBtn" type="button" class="text-[11px] font-bold text-cyan-300 hover:text-cyan-200 underline">
-              + הוסף אפשרות אחרת
-            </button>
           </div>
           <p id="modalVariationsHint" class="text-[11px] text-slate-300">
             לחץ על האפשרות הרצויה כדי לעקוב אחרי המחיר שלה:
           </p>
           <div id="modalVariationsList" class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-44 overflow-y-auto p-0.5"></div>
-
-          <!-- Custom Variant Input Row -->
-          <div id="customVariantRow" class="hidden pt-2.5 border-t border-white/15 flex flex-wrap gap-2">
-            <input id="customVariantLabel" type="text" placeholder="למשל: 4 ק״ג / מידה 42" class="flex-1 px-3 py-1.5 rounded-xl liquid-glass-input text-xs text-white outline-none" />
-            <input id="customVariantPrice" type="number" step="0.01" placeholder="מחיר (₪)" class="w-24 px-3 py-1.5 rounded-xl liquid-glass-input text-xs text-white outline-none" />
-            <button id="saveCustomVariantBtn" type="button" class="px-3.5 py-1.5 rounded-xl btn-gradient-primary text-white text-xs font-extrabold">הוסף</button>
-          </div>
         </div>
 
         <div class="grid grid-cols-2 gap-3">
@@ -2825,11 +2807,6 @@
       const kspUin = extractKspUin(cleanedUrl);
       const isAmz = cleanedUrl.includes('amazon.');
 
-      // Allow user to click "הזן ידנית ➔" at any moment to skip waiting immediately!
-      const manualSkipPromise = new Promise((resolve) => {
-        activeScanCancelResolver = () => resolve('SKIPPED');
-      });
-
       const performScanWork = async () => {
         if (kspUin) {
           updateStep('שולף מחיר רגיל ומחיר אילת מ-KSP...');
@@ -2887,16 +2864,14 @@
         }
       };
 
-      // Race the scan against manual skip AND a strict 5.5-second global timeout so it NEVER hangs!
+      // Race the scan against a strict 5.5-second global timeout so it NEVER hangs!
       try {
         await Promise.race([
           performScanWork(),
-          manualSkipPromise,
           new Promise((resolve) => setTimeout(resolve, 5500))
         ]);
       } catch (e) {}
 
-      activeScanCancelResolver = null;
       if (progressBox) progressBox.classList.add('hidden');
 
       const fallbackTitle = extractTitleFromUrlSlug(rawUrl);
@@ -3015,17 +2990,19 @@
     }
 
     function renderModalVariationsList() {
+      const sectionEl = document.getElementById('modalVariationsSection');
       const listEl = document.getElementById('modalVariationsList');
       const hintEl = document.getElementById('modalVariationsHint');
       const currentSelected = document.getElementById('modalSelectedVariantText').value;
       listEl.innerHTML = '';
 
       if (!state.ui.pendingVariations || state.ui.pendingVariations.length === 0) {
-        hintEl.textContent = 'למוצר זה אפשרות אחת, או שתוכל ללחוץ על "+ הוסף אפשרות אחרת" אם יש משקל/מידה בדף.';
+        if (sectionEl) sectionEl.classList.add('hidden');
         return;
       }
 
-      hintEl.textContent = `נמצאו ${state.ui.pendingVariations.length} אפשרויות – לחץ על האפשרות שאתה רוצה:`;
+      if (sectionEl) sectionEl.classList.remove('hidden');
+      hintEl.textContent = `נמצאו ${state.ui.pendingVariations.length} אפשרויות בדף החנות – לחץ על האפשרות שאתה רוצה:`;
       state.ui.pendingVariations.forEach((v, idx) => {
         const isSelected = currentSelected === v.label || (!currentSelected && idx === 0);
         const btn = document.createElement('button');
@@ -3053,7 +3030,6 @@
 
     function closeProductModal() {
       document.getElementById('productModal').classList.add('hidden');
-      document.getElementById('customVariantRow').classList.add('hidden');
     }
 
     // =========================================================================
@@ -4041,15 +4017,6 @@
         urlInput.focus();
       });
 
-      const skipScanBtn = document.getElementById('skipLiveScanBtn');
-      if (skipScanBtn) {
-        skipScanBtn.addEventListener('click', () => {
-          if (typeof activeScanCancelResolver === 'function') {
-            activeScanCancelResolver();
-          }
-        });
-      }
-
       // Scan URL Form
       document.getElementById('scanUrlForm').addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -4088,21 +4055,6 @@
         }
       });
 
-      // Manual Add Button
-      document.getElementById('openManualAddBtn').addEventListener('click', () => {
-        openProductModalWithData({
-          url: urlInput.value.trim() || 'https://',
-          store: 'חנות אונליין',
-          title: '',
-          price: '',
-          image: FALLBACK_IMAGES.hero,
-          SelectedVariant: '',
-          variations: [],
-          sourceMethod: 'הוספה מהירה',
-          category: 'other'
-        }, '');
-      });
-
       document.getElementById('closeProductModalBtn').addEventListener('click', closeProductModal);
       document.getElementById('cancelProductModalBtn').addEventListener('click', closeProductModal);
 
@@ -4115,27 +4067,6 @@
           document.getElementById('modalProductImageInput').value = newImg;
           document.getElementById('modalProductThumb').src = newImg;
         }
-      });
-
-      document.getElementById('addCustomVariantBtn').addEventListener('click', () => {
-        document.getElementById('customVariantRow').classList.toggle('hidden');
-        document.getElementById('customVariantLabel').focus();
-      });
-
-      document.getElementById('saveCustomVariantBtn').addEventListener('click', () => {
-        const lbl = document.getElementById('customVariantLabel').value.trim();
-        const pr = Number(document.getElementById('customVariantPrice').value);
-        if (!lbl || isNaN(pr) || pr <= 0) {
-          showToast('חסרים פרטים', 'הזן שם אפשרות (למשל 4 ק"ג) ומחיר.', 'warning');
-          return;
-        }
-        state.ui.pendingVariations.push({ id: 'custom_' + Date.now(), label: lbl, price: pr, inStock: true });
-        document.getElementById('modalSelectedVariantText').value = lbl;
-        document.getElementById('modalCurrentPrice').value = pr;
-        document.getElementById('customVariantLabel').value = '';
-        document.getElementById('customVariantPrice').value = '';
-        document.getElementById('customVariantRow').classList.add('hidden');
-        renderModalVariationsList();
       });
 
       // Confirm Product Save
