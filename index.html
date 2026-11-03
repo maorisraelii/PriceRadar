@@ -2,9 +2,9 @@
 <html lang="he" dir="rtl">
 <head>
   <script>
-    window.__APP_VERSION__ = "3.4.0";
-    window.__BUILD_TIMESTAMP__ = 1762165000;
-    window.__OTA_RELEASE_NOTES__ = "שדרוג מסיבי לממשק המשתמש (ניקוי עומס, כותרת מרווחת וכרטיסי מוצר נקיים), זיהוי אוטומטי של קישורים בלוח ההעתקה (Clipboard), תיקון מלא לקליטת קישורים משותפים (Share), ותיקון זיהוי מחירים ב-MyRabbit (75 ₪ במקום 250 ₪) ובטרקלין חשמל (מחיר רגיל 999 ₪ ומחיר אילת 846 ₪).";
+    window.__APP_VERSION__ = "3.5.0";
+    window.__BUILD_TIMESTAMP__ = 1762175000;
+    window.__OTA_RELEASE_NOTES__ = "עיצוב חדש לחלוטין (Titanium Cyber Teal), הסרה טוטאלית של כפתור הדמיית ירידת מחיר, תיקון מושלם לקליטת מחיר ב-MyRabbit (75 ₪) ובטרקלין חשמל (999 ₪ רגיל / 846 ₪ אילת), ואנימציות חלקות.";
 
     // =========================================================================
     // OVER-THE-AIR (OTA) LIVE UPDATE ENGINE FROM GITHUB
@@ -13,43 +13,11 @@
     // =========================================================================
     function applyOtaHtmlCleanly(remoteHtml) {
       try {
-        window.__OTA_APPLYING__ = true;
-        if (window.__prMainIntervalId) {
-          clearInterval(window.__prMainIntervalId);
-          window.__prMainIntervalId = null;
-        }
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(remoteHtml, 'text/html');
-        if (!doc || !doc.body) return false;
-
-        // Extract version/timestamp globals from the first script
-        const vMatch = remoteHtml.match(/window\.__APP_VERSION__\s*=\s*"([^"]+)"/);
-        const tMatch = remoteHtml.match(/window\.__BUILD_TIMESTAMP__\s*=\s*(\d+)/);
-        const nMatch = remoteHtml.match(/window\.__OTA_RELEASE_NOTES__\s*=\s*"([^"]+)"/);
-        if (vMatch) window.__APP_VERSION__ = vMatch[1];
-        if (tMatch) window.__BUILD_TIMESTAMP__ = Number(tMatch[1]);
-        if (nMatch) window.__OTA_RELEASE_NOTES__ = nMatch[1];
-
-        // Replace body HTML cleanly (removes any duplicate DOM from old document.write)
-        const newBodyClone = doc.body.cloneNode(true);
-        const bodyScripts = Array.from(newBodyClone.querySelectorAll('script'));
-        bodyScripts.forEach(s => s.remove());
-        document.body.innerHTML = newBodyClone.innerHTML;
-
-        // Re-execute the main application script on the fresh single DOM
-        bodyScripts.forEach(oldScript => {
-          const s = document.createElement('script');
-          if (oldScript.src) {
-            s.src = oldScript.src;
-          } else {
-            s.textContent = oldScript.textContent;
-          }
-          document.body.appendChild(s);
-        });
-        window.__OTA_APPLYING__ = false;
+        if (!remoteHtml || remoteHtml.length < 5000) return false;
+        localStorage.setItem('pr_live_ota_html', remoteHtml);
+        window.location.reload();
         return true;
       } catch (e) {
-        window.__OTA_APPLYING__ = false;
         return false;
       }
     }
@@ -60,9 +28,9 @@
         const cachedTs = Number(localStorage.getItem('pr_live_ota_ts') || 0);
         if (cachedHtml && cachedTs > window.__BUILD_TIMESTAMP__ && !window.__PR_BOOTSTRAPPED_OTA__) {
           window.__PR_BOOTSTRAPPED_OTA__ = true;
-          window.addEventListener('DOMContentLoaded', () => {
-            applyOtaHtmlCleanly(cachedHtml);
-          }, { once: true });
+          document.open();
+          document.write(cachedHtml);
+          document.close();
         }
       } catch (e) {}
     })();
@@ -140,133 +108,152 @@
     }
     body {
       font-family: 'Heebo', 'Inter', sans-serif;
-      background-color: #05050b;
-      color: #f8fafc;
+      background-color: #060911;
+      color: #f1f5f9;
       overflow-x: hidden;
       min-height: 100vh;
     }
-    /* Obsidian Luxury Aurora Background */
+    /* Midnight Titanium & Cyber Teal Background */
     .aurora-bg {
       position: fixed;
       inset: 0;
       z-index: -1;
       overflow: hidden;
       background:
-        radial-gradient(ellipse 80% 50% at 50% -15%, rgba(124, 58, 237, 0.28), transparent),
-        radial-gradient(ellipse 60% 45% at 85% 20%, rgba(236, 72, 153, 0.16), transparent),
-        radial-gradient(ellipse 70% 50% at 15% 85%, rgba(6, 182, 212, 0.16), transparent),
-        linear-gradient(180deg, #070612 0%, #05050b 60%, #03040a 100%);
+        radial-gradient(ellipse 75% 45% at 50% -10%, rgba(6, 182, 212, 0.22), transparent 70%),
+        radial-gradient(ellipse 65% 50% at 90% 25%, rgba(16, 185, 129, 0.15), transparent 60%),
+        radial-gradient(ellipse 70% 55% at 10% 85%, rgba(99, 102, 241, 0.18), transparent 60%),
+        linear-gradient(180deg, #070a14 0%, #05070d 50%, #030408 100%);
     }
     .aurora-bg::after {
       content: "";
       position: absolute;
       inset: 0;
-      background-image: radial-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px);
-      background-size: 28px 28px;
-      mask-image: radial-gradient(ellipse at center, black 35%, transparent 85%);
-      -webkit-mask-image: radial-gradient(ellipse at center, black 35%, transparent 85%);
+      background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+      background-size: 26px 26px;
+      mask-image: radial-gradient(ellipse at center, black 40%, transparent 88%);
+      -webkit-mask-image: radial-gradient(ellipse at center, black 40%, transparent 88%);
       pointer-events: none;
     }
     .aurora-orb {
       position: absolute;
       border-radius: 9999px;
-      filter: blur(95px);
-      opacity: 0.42;
-      animation: floatOrb 20s ease-in-out infinite alternate;
+      filter: blur(100px);
+      opacity: 0.35;
+      animation: floatOrb 18s ease-in-out infinite alternate;
       pointer-events: none;
     }
     .orb-1 {
-      width: 420px;
-      height: 420px;
-      background: linear-gradient(135deg, #ec4899, #7c3aed);
-      top: -130px;
-      right: -90px;
-    }
-    .orb-2 {
       width: 440px;
       height: 440px;
-      background: linear-gradient(135deg, #06b6d4, #4f46e5);
-      bottom: -140px;
-      left: -110px;
-      animation-delay: -6s;
+      background: linear-gradient(135deg, #06b6d4, #10b981);
+      top: -120px;
+      right: -80px;
+    }
+    .orb-2 {
+      width: 460px;
+      height: 460px;
+      background: linear-gradient(135deg, #6366f1, #0284c7);
+      bottom: -130px;
+      left: -100px;
+      animation-delay: -5s;
     }
     .orb-3 {
       width: 320px;
       height: 320px;
-      background: linear-gradient(135deg, #10b981, #3b82f6);
-      top: 40%;
-      left: 35%;
-      opacity: 0.24;
-      animation-delay: -11s;
+      background: linear-gradient(135deg, #10b981, #14b8a6);
+      top: 45%;
+      left: 30%;
+      opacity: 0.2;
+      animation-delay: -10s;
     }
     @keyframes floatOrb {
       0% { transform: translate(0, 0) scale(1); }
-      50% { transform: translate(-25px, 20px) scale(1.06); }
-      100% { transform: translate(20px, -20px) scale(0.95); }
+      50% { transform: translate(-20px, 22px) scale(1.05); }
+      100% { transform: translate(22px, -18px) scale(0.96); }
     }
 
-    /* High-Craft Obsidian Glass Surfaces */
+    /* Modern Bento Titanium Glass Surfaces */
     .liquid-glass {
-      background: linear-gradient(165deg, rgba(22, 24, 45, 0.84) 0%, rgba(11, 13, 26, 0.92) 100%);
-      backdrop-filter: blur(28px) saturate(190%);
-      -webkit-backdrop-filter: blur(28px) saturate(190%);
-      border: 1px solid rgba(255, 255, 255, 0.11);
+      background: linear-gradient(170deg, rgba(16, 22, 38, 0.88) 0%, rgba(9, 13, 24, 0.94) 100%);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.12);
       box-shadow:
-        inset 0 1px 0 0 rgba(255, 255, 255, 0.18),
-        0 22px 48px -14px rgba(0, 0, 0, 0.72);
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.16),
+        0 20px 44px -12px rgba(0, 0, 0, 0.75);
     }
     .liquid-glass-soft {
-      background: linear-gradient(160deg, rgba(255, 255, 255, 0.065) 0%, rgba(255, 255, 255, 0.02) 100%);
-      backdrop-filter: blur(18px) saturate(165%);
-      -webkit-backdrop-filter: blur(18px) saturate(165%);
-      border: 1px solid rgba(255, 255, 255, 0.09);
-      box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
+      background: linear-gradient(160deg, rgba(255, 255, 255, 0.055) 0%, rgba(255, 255, 255, 0.015) 100%);
+      backdrop-filter: blur(16px) saturate(160%);
+      -webkit-backdrop-filter: blur(16px) saturate(160%);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
     }
     .liquid-glass-input {
-      background: rgba(6, 8, 19, 0.82);
+      background: rgba(8, 12, 22, 0.85);
       backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.13);
-      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.45);
     }
     .liquid-glass-input:focus {
-      border-color: rgba(168, 85, 247, 0.75);
-      box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.22), inset 0 2px 6px rgba(0, 0, 0, 0.5);
+      border-color: rgba(6, 182, 212, 0.85);
+      box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.25), inset 0 2px 6px rgba(0, 0, 0, 0.45);
     }
     .liquid-pill-active {
-      background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 52%, #4f46e5 100%);
-      box-shadow: 0 8px 24px -4px rgba(139, 92, 246, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.42);
-      border: 1px solid rgba(255, 255, 255, 0.28);
+      background: linear-gradient(135deg, #06b6d4 0%, #0d9488 50%, #10b981 100%);
+      box-shadow: 0 6px 20px -3px rgba(6, 182, 212, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: #020617 !important;
+      font-weight: 800 !important;
     }
     .btn-gradient-primary {
-      background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 50%, #06b6d4 100%);
-      box-shadow: 0 10px 28px -6px rgba(139, 92, 246, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.45);
-      transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+      background: linear-gradient(135deg, #06b6d4 0%, #10b981 100%);
+      color: #020617;
+      font-weight: 900;
+      box-shadow: 0 10px 24px -5px rgba(6, 182, 212, 0.55), inset 0 1px 1px rgba(255, 255, 255, 0.6);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .btn-gradient-primary:hover {
-      transform: translateY(-1px) scale(1.01);
-      box-shadow: 0 14px 32px -6px rgba(236, 72, 153, 0.65), inset 0 1px 1px rgba(255, 255, 255, 0.6);
+      transform: translateY(-1px) scale(1.015);
+      box-shadow: 0 14px 28px -5px rgba(16, 185, 129, 0.65), inset 0 1px 1px rgba(255, 255, 255, 0.8);
     }
     .btn-gradient-primary:active {
-      transform: translateY(0) scale(0.98);
+      transform: translateY(0) scale(0.97);
     }
     .btn-gradient-emerald {
-      background: linear-gradient(135deg, #10b981 0%, #059669 55%, #06b6d4 100%);
-      box-shadow: 0 8px 22px -5px rgba(16, 185, 129, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.38);
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      box-shadow: 0 8px 22px -5px rgba(16, 185, 129, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.4);
     }
     .pulse-dot {
       animation: pulseRing 2s infinite;
     }
     @keyframes pulseRing {
-      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.8); }
-      70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(52, 211, 153, 0); }
-      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.8); }
+      70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(6, 182, 212, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(6, 182, 212, 0); }
+    }
+    @keyframes cardEnter {
+      from {
+        opacity: 0;
+        transform: translateY(14px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
     }
     .card-hover {
-      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+      animation: cardEnter 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+      transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease, border-color 0.22s ease;
     }
     .card-hover:hover {
       transform: translateY(-3px);
-      border-color: rgba(255, 255, 255, 0.24);
+      border-color: rgba(6, 182, 212, 0.45);
+      box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.8), 0 0 20px -5px rgba(6, 182, 212, 0.18);
+    }
+    .card-hover:active {
+      transform: scale(0.985);
     }
     .product-stage {
       background: radial-gradient(circle at center, rgba(255, 255, 255, 0.14) 0%, rgba(15, 23, 42, 0.9) 100%);
@@ -281,7 +268,7 @@
     .dir-ltr { direction: ltr; text-align: left; }
   </style>
 </head>
-<body class="flex flex-col pb-24 sm:pb-10 selection:bg-pink-500 selection:text-white">
+<body class="flex flex-col pb-24 sm:pb-10 selection:bg-cyan-500 selection:text-slate-950">
 
   <!-- Animated Colorful Aurora Background -->
   <div class="aurora-bg">
@@ -294,18 +281,19 @@
   <div id="toastContainer" class="fixed top-4 left-4 right-4 sm:left-auto sm:right-6 sm:w-96 z-50 flex flex-col gap-2.5 pointer-events-none"></div>
 
   <!-- Android Style Top App Bar (Clean, Spacious & Uncluttered) -->
-  <header class="sticky top-0 z-30 liquid-glass border-b border-white/15 px-4 py-2.5 sm:px-6 sm:py-3.5 w-full">
+  <header class="sticky top-0 z-30 liquid-glass border-b border-cyan-500/20 px-4 py-2.5 sm:px-6 sm:py-3.5 w-full">
     <div class="max-w-5xl mx-auto flex items-center justify-between gap-3">
       <!-- Logo & Full Un-truncated App Name -->
       <div class="flex items-center gap-3 shrink-0">
-        <div class="relative w-10 h-10 sm:w-11 sm:h-11 rounded-2xl overflow-hidden shadow-lg shadow-pink-500/30 border border-white/30 shrink-0 bg-indigo-950">
+        <div class="relative w-10 h-10 sm:w-11 sm:h-11 rounded-2xl overflow-hidden shadow-lg shadow-cyan-500/30 border border-cyan-400/40 shrink-0 bg-slate-950">
           <img src="icon-192.png" onerror="this.onerror=null;this.src=FALLBACK_IMAGES.hero;" alt="PriceRadar Icon" class="w-full h-full object-cover max-w-full h-auto" />
         </div>
         <div>
           <div class="flex items-center gap-2">
-            <h1 class="text-xl sm:text-2xl font-black tracking-tight bg-gradient-to-r from-white via-pink-100 to-cyan-200 bg-clip-text text-transparent whitespace-nowrap">
+            <h1 class="text-xl sm:text-2xl font-black tracking-tight bg-gradient-to-r from-white via-cyan-100 to-emerald-300 bg-clip-text text-transparent whitespace-nowrap">
               PriceRadar
             </h1>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 tracking-wider">v3.5.0</span>
             <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot shrink-0" title="מעקב מחירים פעיל"></span>
           </div>
           <p class="text-[11px] text-slate-300/85 font-medium">מעקב מחירים חכם 24/7</p>
@@ -314,7 +302,7 @@
 
       <!-- Clean Minimal Header Controls -->
       <div class="flex items-center gap-2 shrink-0">
-        <button id="checkAllNowBtn" type="button" class="px-3.5 sm:px-4 py-2 rounded-xl btn-gradient-primary text-white font-extrabold text-xs flex items-center gap-1.5 shadow-md">
+        <button id="checkAllNowBtn" type="button" class="px-3.5 sm:px-4 py-2 rounded-xl btn-gradient-primary text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-md">
           <svg id="checkAllSpinner" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
           </svg>
@@ -357,10 +345,10 @@
     <section id="tab-dashboard" class="space-y-4 sm:space-y-5">
 
       <!-- Automatic Clipboard Link Detection Banner (Appears when entering the app with a copied link) -->
-      <div id="clipboardDetectBanner" class="hidden rounded-2xl bg-gradient-to-r from-indigo-950/95 via-purple-950/95 to-pink-950/90 border border-pink-400/50 p-4 shadow-2xl space-y-3 transition-all">
+      <div id="clipboardDetectBanner" class="hidden rounded-2xl bg-gradient-to-r from-slate-900/95 via-cyan-950/90 to-slate-900/95 border border-cyan-400/50 p-4 shadow-2xl space-y-3 transition-all">
         <div class="flex items-start justify-between gap-3">
           <div class="flex items-center gap-3 min-w-0">
-            <div class="w-10 h-10 rounded-xl bg-pink-500/25 border border-pink-400/40 flex items-center justify-center text-lg shrink-0">
+            <div class="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-lg shrink-0 text-cyan-300">
               📋
             </div>
             <div class="min-w-0">
@@ -371,7 +359,7 @@
           <button id="dismissClipboardBannerBtn" type="button" class="text-slate-400 hover:text-white text-sm px-1.5">✕</button>
         </div>
         <div class="flex items-center gap-2">
-          <button id="acceptClipboardBannerBtn" type="button" class="flex-1 py-2.5 px-4 rounded-xl btn-gradient-primary text-white text-xs font-extrabold shadow-md flex items-center justify-center gap-1.5">
+          <button id="acceptClipboardBannerBtn" type="button" class="flex-1 py-2.5 px-4 rounded-xl btn-gradient-primary text-slate-950 text-xs font-black shadow-md flex items-center justify-center gap-1.5">
             <span>🔍</span>
             <span>כן, הדבק וחפש את המוצר</span>
           </button>
@@ -382,7 +370,7 @@
       </div>
 
       <!-- Clean & Simple Add Product Bar -->
-      <div class="liquid-glass rounded-3xl p-4 sm:p-5 relative overflow-hidden">
+      <div class="liquid-glass rounded-3xl p-4 sm:p-5 relative overflow-hidden border border-cyan-500/25">
         <div class="relative z-10 space-y-3">
           <form id="scanUrlForm" class="flex flex-col sm:flex-row gap-2.5">
             <div class="relative flex-1 flex items-center">
@@ -398,7 +386,7 @@
                 <button id="clearUrlInputBtn" type="button" title="נקה שדה" class="hidden w-7 h-7 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs flex items-center justify-center">
                   ✕
                 </button>
-                <button id="pasteFromClipboardBtn" type="button" title="הדבק קישור מהלוח" class="px-2.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-[11px] font-bold text-cyan-200 border border-white/15 transition">
+                <button id="pasteFromClipboardBtn" type="button" title="הדבק קישור מהלוח" class="px-2.5 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-[11px] font-bold text-cyan-200 border border-cyan-400/30 transition">
                   📋 הדבק
                 </button>
               </div>
@@ -406,7 +394,7 @@
             <button
               id="scanUrlSubmitBtn"
               type="submit"
-              class="px-6 py-3.5 rounded-2xl btn-gradient-primary text-white font-extrabold text-sm flex items-center justify-center gap-2 shrink-0 shadow-lg"
+              class="px-6 py-3.5 rounded-2xl btn-gradient-primary text-slate-950 font-black text-sm flex items-center justify-center gap-2 shrink-0 shadow-lg"
             >
               <span>🔍</span>
               <span>הוסף מוצר</span>
@@ -414,10 +402,10 @@
           </form>
 
           <!-- Clean Non-Blocking Live Scan Indicator -->
-          <div id="scanProgressBox" class="hidden rounded-2xl liquid-glass-soft px-4 py-2.5 flex items-center justify-between gap-3 border border-pink-400/40">
+          <div id="scanProgressBox" class="hidden rounded-2xl liquid-glass-soft px-4 py-2.5 flex items-center justify-between gap-3 border border-cyan-400/40">
             <div class="flex items-center gap-2.5 min-w-0">
-              <span class="inline-block w-4 h-4 border-2 border-pink-400 border-t-transparent rounded-full animate-spin shrink-0"></span>
-              <span id="scanProgressStep" class="text-xs font-extrabold text-pink-100 truncate">
+              <span class="inline-block w-4 h-4 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin shrink-0"></span>
+              <span id="scanProgressStep" class="text-xs font-extrabold text-cyan-100 truncate">
                 שולף פרטי מוצר ומחיר מהחנות...
               </span>
             </div>
@@ -444,11 +432,11 @@
       </div>
 
       <!-- Active Store Filter Banner (Appears when clicking a store pill on any product card) -->
-      <div id="activeStoreFilterBanner" class="hidden rounded-2xl bg-gradient-to-r from-pink-500/20 via-purple-500/20 to-cyan-500/20 border border-pink-400/40 px-4 py-2.5 flex items-center justify-between gap-3 shadow-lg">
+      <div id="activeStoreFilterBanner" class="hidden rounded-2xl bg-gradient-to-r from-emerald-500/20 via-teal-500/20 to-cyan-500/15 border border-emerald-400/30 px-4 py-2.5 flex items-center justify-between gap-3 shadow-lg">
         <div class="flex items-center gap-2 text-xs font-extrabold text-white">
           <span>🏪</span>
           <span>מציג מוצרים מהחנות:</span>
-          <span id="activeStoreFilterName" class="px-2.5 py-0.5 rounded-full bg-pink-500 text-white font-black"></span>
+          <span id="activeStoreFilterName" class="px-2.5 py-0.5 rounded-full bg-emerald-500 text-white font-black"></span>
         </div>
         <button id="clearStoreFilterBannerBtn" type="button" class="px-3 py-1 rounded-xl bg-white/15 hover:bg-white/25 text-xs font-extrabold text-cyan-200 border border-white/20 transition">
           הצג את כל החנויות ✕
@@ -474,7 +462,7 @@
 
         <!-- Store Filter, Category Filter & Sort Selects (Compact 3-col even on mobile) -->
         <div class="grid grid-cols-3 gap-2 pt-2 border-t border-white/10">
-          <select id="filterStoreSelect" aria-label="סינון לפי חנות" class="w-full px-2.5 py-1.5 rounded-xl liquid-glass-input text-[11px] sm:text-xs font-bold text-pink-100 outline-none truncate">
+          <select id="filterStoreSelect" aria-label="סינון לפי חנות" class="w-full px-2.5 py-1.5 rounded-xl liquid-glass-input text-[11px] sm:text-xs font-bold text-emerald-100 outline-none truncate">
             <option value="all" class="bg-slate-900">🏪 כל החנויות</option>
           </select>
 
@@ -510,21 +498,21 @@
           </p>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-right pt-1">
-          <div class="p-3.5 rounded-2xl liquid-glass-soft border border-pink-400/25">
+          <div class="p-3.5 rounded-2xl liquid-glass-soft border border-cyan-400/30">
             <div class="flex items-center gap-2">
               <span class="text-lg">🔗</span>
-              <p class="text-xs font-extrabold text-pink-200">1. שים קישור</p>
+              <p class="text-xs font-extrabold text-cyan-200">1. שים קישור</p>
             </div>
             <p class="text-[11px] text-slate-300 mt-1">מכל אתר – חשמל, חיות מחמד, אופנה או קניות בחו"ל.</p>
           </div>
-          <div class="p-3.5 rounded-2xl liquid-glass-soft border border-purple-400/25">
+          <div class="p-3.5 rounded-2xl liquid-glass-soft border border-teal-400/30">
             <div class="flex items-center gap-2">
               <span class="text-lg">🎯</span>
-              <p class="text-xs font-extrabold text-purple-200">2. בחר אפשרות</p>
+              <p class="text-xs font-extrabold text-teal-200">2. בחר אפשרות</p>
             </div>
-            <p class="text-[11px] text-slate-300 mt-1">בחר משקל (למשל 2 או 4 ק"ג) או מידת נעל מתוך הדף.</p>
+            <p class="text-[11px] text-slate-300 mt-1">בחר משקל או מידה מתוך הדף בלחיצה אחת.</p>
           </div>
-          <div class="p-3.5 rounded-2xl liquid-glass-soft border border-emerald-400/25">
+          <div class="p-3.5 rounded-2xl liquid-glass-soft border border-emerald-400/30">
             <div class="flex items-center gap-2">
               <span class="text-lg">🔔</span>
               <p class="text-xs font-extrabold text-emerald-200">3. קבל התראות</p>
@@ -543,7 +531,7 @@
     <section id="tab-alerts" class="hidden space-y-5">
       <div class="liquid-glass rounded-3xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div class="flex items-center gap-3">
-          <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-pink-500 flex items-center justify-center text-2xl shadow-lg shadow-amber-500/25 shrink-0">
+          <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-teal-500 flex items-center justify-center text-2xl shadow-lg shadow-amber-500/25 shrink-0">
             🔔
           </div>
           <div>
@@ -592,7 +580,7 @@
 
           <div class="space-y-4 pt-1">
             <div>
-              <label for="dailyTimeInput" class="block text-xs font-bold text-pink-200 mb-1.5">
+              <label for="dailyTimeInput" class="block text-xs font-bold text-emerald-200 mb-1.5">
                 שעת התראה יומית קבועה (דו"ח יומי עם כל המוצרים והאם ירדו):
               </label>
               <input
@@ -803,17 +791,41 @@
         <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-white/10 text-xs">
           <div class="flex items-center gap-2 flex-wrap">
             <span class="text-slate-300 font-bold">גרסת מערכת:</span>
-            <span id="appVersionHeaderBadge" class="font-mono font-extrabold px-2.5 py-0.5 rounded-full bg-pink-500/20 text-pink-200 border border-pink-400/30">v3.4.0</span>
-            <span id="cloudSyncBadge" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-purple-500/25 text-purple-200 border border-purple-400/30 flex items-center gap-1">☁️ ענן 24/7</span>
+            <span id="appVersionHeaderBadge" class="font-mono font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">v3.5.0</span>
+            <span id="cloudSyncBadge" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-teal-500/25 text-teal-200 border border-teal-400/30 flex items-center gap-1">☁️ ענן 24/7</span>
             <span class="text-slate-400">בדיקה הבאה: <span id="nextCheckTimer" class="font-mono font-bold text-cyan-300">--:--</span></span>
             <span class="hidden" id="headerDailyTime">09:00</span>
             <span class="hidden" id="statDailyHour">09:00</span>
             <button id="sendDailyReportQuickBtn" type="button" class="hidden">שלח</button>
           </div>
-          <button id="openOnboardingAgainBtn" type="button" class="px-3 py-1.5 rounded-xl liquid-glass-soft hover:bg-white/15 text-pink-200 text-xs font-bold transition">
+          <button id="openOnboardingAgainBtn" type="button" class="px-3 py-1.5 rounded-xl liquid-glass-soft hover:bg-white/15 text-cyan-200 text-xs font-bold transition">
             ✨ פתח מדריך הגדרות ראשוני
           </button>
         </div>
+
+        <!-- Direct APK Download & OTA Card -->
+        <div class="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/15 via-teal-500/15 to-cyan-500/15 border border-emerald-400/30 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div class="space-y-1 text-center sm:text-right">
+            <div class="flex items-center gap-2 justify-center sm:justify-start">
+              <span class="text-xs font-black text-emerald-300">📱 גרסת קובץ APK עדכנית: v3.5.0</span>
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 font-mono font-bold">RELEASE</span>
+            </div>
+            <p class="text-[11px] text-slate-300">אם התקנת בעבר APK ומערכת ההפעלה דורשת התקנה מחדש, לחץ להורדה ישירה</p>
+          </div>
+          <div class="flex items-center gap-2 w-full sm:w-auto">
+            <a
+              id="directApkDownloadBtn"
+              href="https://github.com/maorisraelii/PriceRadar/releases/latest/download/PriceRadar.apk"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl btn-gradient-emerald text-white text-xs font-extrabold flex items-center justify-center gap-2 shadow-lg hover:brightness-110 transition"
+            >
+              <span>⬇️</span>
+              <span>הורד APK מעודכן v3.5.0</span>
+            </a>
+          </div>
+        </div>
+
         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h4 class="text-sm font-extrabold text-white">איפוס רשימת המעקב</h4>
@@ -855,14 +867,14 @@
 
     <!-- MODAL: ONBOARDING & INITIAL SETUP WIZARD -->
   <div id="onboardingModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-    <div class="liquid-glass rounded-3xl max-w-md w-full p-6 sm:p-7 space-y-5 border border-pink-400/40 shadow-2xl relative overflow-hidden">
-      <div class="absolute -top-24 -left-24 w-52 h-52 bg-pink-500/25 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="liquid-glass rounded-3xl max-w-md w-full p-6 sm:p-7 space-y-5 border border-emerald-400/40 shadow-2xl relative overflow-hidden">
+      <div class="absolute -top-24 -left-24 w-52 h-52 bg-emerald-500/25 rounded-full blur-3xl pointer-events-none"></div>
       <div class="absolute -bottom-24 -right-24 w-52 h-52 bg-cyan-500/25 rounded-full blur-3xl pointer-events-none"></div>
 
       <!-- Step Header -->
       <div class="relative z-10 flex items-center justify-between">
         <div class="flex items-center gap-2">
-          <span id="onboardingStepBadge" class="text-[11px] font-black px-3 py-1 rounded-full bg-pink-500/25 text-pink-200 border border-pink-400/40">
+          <span id="onboardingStepBadge" class="text-[11px] font-black px-3 py-1 rounded-full bg-emerald-500/25 text-emerald-200 border border-emerald-400/40">
             שלב 1 מתוך 3
           </span>
         </div>
@@ -883,7 +895,7 @@
           </p>
         </div>
         <div class="p-3.5 rounded-2xl liquid-glass-soft text-right space-y-2 border border-white/10 text-xs">
-          <p class="font-extrabold text-pink-200">✨ מה האפליקציה עושה בשבילך?</p>
+          <p class="font-extrabold text-emerald-200">✨ מה האפליקציה עושה בשבילך?</p>
           <p class="text-slate-300">• בודקת מחירים אוטומטית כל שעה ברקע</p>
           <p class="text-slate-300">• מזהה ירידות מחיר ומקפיצה התראה מיידית</p>
           <p class="text-slate-300">• שולחת דו"ח מחירים יומי מרוכז בשעה שתבחר</p>
@@ -895,7 +907,7 @@
 
       <!-- STEP 2: NATIVE ANDROID PUSH NOTIFICATIONS PERMISSION -->
       <div id="onboardingStep2" class="hidden relative z-10 space-y-4 text-center">
-        <div class="w-20 h-20 rounded-3xl mx-auto bg-gradient-to-br from-amber-400 to-pink-500 flex items-center justify-center text-4xl shadow-xl shadow-amber-500/25">
+        <div class="w-20 h-20 rounded-3xl mx-auto bg-gradient-to-br from-amber-400 to-emerald-500 flex items-center justify-center text-4xl shadow-xl shadow-amber-500/25">
           🔔
         </div>
         <div class="space-y-1.5">
@@ -935,7 +947,7 @@
 
         <div class="space-y-3 pt-1">
           <div>
-            <label for="onboardingDailyTimeInput" class="block text-xs font-bold text-pink-200 mb-1">
+            <label for="onboardingDailyTimeInput" class="block text-xs font-bold text-emerald-200 mb-1">
               באיזו שעה תרצה לקבל את הדו"ח היומי המרוכז?
             </label>
             <input id="onboardingDailyTimeInput" type="time" value="09:00" class="w-full px-4 py-2.5 rounded-2xl liquid-glass-input text-white font-mono text-base font-bold outline-none" />
@@ -979,7 +991,7 @@
           <div>
             <div class="flex items-center gap-1.5">
               <img id="modalStoreFavicon" src="https://www.google.com/s2/favicons?domain=google.com&sz=64" alt="Store Icon" class="w-4 h-4 rounded-sm object-contain max-w-full h-auto" />
-              <span id="modalStoreBadge" class="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-pink-500/25 text-pink-200 border border-pink-400/30">
+              <span id="modalStoreBadge" class="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500/25 text-emerald-200 border border-emerald-400/30">
                 חנות זוהתה
               </span>
             </div>
@@ -1004,9 +1016,9 @@
         <input id="modalProductUrl" type="url" required class="hidden" />
 
         <!-- Variation Selector Section -->
-        <div id="modalVariationsSection" class="p-4 rounded-2xl bg-gradient-to-br from-purple-950/60 via-indigo-950/60 to-pink-950/40 border border-pink-400/35 space-y-2.5">
+        <div id="modalVariationsSection" class="p-4 rounded-2xl bg-gradient-to-br from-teal-950/60 via-slate-900/60 to-emerald-950/50 border border-emerald-400/35 space-y-2.5">
           <div class="flex items-center justify-between">
-            <label class="text-xs font-extrabold text-pink-200 flex items-center gap-1.5">
+            <label class="text-xs font-extrabold text-emerald-200 flex items-center gap-1.5">
               <span>🎯</span>
               <span>אפשרויות / מידות / משקלים שזוהו בדף המוצר:</span>
             </label>
@@ -1091,44 +1103,6 @@
     </div>
   </div>
 
-  <!-- MODAL: SIMULATE PRICE DROP / TEST ALERT -->
-  <div id="simulateModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4">
-    <div class="liquid-glass rounded-3xl max-w-md w-full p-5 sm:p-6 space-y-4 border border-emerald-400/40 shadow-2xl">
-      <div class="flex items-center justify-between">
-        <h3 class="text-base font-extrabold text-white flex items-center gap-2">
-          <span>🎉 בדיקת התראת ירידת מחיר</span>
-        </h3>
-        <button id="closeSimulateModalBtn" type="button" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-sm">✕</button>
-      </div>
-      <p id="simulateProductName" class="text-xs text-pink-200 font-bold"></p>
-      <p class="text-xs text-slate-300">
-        בחר בכמה להוריד את המחיר כדי לראות איך האפליקציה מקפיצה התראה מיידית, מעדכנת את הגרף ושולחת הודעה:
-      </p>
-      <input id="simulateProductId" type="hidden" value="" />
-      <div class="grid grid-cols-3 gap-2.5">
-        <button type="button" data-sim-pct="5" class="sim-pct-btn py-2.5 rounded-2xl liquid-glass-soft hover:bg-emerald-500/30 border border-emerald-400/30 text-xs font-extrabold text-emerald-300 transition">
-          -5% הנחה
-        </button>
-        <button type="button" data-sim-pct="12" class="sim-pct-btn py-2.5 rounded-2xl liquid-glass-soft hover:bg-emerald-500/30 border border-emerald-400/30 text-xs font-extrabold text-emerald-300 transition">
-          -12% הנחה
-        </button>
-        <button type="button" data-sim-pct="20" class="sim-pct-btn py-2.5 rounded-2xl liquid-glass-soft hover:bg-emerald-500/30 border border-emerald-400/30 text-xs font-extrabold text-emerald-300 transition">
-          -20% מבצע!
-        </button>
-      </div>
-      <div>
-        <label for="simulateNewPriceInput" class="block text-xs font-bold text-slate-200 mb-1">או הקלד מחיר חדש (₪):</label>
-        <input id="simulateNewPriceInput" type="number" step="0.01" class="w-full px-4 py-2.5 rounded-2xl liquid-glass-input text-base font-black text-emerald-300 outline-none" />
-      </div>
-      <div class="flex justify-end gap-2.5 pt-2">
-        <button id="cancelSimulateBtn" type="button" class="px-4 py-2.5 rounded-2xl liquid-glass-soft text-xs font-bold text-slate-200">ביטול</button>
-        <button id="confirmSimulateBtn" type="button" class="px-5 py-2.5 rounded-2xl btn-gradient-emerald text-white text-xs font-extrabold">
-          🔔 הורד מחיר ושלח התראה
-        </button>
-      </div>
-    </div>
-  </div>
-
   <!-- MODAL: CONFIRMATION DIALOG -->
   <div id="confirmDialogModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4">
     <div class="liquid-glass rounded-3xl max-w-sm w-full p-5 sm:p-6 space-y-4 border border-white/25 shadow-2xl">
@@ -1136,7 +1110,7 @@
       <p id="confirmDialogMessage" class="text-xs sm:text-sm text-slate-200"></p>
       <div class="flex justify-end gap-2.5 pt-2">
         <button id="confirmDialogCancelBtn" type="button" class="px-4 py-2 rounded-2xl liquid-glass-soft text-xs font-bold text-slate-200">ביטול</button>
-        <button id="confirmDialogOkBtn" type="button" class="px-5 py-2 rounded-2xl bg-gradient-to-r from-rose-500 to-pink-600 text-xs font-extrabold text-white shadow-lg">אישור</button>
+        <button id="confirmDialogOkBtn" type="button" class="px-5 py-2 rounded-2xl bg-gradient-to-r from-rose-500 to-red-600 text-xs font-extrabold text-white shadow-lg">אישור</button>
       </div>
     </div>
   </div>
@@ -1159,7 +1133,7 @@
       <div class="p-3.5 rounded-2xl liquid-glass-soft border border-white/15 space-y-1.5 text-right text-xs">
         <div class="flex items-center justify-between">
           <span class="text-slate-300 font-bold">מספר גרסה (Version):</span>
-          <span id="otaModalVersionBadge" class="font-mono font-black text-sm text-pink-300 bg-pink-500/20 px-2.5 py-0.5 rounded-lg border border-pink-400/30">v2.8.0</span>
+          <span id="otaModalVersionBadge" class="font-mono font-black text-sm text-emerald-300 bg-emerald-500/20 px-2.5 py-0.5 rounded-lg border border-emerald-400/30">v2.8.0</span>
         </div>
         <div class="flex items-center justify-between">
           <span class="text-slate-300 font-bold">מספר בנייה (Build):</span>
@@ -1181,7 +1155,7 @@
       <!-- Top Bar -->
       <div class="flex items-start justify-between gap-3">
         <div class="flex items-center gap-2 flex-wrap">
-          <button id="detailsStoreFilterBtn" type="button" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/10 hover:bg-pink-500/25 border border-white/15 hover:border-pink-400/40 text-xs font-extrabold text-white transition" title="לחץ לסינון כל המוצרים מחנות זו">
+          <button id="detailsStoreFilterBtn" type="button" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/10 hover:bg-emerald-500/25 border border-white/15 hover:border-emerald-400/40 text-xs font-extrabold text-white transition" title="לחץ לסינון כל המוצרים מחנות זו">
             <img id="detailsStoreFavicon" src="" alt="" class="w-4 h-4 rounded-sm object-contain" onerror="this.style.display='none'" />
             <span id="detailsStoreName">חנות</span>
             <span class="text-[10px] text-cyan-300 font-bold">🔍 סנן</span>
@@ -1726,7 +1700,7 @@
         drop:    'border-emerald-400 bg-gradient-to-r from-emerald-950/95 via-teal-950/95 to-slate-950/95 text-emerald-100 shadow-emerald-500/25',
         warning: 'border-amber-400/60 bg-slate-950/90 text-amber-200',
         error:   'border-rose-400/60 bg-slate-950/90 text-rose-200',
-        info:    'border-pink-400/60 bg-slate-950/90 text-pink-200'
+        info:    'border-cyan-400/60 bg-slate-950/90 text-cyan-200'
       };
       const icons = { success: '✅', drop: '🎉', warning: '⏰', error: '⚠️', info: '✨' };
       const toast = document.createElement('div');
@@ -2701,6 +2675,49 @@
         result.image = ogImage;
       }
 
+      // 1.5 Specific Direct Matchers for MyRabbit & Traklin
+      if (targetUrl.includes('myrabbit.co.il')) {
+        const mrTitle = doc.querySelector('h1.product_title, .product_title, h1');
+        if (mrTitle && mrTitle.textContent.trim()) {
+          result.title = mrTitle.textContent.trim();
+        }
+        const mrPriceEls = doc.querySelectorAll('.summary p.price .woocommerce-Price-amount, p.price .woocommerce-Price-amount, .summary .price, .woocommerce-Price-amount');
+        for (const pel of mrPriceEls) {
+          if (pel.closest('.woocommerce-store-notice, .demo_store, del, .related, .upsells')) continue;
+          const pVal = Number(pel.textContent.replace(/[^0-9.]/g, ''));
+          if (pVal > 0 && pVal !== 250) {
+            result.price = pVal;
+            result.sourceMethod = 'זיהוי מחיר מ-MyRabbit';
+            break;
+          }
+        }
+      }
+
+      if (targetUrl.includes('traklin.co.il')) {
+        const trTitle = doc.querySelector('h1, .product-title, .product_title');
+        if (trTitle && trTitle.textContent.trim()) {
+          result.title = trTitle.textContent.replace(/[\u200E\u200F\u202A-\u202E]/g, '').trim();
+        }
+        const fullCleanHtml = (doc.body ? doc.body.textContent : html).replace(/[\u200E\u200F\u202A-\u202E]/g, '');
+        const traklinRegM = fullCleanHtml.match(/לרכישה\s+(?:עכשיו\s+)?ב\s*[:\-\s\r\n]*?(?:₪\s*)?(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(?:₪|ש["״']ח|&#8362;)?/);
+        const traklinEilatM = fullCleanHtml.match(/(?:קנו\s+באילת\s+ב|לרכישה\s+באילת\s+ב)\s*[:\-\s\r\n]*?(?:₪\s*)?(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(?:₪|ש["״']ח|&#8362;)?/);
+        if (traklinRegM) {
+          const pReg = Number(traklinRegM[1].replace(/,/g, ''));
+          if (pReg > 5) {
+            result.price = pReg;
+            result.variations = [{ id: 'reg', label: 'מחיר רגיל', price: pReg, inStock: true }];
+            result.SelectedVariant = 'מחיר רגיל';
+            result.sourceMethod = 'זיהוי מחיר מ-טרקלין חשמל';
+            if (traklinEilatM) {
+              const pEilat = Number(traklinEilatM[1].replace(/,/g, ''));
+              if (pEilat > 5) {
+                result.variations.push({ id: 'eilat', label: 'מחיר אילת', price: pEilat, inStock: true });
+              }
+            }
+          }
+        }
+      }
+
       // 2. Specific Amazon Selectors
       const amazonPriceEl = doc.querySelector('.a-price:not(.a-text-price) .a-offscreen') ||
                            doc.querySelector('#corePrice_feature_div .a-price .a-offscreen') ||
@@ -3361,7 +3378,7 @@
         banner.className = 'p-3.5 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 text-xs text-emerald-100';
         banner.innerHTML = `✨ <strong>${escapeHtml(data.sourceMethod)}:</strong> בחר למטה אחרי איזו אפשרות או מידה תרצה לעקוב!`;
       } else if (data.price) {
-        banner.className = 'p-3.5 rounded-2xl bg-pink-500/20 border border-pink-400/40 text-xs text-pink-100';
+        banner.className = 'p-3.5 rounded-2xl bg-cyan-500/20 border border-cyan-400/40 text-xs text-cyan-100';
         banner.innerHTML = `✨ <strong>${escapeHtml(data.sourceMethod)}:</strong> המחיר הנוכחי שזוהה הוא <strong>${formatPrice(data.price)}</strong>.`;
       } else {
         banner.className = 'p-3.5 rounded-2xl bg-amber-500/20 border border-amber-400/40 text-xs text-amber-100';
@@ -3495,7 +3512,7 @@
       if (pillsBox) {
         const pills = [];
         if (p.SelectedVariant) {
-          pills.push(`<span class="px-2.5 py-1 rounded-lg bg-pink-500/20 border border-pink-400/40 text-pink-200 text-xs font-extrabold">🎯 אפשרות: ${escapeHtml(p.SelectedVariant)}</span>`);
+          pills.push(`<span class="px-2.5 py-1 rounded-lg bg-teal-500/20 border border-teal-400/40 text-teal-200 text-xs font-extrabold">🎯 אפשרות: ${escapeHtml(p.SelectedVariant)}</span>`);
         }
         const asin = extractAmazonAsin(p.url);
         if (asin) {
@@ -3976,7 +3993,7 @@
     }
 
     // =========================================================================
-    // CHECK PRICE & SIMULATE DROP
+    // CHECK PRICE LIVE
     // =========================================================================
     async function checkSingleProductNow(productId, silent = false) {
       const p = state.products.find(item => item.id === productId);
@@ -4354,19 +4371,19 @@
           : '';
 
         const variantPill = p.SelectedVariant
-          ? `<button type="button" data-action="edit" data-id="${p.id}" class="prod-action-btn inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-gradient-to-r from-pink-500/25 to-purple-500/25 border border-pink-400/40 text-pink-100 text-[11px] font-extrabold hover:bg-pink-500/35 transition">
+          ? `<button type="button" data-action="edit" data-id="${p.id}" class="prod-action-btn inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-cyan-500/15 border border-cyan-400/35 text-cyan-200 text-[11px] font-extrabold hover:bg-cyan-500/25 transition">
                <span>🎯 ${escapeHtml(p.SelectedVariant)}</span>
              </button>`
           : '';
 
         const multiStoreComparisonHtml = isMultiStore ? `
-          <div class="p-2.5 rounded-2xl bg-slate-950/65 border border-cyan-400/30 space-y-1.5">
+          <div class="p-2.5 rounded-2xl bg-slate-950/75 border border-cyan-400/30 space-y-1.5">
             <div class="flex items-center justify-between text-[11px]">
               <span class="font-extrabold text-cyan-200 flex items-center gap-1">
                 <span>🏪</span>
                 <span>השוואת ${offers.length} חנויות:</span>
               </span>
-              <button type="button" data-action="add_store" data-id="${p.id}" class="prod-action-btn text-[11px] font-extrabold text-pink-300 hover:text-pink-200 underline">
+              <button type="button" data-action="add_store" data-id="${p.id}" class="prod-action-btn text-[11px] font-extrabold text-cyan-300 hover:text-cyan-200 underline">
                 + הוסף חנות
               </button>
             </div>
@@ -4375,15 +4392,15 @@
                 const isCheapest = idx === 0;
                 const offMeta = getStoreMeta(off.url);
                 return `
-                  <div class="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-xl ${isCheapest ? 'bg-emerald-500/20 border border-emerald-400/40' : 'bg-white/5 border border-white/10'}">
+                  <div class="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-xl ${isCheapest ? 'bg-emerald-500/20 border border-emerald-400/40' : 'bg-slate-900/60 border border-slate-800'}">
                     <button type="button" data-action="filter_store" data-store="${escapeHtml(off.store)}" title="סנן את כל המוצרים מ-${escapeHtml(off.store)}" class="prod-action-btn flex items-center gap-1.5 min-w-0 hover:underline text-right">
                       <img src="${escapeHtml(off.favicon || offMeta.favicon)}" alt="" class="w-4 h-4 rounded-sm object-contain shrink-0" onerror="this.style.display='none'" />
                       <span class="text-xs font-extrabold ${isCheapest ? 'text-emerald-200' : 'text-slate-200'} truncate">${escapeHtml(off.store)}</span>
-                      ${isCheapest ? `<span class="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-emerald-500 text-slate-950 shrink-0">הכי זול 🏆</span>` : ''}
+                      ${isCheapest ? `<span class="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-emerald-400 text-slate-950 shrink-0">הכי זול 🏆</span>` : ''}
                     </button>
                     <div class="flex items-center gap-2 shrink-0">
                       <span class="text-xs font-black tabular-nums ${isCheapest ? 'text-emerald-300' : 'text-white'}">${formatPrice(off.currentPrice)}</span>
-                      <a href="${escapeHtml(off.url)}" target="_blank" rel="noopener noreferrer" class="prod-external-link text-[11px] font-extrabold px-2 py-0.5 rounded-lg bg-white/10 hover:bg-white/20 text-cyan-200 transition">
+                      <a href="${escapeHtml(off.url)}" target="_blank" rel="noopener noreferrer" class="prod-external-link text-[11px] font-extrabold px-2 py-0.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 border border-cyan-400/30 transition">
                         לחנות ↗
                       </a>
                       <button type="button" data-action="remove_offer" data-id="${p.id}" data-offer-url="${escapeHtml(off.url)}" title="הסר חנות זו מהקובייה" class="prod-action-btn text-[11px] text-slate-400 hover:text-rose-300 px-1">
@@ -4404,7 +4421,7 @@
           <div class="space-y-3">
             <!-- Top Store Bar & Status Badge -->
             <div class="flex items-center justify-between gap-2">
-              <button type="button" data-action="filter_store" data-store="${escapeHtml(primaryStoreName)}" title="לחץ לסינון כל המוצרים מ-${escapeHtml(primaryStoreName)}" class="prod-action-btn flex items-center gap-1.5 px-2.5 py-1 rounded-xl ${isThisStoreFiltered ? 'bg-pink-500/35 border-pink-400 text-white shadow-md' : 'bg-white/10 hover:bg-pink-500/25 border-white/15 hover:border-pink-400/40 text-white'} border transition min-w-0">
+              <button type="button" data-action="filter_store" data-store="${escapeHtml(primaryStoreName)}" title="לחץ לסינון כל המוצרים מ-${escapeHtml(primaryStoreName)}" class="prod-action-btn flex items-center gap-1.5 px-2.5 py-1 rounded-xl ${isThisStoreFiltered ? 'bg-cyan-500/30 border-cyan-400 text-cyan-100 shadow-md' : 'bg-slate-800/80 hover:bg-cyan-500/20 border-slate-700/80 hover:border-cyan-400/40 text-slate-200'} border transition min-w-0">
                 <img src="${escapeHtml(storeMeta.favicon)}" alt="" class="w-3.5 h-3.5 rounded-sm object-contain shrink-0" onerror="this.style.display='none'" />
                 <span class="text-[11px] font-extrabold truncate">${escapeHtml(isMultiStore ? `${offers.length} חנויות (${bestOffer.store})` : p.store)}</span>
               </button>
@@ -4415,11 +4432,11 @@
 
             <!-- Product Image + Title + Price Row -->
             <div class="flex items-center gap-3.5">
-              <div class="relative w-20 h-20 rounded-2xl overflow-hidden product-stage border border-white/20 shrink-0 p-1.5 flex items-center justify-center">
+              <div class="relative w-20 h-20 rounded-2xl overflow-hidden product-stage border border-white/15 shrink-0 p-1.5 flex items-center justify-center bg-slate-950/80">
                 <img src="${escapeHtml(prodImg)}" alt="${escapeHtml(p.title)}" class="w-full h-full object-contain rounded-xl max-w-full h-auto" />
               </div>
               <div class="space-y-1.5 flex-1 min-w-0">
-                <h3 class="text-sm sm:text-base font-black text-white leading-snug line-clamp-2 group-hover:text-pink-200 transition">${escapeHtml(p.title)}</h3>
+                <h3 class="text-sm sm:text-base font-black text-white leading-snug line-clamp-2 hover:text-cyan-300 transition">${escapeHtml(p.title)}</h3>
                 <div class="flex flex-wrap items-center gap-1.5">
                   ${freeShippingPill}
                   ${variantPill}
@@ -4437,9 +4454,9 @@
           </div>
 
           <!-- Clean Minimal Card Footer -->
-          <div class="pt-2.5 border-t border-white/10 flex items-center justify-between gap-2">
+          <div class="pt-2.5 border-t border-slate-800/80 flex items-center justify-between gap-2">
             <div class="flex items-center gap-1.5">
-              <button type="button" data-action="check" data-id="${p.id}" class="prod-action-btn py-1.5 px-3 rounded-xl liquid-glass-soft hover:bg-white/20 text-white text-xs font-extrabold transition flex items-center gap-1">
+              <button type="button" data-action="check" data-id="${p.id}" class="prod-action-btn py-1.5 px-3 rounded-xl liquid-glass-soft hover:bg-cyan-500/20 hover:text-cyan-200 text-white text-xs font-extrabold transition flex items-center gap-1">
                 <span>🔄</span>
                 <span>בדוק</span>
               </button>
@@ -4447,7 +4464,7 @@
                 <span>לחנות</span>
                 <span>↗</span>
               </a>
-              ${!isMultiStore ? `<button type="button" data-action="add_store" data-id="${p.id}" title="השווה מחיר מול חנות נוספת" class="prod-action-btn py-1.5 px-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200 text-[11px] font-bold transition">+ חנות</button>` : ''}
+              ${!isMultiStore ? `<button type="button" data-action="add_store" data-id="${p.id}" title="השווה מחיר מול חנות נוספת" class="prod-action-btn py-1.5 px-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-[11px] font-bold transition">+ חנות</button>` : ''}
             </div>
 
             <div class="flex items-center gap-1">
@@ -4559,7 +4576,7 @@
         if (mains.length > 1) {
           for (let i = 1; i < mains.length; i++) mains[i].remove();
         }
-        ['toastContainer', 'onboardingModal', 'productModal', 'simulateModal', 'confirmDialogModal', 'otaUpdateModal'].forEach(id => {
+        ['toastContainer', 'onboardingModal', 'productModal', 'confirmDialogModal', 'otaUpdateModal'].forEach(id => {
           const els = document.querySelectorAll(`[id="${id}"]`);
           if (els.length > 1) {
             for (let i = 1; i < els.length; i++) els[i].remove();
@@ -4883,11 +4900,6 @@
             renderAll();
             showToast('החנות הוסרה מהקובייה', 'רשימת ההשוואה עודכנה.', 'info');
           }
-        } else if (action === 'simulate') {
-          document.getElementById('simulateProductId').value = id;
-          document.getElementById('simulateProductName').textContent = `${prod.title}${prod.SelectedVariant ? ' (' + prod.SelectedVariant + ')' : ''} — כעת: ${formatPrice(prod.currentPrice)}`;
-          document.getElementById('simulateNewPriceInput').value = Math.max(1, Math.round(prod.currentPrice * 0.88));
-          document.getElementById('simulateModal').classList.remove('hidden');
         } else if (action === 'edit') {
           openProductModalWithData({
             url: prod.url,
@@ -5019,19 +5031,6 @@
           if (!id) return;
           await checkSingleProductNow(id, false);
           if (activeDetailsProductId === id) openProductDetailsModal(id);
-        });
-      }
-
-      const detailsSimBtn = document.getElementById('detailsSimulateBtn');
-      if (detailsSimBtn) {
-        detailsSimBtn.addEventListener('click', () => {
-          const p = state.products.find(item => item.id === activeDetailsProductId);
-          if (!p) return;
-          closeProductDetailsModal();
-          document.getElementById('simulateProductId').value = p.id;
-          document.getElementById('simulateProductName').textContent = `${p.title}${p.SelectedVariant ? ' (' + p.SelectedVariant + ')' : ''} — כעת: ${formatPrice(p.currentPrice)}`;
-          document.getElementById('simulateNewPriceInput').value = Math.max(1, Math.round(p.currentPrice * 0.88));
-          document.getElementById('simulateModal').classList.remove('hidden');
         });
       }
 
@@ -5186,30 +5185,6 @@
       });
       window.addEventListener('focus', () => {
         setTimeout(checkClipboardForProductUrl, 250);
-      });
-
-      // Simulate Price Drop Modal
-      document.querySelectorAll('.sim-pct-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const pct = Number(btn.getAttribute('data-sim-pct'));
-          const id = document.getElementById('simulateProductId').value;
-          const prod = state.products.find(p => p.id === id);
-          if (prod && pct > 0) {
-            document.getElementById('simulateNewPriceInput').value = Math.max(1, Number((prod.currentPrice * (1 - pct / 100)).toFixed(2)));
-          }
-        });
-      });
-
-      document.getElementById('closeSimulateModalBtn').addEventListener('click', () => document.getElementById('simulateModal').classList.add('hidden'));
-      document.getElementById('cancelSimulateBtn').addEventListener('click', () => document.getElementById('simulateModal').classList.add('hidden'));
-      document.getElementById('confirmSimulateBtn').addEventListener('click', async () => {
-        const id = document.getElementById('simulateProductId').value;
-        const newPrice = Number(document.getElementById('simulateNewPriceInput').value);
-        const prod = state.products.find(p => p.id === id);
-        document.getElementById('simulateModal').classList.add('hidden');
-        if (prod && newPrice > 0) {
-          await applyNewPriceToProduct(prod, newPrice, false);
-        }
       });
 
       document.getElementById('confirmDialogCancelBtn').addEventListener('click', closeConfirmModal);

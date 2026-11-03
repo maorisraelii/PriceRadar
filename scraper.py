@@ -425,6 +425,30 @@ def extract_price_from_html(html: str, url: str, selected_variant: str = ""):
     parsed_url = urlparse(url)
     url_variant_id = parse_qs(parsed_url.query).get("variant", [""])[0]
 
+    # Specific direct extraction for MyRabbit
+    if "myrabbit.co.il" in url:
+        for pel in soup.select(".summary p.price .woocommerce-Price-amount, p.price .woocommerce-Price-amount, .summary .price, .woocommerce-Price-amount"):
+            if pel.find_parent(["del", "s"]) or pel.find_parent(class_=["woocommerce-store-notice", "demo_store", "related", "upsells"]):
+                continue
+            txt = re.sub(r"[^0-9.]", "", pel.get_text(strip=True))
+            try:
+                val = float(txt)
+                if val > 0 and val != 250:
+                    return val
+            except ValueError:
+                pass
+
+    # Specific direct extraction for Traklin Hashmal
+    if "traklin.co.il" in url:
+        clean_doc = re.sub(r"[\u200E\u200F\u202A-\u202E]", "", soup.get_text("\n", strip=True))
+        clean_doc = re.sub(r"&#8362;|&#x20aa;", "₪", clean_doc, flags=re.I)
+        m_tr_eilat = re.search(r"(?:קנו\s+באילת\s+ב|לרכישה\s+באילת\s+ב)\s*[:\-\s\r\n]*?(?:₪\s*)?(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(?:₪|ש[\"״']ח)?", clean_doc)
+        m_tr_reg = re.search(r"לרכישה\s+(?:עכשיו\s+)?ב\s*[:\-\s\r\n]*?(?:₪\s*)?(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(?:₪|ש[\"״']ח)?", clean_doc)
+        if "אילת" in selected_variant and m_tr_eilat:
+            return float(m_tr_eilat.group(1).replace(",", ""))
+        if m_tr_reg:
+            return float(m_tr_reg.group(1).replace(",", ""))
+
     # 1. Amazon Specific Selectors
     amz_el = soup.select_one(".a-price:not(.a-text-price) .a-offscreen, #corePrice_feature_div .a-price .a-offscreen, #priceblock_ourprice, #priceblock_dealprice")
     if amz_el:
