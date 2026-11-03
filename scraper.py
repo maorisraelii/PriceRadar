@@ -69,18 +69,41 @@ def send_fcm_notification(fcm_token: str, title: str, body: str, url: str = ""):
 
 
 
-def check_amazon_free_shipping(html: str) -> bool:
+def check_amazon_shipping_details(html: str) -> dict:
     if not html:
-        return False
+        return {"eligible": False, "no_shipping": False}
     clean = re.sub(r"[\u200E\u200F\u202A-\u202E\u00A0]", " ", html)
-    pattern = (
-        r'data-csa-c-delivery-price=["\'](?:חינם|FREE)["\']|'
-        r'data-csa-c-delivery-benefit-program-id=["\']efs["\']|'
-        r'data-csa-c-mir-sub-type=["\']CONDITIONALLY_FREE["\']|'
-        r'(?:FREE\s+(?:International\s+)?(?:Shipping|Delivery)|משלוח\s+חינם|זכאי\s+למשלוח\s+חינם)[\s\S]{0,160}?(?:to\s+Israel|אל\s+ישראל|לישראל|מעל\s*\$?49|49\$|על\s+הזמנות\s+שעומדות\s+בדרישות|ILS)|'
-        r'qualif(?:y|ies)\s+for\s+FREE\s+(?:Shipping|Delivery)|eligible\s+for\s+FREE\s+(?:Shipping|Delivery)'
+    clean = re.sub(r"\s+", " ", clean)
+
+    # 1. Negative disqualifiers (Does NOT ship to Israel at all)
+    no_ship_pat = (
+        r"cannot be shipped to your selected delivery location|"
+        r"does not ship to Israel|"
+        r"does not ship to your selected delivery location|"
+        r"פריט זה אינו נשלח אל ישראל|"
+        r"אינו נשלח אל ישראל|"
+        r"אינו נשלח לישראל|"
+        r"לא ניתן לשלוח פריט זה למיקום המשלוח|"
+        r"לא נשלח לישראל|"
+        r"Currently unavailable|"
+        r"לא זמין כרגע"
     )
-    return bool(re.search(pattern, clean, re.I))
+    if re.search(no_ship_pat, clean, re.I):
+        return {"eligible": False, "no_shipping": True}
+
+    # 2. Strict Amazon Israel $49 Free Shipping program markers
+    pattern = (
+        r'data-csa-c-delivery-benefit-program-id=["\']efs["\']|'
+        r'data-csa-c-mir-sub-type=["\']CONDITIONALLY_FREE["\'].*?(?:to\s+Israel|אל\s+ישראל|לישראל)|'
+        r'(?:FREE\s+(?:International\s+)?(?:Shipping|Delivery)|משלוח\s+חינם)[\s\S]{0,100}?(?:to\s+Israel|אל\s+ישראל|לישראל)[\s\S]{0,100}?(?:over\s*\$?49|49\$|\$49|qualifying\s+orders|הזמנות\s+מתאימות|בקנייה\s+מעל)|'
+        r'(?:to\s+Israel|אל\s+ישראל|לישראל)[\s\S]{0,100}?(?:FREE\s+(?:Shipping|Delivery)|משלוח\s+חינם)[\s\S]{0,100}?(?:over\s*\$?49|49\$|\$49|qualifying\s+orders|הזמנות\s+מתאימות)'
+    )
+    eligible = bool(re.search(pattern, clean, re.I))
+    return {"eligible": eligible, "no_shipping": False}
+
+
+def check_amazon_free_shipping(html: str) -> bool:
+    return check_amazon_shipping_details(html)["eligible"]
 
 
 def extract_ksp_uin(url: str) -> str:
@@ -722,7 +745,9 @@ def process_profile(page, data: dict, chat_id: str, now_il: datetime, fcm_token:
         if is_amazon_url:
             try:
                 page_content = page.content()
-                is_free_ship = check_amazon_free_shipping(page_content)
+                ship_info = check_amazon_shipping_details(page_content)
+                is_free_ship = ship_info["eligible"]
+                prod["doesNotShipToIsrael"] = ship_info["no_shipping"]
                 was_free_ship = bool(prod.get("freeShippingEligible"))
                 prod["freeShippingEligible"] = is_free_ship
 

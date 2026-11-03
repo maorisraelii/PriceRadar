@@ -2,9 +2,9 @@
 <html lang="he" dir="rtl">
 <head>
   <script>
-    window.__APP_VERSION__ = "3.6.0";
-    window.__BUILD_TIMESTAMP__ = 1762186000;
-    window.__OTA_RELEASE_NOTES__ = "v3.6.0: ערכת נושא OLED שחור מוחלט, ערכת נושא בהירה עם כפתור שמש/ירח מהיר, שעון 24 שעות ללא AM/PM, וביטול מוחלט של התראות רקע מיותרות.";
+    window.__APP_VERSION__ = "3.6.1";
+    window.__BUILD_TIMESTAMP__ = 1762190000;
+    window.__OTA_RELEASE_NOTES__ = "v3.6.1: תיקון מקיף לזיהוי משלוח חינם באמזון - בדיקה קפדנית לזכאות משלוח חינם לישראל מעל 49$ ומניעת זיהויים שגויים, וסימון מוצרים שאינם נשלחים לישראל.";
 
     (function bootstrapTheme() {
       try {
@@ -393,7 +393,7 @@
             <h1 class="text-xl sm:text-2xl font-black tracking-tight bg-gradient-to-r from-white via-cyan-100 to-emerald-300 bg-clip-text text-transparent whitespace-nowrap">
               PriceRadar
             </h1>
-            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 tracking-wider">v3.6.0</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 tracking-wider">v3.6.1</span>
             <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot shrink-0" title="מעקב מחירים פעיל"></span>
           </div>
           <p class="text-[11px] text-slate-300/85 font-medium">מעקב מחירים חכם 24/7</p>
@@ -946,7 +946,7 @@
         <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-white/10 text-xs">
           <div class="flex items-center gap-2 flex-wrap">
             <span class="text-slate-300 font-bold">גרסת מערכת:</span>
-            <span id="appVersionHeaderBadge" class="font-mono font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">v3.6.0</span>
+            <span id="appVersionHeaderBadge" class="font-mono font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">v3.6.1</span>
             <span id="cloudSyncBadge" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-teal-500/25 text-teal-200 border border-teal-400/30 flex items-center gap-1">☁️ ענן 24/7</span>
             <span class="text-slate-400">בדיקה הבאה: <span id="nextCheckTimer" class="font-mono font-bold text-cyan-300">--:--</span></span>
             <span class="hidden" id="headerDailyTime">09:00</span>
@@ -962,7 +962,7 @@
         <div class="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/15 via-teal-500/15 to-cyan-500/15 border border-emerald-400/30 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div class="space-y-1 text-center sm:text-right">
             <div class="flex items-center gap-2 justify-center sm:justify-start">
-              <span class="text-xs font-black text-emerald-300">📱 גרסת קובץ APK עדכנית: v3.6.0</span>
+              <span class="text-xs font-black text-emerald-300">📱 גרסת קובץ APK עדכנית: v3.6.1</span>
               <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 font-mono font-bold">RELEASE</span>
             </div>
             <p class="text-[11px] text-slate-300">אם התקנת בעבר APK ומערכת ההפעלה דורשת התקנה מחדש, לחץ להורדה ישירה</p>
@@ -976,7 +976,7 @@
               class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl btn-gradient-emerald text-white text-xs font-extrabold flex items-center justify-center gap-2 shadow-lg hover:brightness-110 transition"
             >
               <span>⬇️</span>
-              <span>הורד APK מעודכן v3.6.0</span>
+              <span>הורד APK מעודכן v3.6.1</span>
             </a>
           </div>
         </div>
@@ -2194,19 +2194,32 @@
       }
     }
 
-    function checkAmazonFreeShippingToIsrael(rawText) {
-      if (!rawText) return false;
+    function checkAmazonShippingDetails(rawText) {
+      if (!rawText) return { eligible: false, noShipping: false };
       const clean = String(rawText)
         .replace(/[\u200E\u200F\u202A-\u202E\u00A0]/g, ' ')
         .replace(/\s+/g, ' ');
-      return (
-        /data-csa-c-delivery-price=["'](?:חינם|FREE)["']/i.test(clean) ||
-        /data-csa-c-delivery-benefit-program-id=["']efs["']/i.test(clean) ||
-        /data-csa-c-mir-sub-type=["']CONDITIONALLY_FREE["']/i.test(clean) ||
-        /(?:FREE\s+(?:International\s+)?(?:Shipping|Delivery)|משלוח\s+חינם|זכאי\s+למשלוח\s+חינם)[\s\S]{0,160}?(?:to\s+Israel|אל\s+ישראל|לישראל|מעל\s*\$?49|49\$|\$49\s+of\s+eligible|על\s+הזמנות\s+שעומדות\s+בדרישות|ILS)/i.test(clean) ||
-        /(?:to\s+Israel|אל\s+ישראל|לישראל)[\s\S]{0,120}?(?:FREE\s+(?:Shipping|Delivery)|משלוח\s+חינם|על\s+הזמנות\s+שעומדות\s+בדרישות)/i.test(clean) ||
-        /qualif(?:y|ies)\s+for\s+FREE\s+(?:Shipping|Delivery)|eligible\s+for\s+FREE\s+(?:Shipping|Delivery)|FREE\s+delivery[\s\S]{0,80}?on\s+\$49/i.test(clean)
+
+      // 1. First check explicit NEGATIVE disqualifiers (item does NOT ship to Israel at all)
+      const noShippingRegex = /cannot be shipped to your selected delivery location|does not ship to Israel|does not ship to your selected delivery location|פריט זה אינו נשלח אל ישראל|אינו נשלח אל ישראל|אינו נשלח לישראל|לא ניתן לשלוח פריט זה למיקום המשלוח|לא נשלח לישראל|Currently unavailable|לא זמין כרגע/i;
+      if (noShippingRegex.test(clean)) {
+        return { eligible: false, noShipping: true };
+      }
+
+      // 2. Check explicit Amazon Israel $49 Free Shipping program markers
+      const isEfs = /data-csa-c-delivery-benefit-program-id=["']efs["']/i.test(clean);
+      const isCondFree = /data-csa-c-mir-sub-type=["']CONDITIONALLY_FREE["']/i.test(clean) && /(?:to\s+Israel|אל\s+ישראל|לישראל)/i.test(clean);
+      const hasIsraelOver49 = (
+        /(?:FREE\s+(?:International\s+)?(?:Shipping|Delivery)|משלוח\s+חינם)[\s\S]{0,100}?(?:to\s+Israel|אל\s+ישראל|לישראל)[\s\S]{0,100}?(?:over\s*\$?49|49\$|\$49|qualifying\s+orders|הזמנות\s+מתאימות|בקנייה\s+מעל)/i.test(clean) ||
+        /(?:to\s+Israel|אל\s+ישראל|לישראל)[\s\S]{0,100}?(?:FREE\s+(?:Shipping|Delivery)|משלוח\s+חינם)[\s\S]{0,100}?(?:over\s*\$?49|49\$|\$49|qualifying\s+orders|הזמנות\s+מתאימות)/i.test(clean)
       );
+
+      const eligible = Boolean(isEfs || isCondFree || hasIsraelOver49);
+      return { eligible, noShipping: false };
+    }
+
+    function checkAmazonFreeShippingToIsrael(rawText) {
+      return checkAmazonShippingDetails(rawText).eligible;
     }
 
     function extractKspUin(rawUrl) {
@@ -3235,14 +3248,23 @@
         SelectedVariant: '',
         variations: [],
         freeShippingEligible: false,
+        doesNotShipToIsrael: false,
         sourceMethod: 'זיהוי מ-Amazon'
       };
 
       const recordCandidate = (parsed, rawContent = '') => {
         if (!parsed) return null;
-        if (rawContent && checkAmazonFreeShippingToIsrael(rawContent)) {
-          bestPartial.freeShippingEligible = true;
-          parsed.freeShippingEligible = true;
+        if (rawContent) {
+          const ship = checkAmazonShippingDetails(rawContent);
+          if (ship.noShipping) {
+            bestPartial.doesNotShipToIsrael = true;
+            bestPartial.freeShippingEligible = false;
+            parsed.doesNotShipToIsrael = true;
+            parsed.freeShippingEligible = false;
+          } else if (ship.eligible) {
+            bestPartial.freeShippingEligible = true;
+            parsed.freeShippingEligible = true;
+          }
         }
         if (parsed.title && !isBlockedTitle(parsed.title) && !/^amazon\.com$/i.test(parsed.title)) {
           if (!bestPartial.title || parsed.title.length > bestPartial.title.length) {
@@ -3255,7 +3277,8 @@
         if (parsed.price && Number(parsed.price) > 0.5) {
           parsed.title = parsed.title && !isBlockedTitle(parsed.title) ? parsed.title : bestPartial.title;
           parsed.image = parsed.image || bestPartial.image;
-          parsed.freeShippingEligible = bestPartial.freeShippingEligible;
+          parsed.freeShippingEligible = Boolean(bestPartial.freeShippingEligible);
+          parsed.doesNotShipToIsrael = Boolean(bestPartial.doesNotShipToIsrael);
           return parsed;
         }
         return null;
@@ -3286,12 +3309,18 @@
             return { content: await r.text(), format: 'html' };
           })()
         ]).then(res => {
-          if (res && res.content && checkAmazonFreeShippingToIsrael(res.content)) {
-            bestPartial.freeShippingEligible = true;
-            return true;
+          if (res && res.content) {
+            const ship = checkAmazonShippingDetails(res.content);
+            if (ship.noShipping) {
+              bestPartial.doesNotShipToIsrael = true;
+              bestPartial.freeShippingEligible = false;
+            } else if (ship.eligible) {
+              bestPartial.freeShippingEligible = true;
+            }
+            return ship;
           }
-          return false;
-        }).catch(() => false);
+          return { eligible: false, noShipping: false };
+        }).catch(() => ({ eligible: false, noShipping: false }));
 
         const amzTasks = [
           runAmzFetch(tryCapacitorNativeHttpGet(cleanedUrl)),
@@ -3309,16 +3338,23 @@
           new Promise((_, rej) => setTimeout(() => rej(new Error('Amazon timeout')), 4800))
         ]);
         if (winner && winner.price) {
-          if (!winner.freeShippingEligible && !bestPartial.freeShippingEligible) {
-            const isIlFree = await Promise.race([
+          let ilShip = { eligible: false, noShipping: false };
+          try {
+            ilShip = await Promise.race([
               israelIpShipCheck,
-              new Promise(r => setTimeout(() => r(false), 1200))
+              new Promise(r => setTimeout(() => r({ eligible: false, noShipping: false }), 1200))
             ]);
-            if (isIlFree || bestPartial.freeShippingEligible) {
-              winner.freeShippingEligible = true;
-            }
-          } else {
+          } catch (e) {}
+
+          if (ilShip.noShipping || bestPartial.doesNotShipToIsrael || winner.doesNotShipToIsrael) {
+            winner.doesNotShipToIsrael = true;
+            winner.freeShippingEligible = false;
+          } else if (ilShip.eligible || bestPartial.freeShippingEligible || winner.freeShippingEligible) {
             winner.freeShippingEligible = true;
+            winner.doesNotShipToIsrael = false;
+          } else {
+            winner.freeShippingEligible = false;
+            winner.doesNotShipToIsrael = false;
           }
           return winner;
         }
@@ -3430,9 +3466,20 @@
       const validTitle = (extracted && extracted.title && !isBlockedTitle(extracted.title)) ? extracted.title : fallbackTitle;
       const cat = guessCategoryFromUrl(cleanedUrl, validTitle);
       const chosenImage = (extracted && extracted.image) ? extracted.image : getFallbackProductImage(cleanedUrl, cat);
-      const isFreeShip = isAmz && (
+
+      let rawShipDetails = { eligible: false, noShipping: false };
+      if (rawFetchedContent && isAmz) {
+        rawShipDetails = checkAmazonShippingDetails(rawFetchedContent);
+      }
+
+      const doesNotShip = isAmz && Boolean(
+        (extracted && extracted.doesNotShipToIsrael) ||
+        rawShipDetails.noShipping
+      );
+
+      const isFreeShip = isAmz && !doesNotShip && Boolean(
         (extracted && extracted.freeShippingEligible) ||
-        (rawFetchedContent && checkAmazonFreeShippingToIsrael(rawFetchedContent))
+        rawShipDetails.eligible
       );
 
       return {
@@ -3447,6 +3494,7 @@
         sourceMethod: (extracted && extracted.sourceMethod) ? extracted.sourceMethod : 'סריקת קישור ישירה',
         category: cat,
         freeShippingEligible: Boolean(isFreeShip),
+        doesNotShipToIsrael: Boolean(doesNotShip),
         trackFreeShipping: isAmz
       };
     }
@@ -3486,7 +3534,10 @@
           : 'hidden';
       }
       if (fsDetectedBadge && isAmazonProd) {
-        if (data.freeShippingEligible) {
+        if (data.doesNotShipToIsrael) {
+          fsDetectedBadge.className = 'text-[11px] font-black px-2.5 py-0.5 rounded-full bg-rose-500/25 text-rose-200 border border-rose-400/40';
+          fsDetectedBadge.textContent = '🚫 אינו נשלח לישראל';
+        } else if (data.freeShippingEligible) {
           fsDetectedBadge.className = 'text-[11px] font-black px-2.5 py-0.5 rounded-full bg-emerald-500/25 text-emerald-200 border border-emerald-400/40';
           fsDetectedBadge.textContent = '✈️ זכאי למשלוח חינם לישראל!';
         } else {
@@ -3498,6 +3549,7 @@
         fsCheck.checked = data.trackFreeShipping !== false;
       }
       state.ui.pendingFreeShipping = Boolean(data.freeShippingEligible);
+      state.ui.pendingDoesNotShip = Boolean(data.doesNotShipToIsrael);
       document.getElementById('modalSelectedVariantText').value = data.SelectedVariant || '';
       document.getElementById('modalCategorySelect').value = data.category || 'other';
 
@@ -3705,7 +3757,11 @@
           const amzSub = document.getElementById('detailsAmazonShippingSubtext');
           const amzToggle = document.getElementById('detailsAmazonTrackShippingToggle');
           if (amzToggle) amzToggle.checked = p.trackFreeShipping !== false;
-          if (p.freeShippingEligible) {
+          if (p.doesNotShipToIsrael) {
+            amzBadge.className = 'text-xs font-black px-3 py-1 rounded-full bg-rose-500/25 text-rose-200 border border-rose-400/40';
+            amzBadge.textContent = '🚫 אינו נשלח לישראל';
+            amzSub.textContent = 'על פי אמזון, פריט זה אינו נשלח כרגע לכתובת בישראל.';
+          } else if (p.freeShippingEligible) {
             amzBadge.className = 'text-xs font-black px-3 py-1 rounded-full bg-emerald-500/25 text-emerald-200 border border-emerald-400/40';
             amzBadge.textContent = '✈️ זכאי למשלוח חינם לישראל!';
             amzSub.textContent = 'המוצר משתתף במשלוח חינם של אמזון לישראל בקנייה מעל $49.';
@@ -4220,6 +4276,7 @@
       const wasFreeShip = Boolean(p.freeShippingEligible);
       const isNowFreeShip = Boolean(scanned.freeShippingEligible);
       p.freeShippingEligible = isNowFreeShip;
+      p.doesNotShipToIsrael = Boolean(scanned.doesNotShipToIsrael);
 
       if (!wasFreeShip && isNowFreeShip && p.trackFreeShipping !== false && isAmazonUrlOrStore(p.url, p.store)) {
         const fsMsg =
@@ -4522,15 +4579,19 @@
 
         // For Amazon products: ALWAYS show Free Shipping status & whether tracking is active!
         const freeShippingPill = isAmazonProduct
-          ? (p.freeShippingEligible
-              ? `<button type="button" data-action="toggle_fs_track" data-id="${p.id}" title="לחץ להפעלה/כיבוי מעקב משלוח חינם" class="prod-action-btn inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/45 text-emerald-200 text-[11px] font-extrabold transition">
-                   <span>✈️ משלוח חינם לישראל</span>
-                   <span class="text-[10px] opacity-85">(${p.trackFreeShipping !== false ? 'מעקב פעיל 🔔' : 'מעקב כבוי'})</span>
-                 </button>`
-              : `<button type="button" data-action="toggle_fs_track" data-id="${p.id}" title="לחץ להפעלה/כיבוי התראה כשייכנס למשלוח חינם" class="prod-action-btn inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg ${p.trackFreeShipping !== false ? 'bg-cyan-500/15 border-cyan-400/40 text-cyan-200' : 'bg-white/10 border-white/15 text-slate-300'} border text-[11px] font-extrabold hover:bg-cyan-500/25 transition">
-                   <span>📦 ללא משלוח חינם כרגע</span>
-                   <span class="text-[10px] ${p.trackFreeShipping !== false ? 'text-amber-300' : 'opacity-75'}">(${p.trackFreeShipping !== false ? 'במעקב משלוח 🔔' : 'ללא מעקב'})</span>
-                 </button>`)
+          ? (p.doesNotShipToIsrael
+              ? `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-rose-500/15 border border-rose-400/35 text-rose-200 text-[11px] font-extrabold">
+                   <span>🚫 לא נשלח לישראל</span>
+                 </span>`
+              : (p.freeShippingEligible
+                  ? `<button type="button" data-action="toggle_fs_track" data-id="${p.id}" title="לחץ להפעלה/כיבוי מעקב משלוח חינם" class="prod-action-btn inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/45 text-emerald-200 text-[11px] font-extrabold transition">
+                       <span>✈️ משלוח חינם לישראל</span>
+                       <span class="text-[10px] opacity-85">(${p.trackFreeShipping !== false ? 'מעקב פעיל 🔔' : 'מעקב כבוי'})</span>
+                     </button>`
+                  : `<button type="button" data-action="toggle_fs_track" data-id="${p.id}" title="לחץ להפעלה/כיבוי התראה כשייכנס למשלוח חינם" class="prod-action-btn inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg ${p.trackFreeShipping !== false ? 'bg-cyan-500/15 border-cyan-400/40 text-cyan-200' : 'bg-white/10 border-white/15 text-slate-300'} border text-[11px] font-extrabold hover:bg-cyan-500/25 transition">
+                       <span>📦 ללא משלוח חינם כרגע</span>
+                       <span class="text-[10px] ${p.trackFreeShipping !== false ? 'text-amber-300' : 'opacity-75'}">(${p.trackFreeShipping !== false ? 'במעקב משלוח 🔔' : 'ללא מעקב'})</span>
+                     </button>`))
           : '';
 
         const variantPill = p.SelectedVariant
@@ -5079,6 +5140,7 @@
             p.targetPrice = targetPriceVal > 0 ? targetPriceVal : null;
             p.trackFreeShipping = document.getElementById('modalTrackFreeShipping') ? document.getElementById('modalTrackFreeShipping').checked : true;
             if (state.ui.pendingFreeShipping !== undefined) p.freeShippingEligible = state.ui.pendingFreeShipping;
+            if (state.ui.pendingDoesNotShip !== undefined) p.doesNotShipToIsrael = state.ui.pendingDoesNotShip;
             p.SelectedVariant = selectedVariant;
             p.category = category;
             p.variations = state.ui.pendingVariations.slice();
@@ -5138,6 +5200,7 @@
             lowestPrice: price,
             targetPrice: targetPriceVal > 0 ? targetPriceVal : null,
             freeShippingEligible: state.ui.pendingFreeShipping || false,
+            doesNotShipToIsrael: state.ui.pendingDoesNotShip || false,
             trackFreeShipping: document.getElementById('modalTrackFreeShipping') ? document.getElementById('modalTrackFreeShipping').checked : true,
             SelectedVariant: selectedVariant,
             variations: state.ui.pendingVariations.slice(),
@@ -5339,6 +5402,7 @@
           const p = state.products.find(item => item.id === activeDetailsProductId);
           if (!p) return;
           p.freeShippingEligible = !p.freeShippingEligible;
+          if (p.freeShippingEligible) p.doesNotShipToIsrael = false;
           saveState(false, true);
           openProductDetailsModal(p.id);
           renderProductsGrid();
