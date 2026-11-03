@@ -217,7 +217,17 @@ public class MainActivity extends BridgeActivity {
             e.printStackTrace();
         }
         scheduleNextBackgroundCheck(this, 15);
-        startRadarMonitorService(this);
+        scheduleNextDailyReportAlarm(this);
+        // Dismiss any lingering foreground monitor notification from older versions
+        try {
+            NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm != null) {
+                nm.cancel(7001);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    nm.deleteNotificationChannel(MONITOR_CHANNEL_ID);
+                }
+            }
+        } catch (Exception ignored) {}
         handleIncomingShareIntent(getIntent());
     }
 
@@ -264,18 +274,18 @@ public class MainActivity extends BridgeActivity {
     }
 
     public static void startRadarMonitorService(Context ctx) {
+        // Pure silent background alarm schedule — NO foreground service notification!
         try {
-            Intent svc = new Intent(ctx, TaskRemovedWatchdogService.class);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                ctx.startForegroundService(svc);
-            } else {
-                ctx.startService(svc);
+            scheduleNextBackgroundCheck(ctx, 15);
+            scheduleNextDailyReportAlarm(ctx);
+            NotificationManager nm = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm != null) {
+                nm.cancel(7001);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    nm.deleteNotificationChannel(MONITOR_CHANNEL_ID);
+                }
             }
-        } catch (Exception ignored) {
-            try {
-                ctx.startService(new Intent(ctx, TaskRemovedWatchdogService.class));
-            } catch (Exception ignored2) {}
-        }
+        } catch (Exception ignored) {}
     }
 
     private void requestBatteryExemptionIfNeeded() {
@@ -292,64 +302,14 @@ public class MainActivity extends BridgeActivity {
     }
 
     public static class TaskRemovedWatchdogService extends Service {
-        private final Handler loopHandler = new Handler(Looper.getMainLooper());
-        private final Runnable periodicRunner = new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    Intent i = new Intent(getApplicationContext(), BackgroundAlertReceiver.class);
-                    i.setAction("com.priceradar.app.CHECK_ALERTS");
-                    sendBroadcast(i);
-                } catch (Exception ignored) {}
-                SharedPreferences sp = getSharedPreferences("PriceRadarPrefs", Context.MODE_PRIVATE);
-                int mins = Math.max(5, sp.getInt("checkIntervalMinutes", 15));
-                loopHandler.postDelayed(this, mins * 60L * 1000L);
-            }
-        };
-
         @Override
         public void onCreate() {
             super.onCreate();
-            startSilentForeground();
-            loopHandler.postDelayed(periodicRunner, 60000L);
-        }
-
-        private void startSilentForeground() {
-            try {
-                createNotificationChannel(this);
-                Intent tapIntent = new Intent(this, MainActivity.class);
-                tapIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                PendingIntent pi = PendingIntent.getActivity(
-                    this,
-                    7001,
-                    tapIntent,
-                    PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT
-                );
-                int smallIconId = getApplicationInfo().icon;
-                if (smallIconId == 0) smallIconId = android.R.drawable.ic_dialog_info;
-
-                Notification n = new NotificationCompat.Builder(this, MONITOR_CHANNEL_ID)
-                    .setSmallIcon(smallIconId)
-                    .setContentTitle("PriceRadar פועל ברקע 24/7")
-                    .setContentText("מנטר ירידות מחיר ומשלוח חינם גם כשהאפליקציה סגורה")
-                    .setPriority(NotificationCompat.PRIORITY_MIN)
-                    .setOngoing(true)
-                    .setSilent(true)
-                    .setContentIntent(pi)
-                    .build();
-
-                if (Build.VERSION.SDK_INT >= 34) {
-                    startForeground(7001, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
-                } else {
-                    startForeground(7001, n);
-                }
-            } catch (Exception ignored) {}
         }
 
         @Override
         public int onStartCommand(Intent intent, int flags, int startId) {
-            startSilentForeground();
-            return START_STICKY;
+            return START_NOT_STICKY;
         }
 
         @Override
@@ -363,27 +323,8 @@ public class MainActivity extends BridgeActivity {
                 SharedPreferences sp = getSharedPreferences("PriceRadarPrefs", Context.MODE_PRIVATE);
                 int mins = sp.getInt("checkIntervalMinutes", 15);
                 scheduleNextBackgroundCheck(getApplicationContext(), mins);
-                // Schedule an immediate 15-second wakeup check after swipe-away from multitasking
-                AlarmManager am = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-                if (am != null) {
-                    Intent i = new Intent(getApplicationContext(), BackgroundAlertReceiver.class);
-                    i.setAction("com.priceradar.app.CHECK_ALERTS");
-                    PendingIntent pi = PendingIntent.getBroadcast(
-                        getApplicationContext(),
-                        102,
-                        i,
-                        PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT
-                    );
-                    long triggerSoon = System.currentTimeMillis() + 15000L;
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && am.canScheduleExactAlarms()) {
-                        am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerSoon, pi);
-                    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                        am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerSoon, pi);
-                    } else {
-                        am.set(AlarmManager.RTC_WAKEUP, triggerSoon, pi);
-                    }
-                }
             } catch (Exception ignored) {}
+            stopSelf();
             super.onTaskRemoved(rootIntent);
         }
     }
@@ -411,16 +352,9 @@ public class MainActivity extends BridgeActivity {
                 channel.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
                 nm.createNotificationChannel(channel);
 
-                NotificationChannel monitorChannel = new NotificationChannel(
-                    MONITOR_CHANNEL_ID,
-                    "ניטור מחירים ברקע PriceRadar",
-                    NotificationManager.IMPORTANCE_LOW
-                );
-                monitorChannel.setDescription("שומר על ניטור מחירים פעיל 24/7 גם כשהאפליקציה סגורה");
-                monitorChannel.enableVibration(false);
-                monitorChannel.setSound(null, null);
-                monitorChannel.setShowBadge(false);
-                nm.createNotificationChannel(monitorChannel);
+                try {
+                    nm.deleteNotificationChannel(MONITOR_CHANNEL_ID);
+                } catch (Exception ignored) {}
             }
         }
     }
@@ -530,6 +464,12 @@ public class MainActivity extends BridgeActivity {
     public static class BackgroundAlertReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
+            try {
+                NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+                if (nm != null) {
+                    nm.cancel(7001);
+                }
+            } catch (Exception ignored) {}
             if (intent != null && "com.priceradar.app.DELAYED_TEST_NOTIFICATION".equals(intent.getAction())) {
                 String t = intent.getStringExtra("title");
                 String m = intent.getStringExtra("message");
@@ -539,7 +479,6 @@ public class MainActivity extends BridgeActivity {
                     m != null ? m : "מנוע הרקע פועל בהצלחה גם לאחר סגירה מהמולטיטאסקינג!",
                     (int) (System.currentTimeMillis() & 0x7fffffff)
                 );
-                startRadarMonitorService(context);
                 return;
             }
             if (intent != null && "com.priceradar.app.DAILY_REPORT_ALARM".equals(intent.getAction())) {
@@ -548,9 +487,7 @@ public class MainActivity extends BridgeActivity {
                 String dMsg = sp.getString("dailyMessage", "הדו\\"ח היומי של המוצרים שלך במעקב מוכן!");
                 showSystemNotification(context, dTitle, dMsg, 99001);
                 scheduleNextDailyReportAlarm(context);
-                startRadarMonitorService(context);
             }
-            startRadarMonitorService(context);
             final PendingResult pendingResult = goAsync();
             new Thread(() -> {
                 PowerManager.WakeLock wl = null;

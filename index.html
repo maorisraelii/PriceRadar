@@ -2,9 +2,20 @@
 <html lang="he" dir="rtl">
 <head>
   <script>
-    window.__APP_VERSION__ = "3.5.0";
-    window.__BUILD_TIMESTAMP__ = 1762175000;
-    window.__OTA_RELEASE_NOTES__ = "עיצוב חדש לחלוטין (Titanium Cyber Teal), הסרה טוטאלית של כפתור הדמיית ירידת מחיר, תיקון מושלם לקליטת מחיר ב-MyRabbit (75 ₪) ובטרקלין חשמל (999 ₪ רגיל / 846 ₪ אילת), ואנימציות חלקות.";
+    window.__APP_VERSION__ = "3.6.0";
+    window.__BUILD_TIMESTAMP__ = 1762186000;
+    window.__OTA_RELEASE_NOTES__ = "v3.6.0: ערכת נושא OLED שחור מוחלט, ערכת נושא בהירה עם כפתור שמש/ירח מהיר, שעון 24 שעות ללא AM/PM, וביטול מוחלט של התראות רקע מיותרות.";
+
+    (function bootstrapTheme() {
+      try {
+        const savedTheme = localStorage.getItem('priceradar_theme') || 'oled';
+        if (savedTheme === 'light') {
+          document.documentElement.classList.add('theme-light');
+        } else {
+          document.documentElement.classList.add('theme-oled');
+        }
+      } catch (e) {}
+    })();
 
     // =========================================================================
     // OVER-THE-AIR (OTA) LIVE UPDATE ENGINE FROM GITHUB
@@ -266,6 +277,95 @@
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 9999px; }
     .dir-ltr { direction: ltr; text-align: left; }
+
+    /* ========================================================================= */
+    /* THEMES: OLED PITCH BLACK & CLEAN DAYLIGHT                                 */
+    /* ========================================================================= */
+    html.theme-oled body {
+      background-color: #000000 !important;
+      color: #f8fafc !important;
+    }
+    html.theme-oled .aurora-bg {
+      background: #000000 !important;
+    }
+    html.theme-oled .aurora-bg::after {
+      display: none !important;
+    }
+    html.theme-oled .aurora-orb {
+      opacity: 0.08 !important;
+    }
+    html.theme-oled .liquid-glass {
+      background: #08080a !important;
+      border: 1px solid #1c1f26 !important;
+      box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.95) !important;
+    }
+    html.theme-oled .liquid-glass-soft {
+      background: #111318 !important;
+      border: 1px solid #1e222b !important;
+    }
+    html.theme-oled .liquid-glass-input {
+      background: #000000 !important;
+      border: 1px solid #282d38 !important;
+    }
+
+    /* Light Theme */
+    html.theme-light {
+      color-scheme: light !important;
+    }
+    html.theme-light body {
+      background-color: #f3f5fa !important;
+      color: #0f172a !important;
+    }
+    html.theme-light .aurora-bg {
+      background:
+        radial-gradient(ellipse 75% 45% at 50% -10%, rgba(6, 182, 212, 0.12), transparent 70%),
+        radial-gradient(ellipse 65% 50% at 90% 25%, rgba(16, 185, 129, 0.1), transparent 60%),
+        linear-gradient(180deg, #f8fafc 0%, #edf2f7 50%, #e2e8f0 100%) !important;
+    }
+    html.theme-light .aurora-bg::after {
+      background-image: radial-gradient(rgba(15, 23, 42, 0.05) 1px, transparent 1px) !important;
+    }
+    html.theme-light .aurora-orb {
+      opacity: 0.15 !important;
+      filter: blur(120px) !important;
+    }
+    html.theme-light .liquid-glass {
+      background: rgba(255, 255, 255, 0.94) !important;
+      border: 1px solid rgba(203, 213, 225, 0.9) !important;
+      box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.07), 0 4px 6px -2px rgba(15, 23, 42, 0.03) !important;
+      color: #0f172a !important;
+    }
+    html.theme-light .liquid-glass-soft {
+      background: rgba(241, 245, 249, 0.9) !important;
+      border: 1px solid rgba(226, 232, 240, 0.95) !important;
+      color: #0f172a !important;
+    }
+    html.theme-light .liquid-glass-input {
+      background: #ffffff !important;
+      color: #0f172a !important;
+      border: 1px solid #cbd5e1 !important;
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+    }
+    html.theme-light .text-white {
+      color: #0f172a !important;
+    }
+    html.theme-light .text-slate-200,
+    html.theme-light .text-slate-300 {
+      color: #334155 !important;
+    }
+    html.theme-light .text-slate-400 {
+      color: #64748b !important;
+    }
+    html.theme-light select option {
+      background: #ffffff !important;
+      color: #0f172a !important;
+    }
+    html.theme-light h1 {
+      background: linear-gradient(135deg, #0f172a 0%, #0284c7 60%, #059669 100%) !important;
+      -webkit-background-clip: text !important;
+      background-clip: text !important;
+      color: transparent !important;
+    }
   </style>
 </head>
 <body class="flex flex-col pb-24 sm:pb-10 selection:bg-cyan-500 selection:text-slate-950">
@@ -293,7 +393,7 @@
             <h1 class="text-xl sm:text-2xl font-black tracking-tight bg-gradient-to-r from-white via-cyan-100 to-emerald-300 bg-clip-text text-transparent whitespace-nowrap">
               PriceRadar
             </h1>
-            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 tracking-wider">v3.5.0</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 tracking-wider">v3.6.0</span>
             <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot shrink-0" title="מעקב מחירים פעיל"></span>
           </div>
           <p class="text-[11px] text-slate-300/85 font-medium">מעקב מחירים חכם 24/7</p>
@@ -302,6 +402,11 @@
 
       <!-- Clean Minimal Header Controls -->
       <div class="flex items-center gap-2 shrink-0">
+        <!-- Sun/Moon Theme Toggle Button -->
+        <button id="themeToggleBtn" type="button" title="החלף ערכת נושא (אולד / בהיר)" class="w-9 h-9 rounded-xl liquid-glass-soft hover:bg-white/15 flex items-center justify-center text-base transition">
+          <span id="themeToggleIcon">☀️</span>
+        </button>
+
         <button id="checkAllNowBtn" type="button" class="px-3.5 sm:px-4 py-2 rounded-xl btn-gradient-primary text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-md">
           <svg id="checkAllSpinner" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
@@ -566,6 +671,51 @@
     <section id="tab-settings" class="hidden space-y-6">
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
+        <!-- Display Theme Selector Card -->
+        <div class="liquid-glass rounded-3xl p-5 sm:p-6 space-y-4 lg:col-span-2">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-2xl shadow-lg shadow-indigo-500/20">
+              🎨
+            </div>
+            <div>
+              <h3 class="text-base sm:text-lg font-extrabold text-white">ערכת נושא ותצוגה</h3>
+              <p class="text-xs text-slate-300">בחר סגנון מועדף — ניתן גם להחליף בלחיצה אחת על כפתור השמש/ירח בראש המסך</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <button
+              id="themeOptOled"
+              type="button"
+              class="p-4 rounded-2xl border text-right transition flex items-center justify-between gap-3 bg-black border-cyan-400 shadow-lg shadow-cyan-500/20"
+            >
+              <div class="flex items-center gap-3">
+                <span class="text-3xl">🌙</span>
+                <div>
+                  <p class="text-sm font-extrabold text-white">OLED שחור מוחלט</p>
+                  <p class="text-[11px] text-slate-400">פיץ' בלאק מושלם למסכי OLED וחיסכון בסוללה</p>
+                </div>
+              </div>
+              <span id="badgeThemeOled" class="text-[11px] font-black px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/40">פעיל</span>
+            </button>
+
+            <button
+              id="themeOptLight"
+              type="button"
+              class="p-4 rounded-2xl border text-right transition flex items-center justify-between gap-3 bg-white/5 border-white/10 hover:border-white/20"
+            >
+              <div class="flex items-center gap-3">
+                <span class="text-3xl">☀️</span>
+                <div>
+                  <p class="text-sm font-extrabold text-white">מצב יום בהיר</p>
+                  <p class="text-[11px] text-slate-400">רקע בהיר, נקי וקריא באור יום מלא</p>
+                </div>
+              </div>
+              <span id="badgeThemeLight" class="hidden text-[11px] font-black px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">פעיל</span>
+            </button>
+          </div>
+        </div>
+
         <!-- Schedule & Notification Preferences Card -->
         <div class="liquid-glass rounded-3xl p-5 sm:p-6 space-y-5">
           <div class="flex items-center gap-3">
@@ -580,15 +730,20 @@
 
           <div class="space-y-4 pt-1">
             <div>
-              <label for="dailyTimeInput" class="block text-xs font-bold text-emerald-200 mb-1.5">
-                שעת התראה יומית קבועה (דו"ח יומי עם כל המוצרים והאם ירדו):
+              <label class="block text-xs font-bold text-emerald-200 mb-1.5">
+                שעת התראה יומית קבועה (דו"ח יומי - שעון 24 שעות):
               </label>
-              <input
-                id="dailyTimeInput"
-                type="time"
-                value="09:00"
-                class="w-full sm:w-48 px-4 py-2.5 rounded-2xl liquid-glass-input text-white font-mono text-base font-bold outline-none"
-              />
+              <div class="flex items-center gap-2">
+                <div class="flex items-center gap-1.5 px-3 py-2 rounded-2xl liquid-glass-input w-full sm:w-56 justify-center">
+                  <select id="dailyHourSelect" aria-label="שעה" class="bg-transparent text-white font-mono text-base font-bold outline-none cursor-pointer text-center">
+                  </select>
+                  <span class="text-emerald-400 font-black text-lg select-none">:</span>
+                  <select id="dailyMinuteSelect" aria-label="דקות" class="bg-transparent text-white font-mono text-base font-bold outline-none cursor-pointer text-center">
+                  </select>
+                  <span class="text-[11px] text-slate-400 font-bold px-1.5 border-r border-white/10 select-none">24H</span>
+                </div>
+                <input id="dailyTimeInput" type="hidden" value="09:00" />
+              </div>
             </div>
 
             <div>
@@ -791,7 +946,7 @@
         <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-white/10 text-xs">
           <div class="flex items-center gap-2 flex-wrap">
             <span class="text-slate-300 font-bold">גרסת מערכת:</span>
-            <span id="appVersionHeaderBadge" class="font-mono font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">v3.5.0</span>
+            <span id="appVersionHeaderBadge" class="font-mono font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">v3.6.0</span>
             <span id="cloudSyncBadge" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-teal-500/25 text-teal-200 border border-teal-400/30 flex items-center gap-1">☁️ ענן 24/7</span>
             <span class="text-slate-400">בדיקה הבאה: <span id="nextCheckTimer" class="font-mono font-bold text-cyan-300">--:--</span></span>
             <span class="hidden" id="headerDailyTime">09:00</span>
@@ -807,7 +962,7 @@
         <div class="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/15 via-teal-500/15 to-cyan-500/15 border border-emerald-400/30 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div class="space-y-1 text-center sm:text-right">
             <div class="flex items-center gap-2 justify-center sm:justify-start">
-              <span class="text-xs font-black text-emerald-300">📱 גרסת קובץ APK עדכנית: v3.5.0</span>
+              <span class="text-xs font-black text-emerald-300">📱 גרסת קובץ APK עדכנית: v3.6.0</span>
               <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 font-mono font-bold">RELEASE</span>
             </div>
             <p class="text-[11px] text-slate-300">אם התקנת בעבר APK ומערכת ההפעלה דורשת התקנה מחדש, לחץ להורדה ישירה</p>
@@ -821,7 +976,7 @@
               class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl btn-gradient-emerald text-white text-xs font-extrabold flex items-center justify-center gap-2 shadow-lg hover:brightness-110 transition"
             >
               <span>⬇️</span>
-              <span>הורד APK מעודכן v3.5.0</span>
+              <span>הורד APK מעודכן v3.6.0</span>
             </a>
           </div>
         </div>
@@ -947,10 +1102,18 @@
 
         <div class="space-y-3 pt-1">
           <div>
-            <label for="onboardingDailyTimeInput" class="block text-xs font-bold text-emerald-200 mb-1">
-              באיזו שעה תרצה לקבל את הדו"ח היומי המרוכז?
+            <label class="block text-xs font-bold text-emerald-200 mb-1">
+              באיזו שעה תרצה לקבל את הדו"ח היומי המרוכז? (שעון 24 שעות)
             </label>
-            <input id="onboardingDailyTimeInput" type="time" value="09:00" class="w-full px-4 py-2.5 rounded-2xl liquid-glass-input text-white font-mono text-base font-bold outline-none" />
+            <div class="flex items-center gap-1.5 px-3 py-2 rounded-2xl liquid-glass-input w-full sm:w-52 justify-center">
+              <select id="onboardingDailyHourSelect" aria-label="שעה" class="bg-transparent text-white font-mono text-base font-bold outline-none cursor-pointer text-center">
+              </select>
+              <span class="text-emerald-400 font-black text-lg select-none">:</span>
+              <select id="onboardingDailyMinuteSelect" aria-label="דקות" class="bg-transparent text-white font-mono text-base font-bold outline-none cursor-pointer text-center">
+              </select>
+              <span class="text-[11px] text-slate-400 font-bold px-1.5 border-r border-white/10 select-none">24H</span>
+            </div>
+            <input id="onboardingDailyTimeInput" type="hidden" value="09:00" />
           </div>
 
           <div class="p-3.5 rounded-2xl bg-gradient-to-br from-sky-500/20 via-indigo-500/15 to-purple-500/20 border border-sky-400/35 space-y-2.5">
@@ -1752,7 +1915,7 @@
 
     function formatTimeNow() {
       const d = new Date();
-      return d.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) + ' ' + d.toLocaleDateString('he-IL');
+      return d.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', hour12: false }) + ' ' + d.toLocaleDateString('he-IL');
     }
 
     // =========================================================================
@@ -4518,8 +4681,169 @@
       });
     }
 
+    // =========================================================================
+    // 24-HOUR TIME SELECTOR ENGINE (ELIMINATES AM/PM TOTALLY)
+    // =========================================================================
+    function populate24HourSelects() {
+      const hourSelects = [
+        document.getElementById('dailyHourSelect'),
+        document.getElementById('onboardingDailyHourSelect')
+      ];
+      const minuteSelects = [
+        document.getElementById('dailyMinuteSelect'),
+        document.getElementById('onboardingDailyMinuteSelect')
+      ];
+
+      hourSelects.forEach(sel => {
+        if (!sel || sel.children.length > 0) return;
+        for (let h = 0; h < 24; h++) {
+          const val = String(h).padStart(2, '0');
+          const opt = document.createElement('option');
+          opt.value = val;
+          opt.textContent = val;
+          opt.className = 'bg-slate-900 text-white';
+          sel.appendChild(opt);
+        }
+      });
+
+      minuteSelects.forEach(sel => {
+        if (!sel || sel.children.length > 0) return;
+        for (let m = 0; m < 60; m += 5) {
+          const val = String(m).padStart(2, '0');
+          const opt = document.createElement('option');
+          opt.value = val;
+          opt.textContent = val;
+          opt.className = 'bg-slate-900 text-white';
+          sel.appendChild(opt);
+        }
+      });
+
+      // Synchronize changes from selects to hidden input and state
+      const dailyH = document.getElementById('dailyHourSelect');
+      const dailyM = document.getElementById('dailyMinuteSelect');
+      const dailyInp = document.getElementById('dailyTimeInput');
+      if (dailyH && dailyM && dailyInp) {
+        const syncDaily = () => {
+          const val = `${dailyH.value}:${dailyM.value}`;
+          dailyInp.value = val;
+          if (state.settings) state.settings.dailyTime = val;
+        };
+        dailyH.addEventListener('change', syncDaily);
+        dailyM.addEventListener('change', syncDaily);
+      }
+
+      const obH = document.getElementById('onboardingDailyHourSelect');
+      const obM = document.getElementById('onboardingDailyMinuteSelect');
+      const obInp = document.getElementById('onboardingDailyTimeInput');
+      if (obH && obM && obInp) {
+        const syncOb = () => {
+          const val = `${obH.value}:${obM.value}`;
+          obInp.value = val;
+          if (state.settings) state.settings.dailyTime = val;
+        };
+        obH.addEventListener('change', syncOb);
+        obM.addEventListener('change', syncOb);
+      }
+    }
+
+    function set24HourPickerValue(timeStr) {
+      if (!timeStr) timeStr = '09:00';
+      const parts = timeStr.split(':');
+      const h = (parts[0] || '09').padStart(2, '0');
+      let mNum = parseInt(parts[1] || '0', 10);
+      mNum = Math.round(mNum / 5) * 5;
+      if (mNum >= 60) mNum = 55;
+      const m = String(mNum).padStart(2, '0');
+
+      const dailyH = document.getElementById('dailyHourSelect');
+      const dailyM = document.getElementById('dailyMinuteSelect');
+      const dailyInp = document.getElementById('dailyTimeInput');
+      if (dailyH) dailyH.value = h;
+      if (dailyM) dailyM.value = m;
+      if (dailyInp) dailyInp.value = `${h}:${m}`;
+
+      const obH = document.getElementById('onboardingDailyHourSelect');
+      const obM = document.getElementById('onboardingDailyMinuteSelect');
+      const obInp = document.getElementById('onboardingDailyTimeInput');
+      if (obH) obH.value = h;
+      if (obM) obM.value = m;
+      if (obInp) obInp.value = `${h}:${m}`;
+    }
+
+    // =========================================================================
+    // THEME SYSTEM (OLED PITCH BLACK & CLEAN DAYLIGHT)
+    // =========================================================================
+    function initThemeSystem() {
+      const savedTheme = localStorage.getItem('priceradar_theme') || 'oled';
+      setAppTheme(savedTheme, false);
+
+      const btn = document.getElementById('themeToggleBtn');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          const isLight = document.documentElement.classList.contains('theme-light');
+          const next = isLight ? 'oled' : 'light';
+          setAppTheme(next, true);
+        });
+      }
+
+      const optOled = document.getElementById('themeOptOled');
+      const optLight = document.getElementById('themeOptLight');
+      if (optOled) optOled.addEventListener('click', () => setAppTheme('oled', true));
+      if (optLight) optLight.addEventListener('click', () => setAppTheme('light', true));
+    }
+
+    function setAppTheme(themeName, showNotification = false) {
+      document.documentElement.classList.remove('theme-oled', 'theme-light');
+      const toggleIcon = document.getElementById('themeToggleIcon');
+      const badgeOled = document.getElementById('badgeThemeOled');
+      const badgeLight = document.getElementById('badgeThemeLight');
+      const cardOled = document.getElementById('themeOptOled');
+      const cardLight = document.getElementById('themeOptLight');
+
+      if (themeName === 'light') {
+        document.documentElement.classList.add('theme-light');
+        if (toggleIcon) toggleIcon.textContent = '🌙';
+        if (badgeOled) badgeOled.classList.add('hidden');
+        if (badgeLight) badgeLight.classList.remove('hidden');
+        if (cardOled) {
+          cardOled.className = 'p-4 rounded-2xl border text-right transition flex items-center justify-between gap-3 bg-white/5 border-white/10 hover:border-white/20';
+        }
+        if (cardLight) {
+          cardLight.className = 'p-4 rounded-2xl border text-right transition flex items-center justify-between gap-3 bg-white border-emerald-500 shadow-lg shadow-emerald-500/15';
+        }
+        if (showNotification) {
+          showToast('ערכת נושא בהירה ☀️', 'התצוגה שונתה למצב יום נקי, מואר וקריא.', 'info');
+        }
+      } else {
+        document.documentElement.classList.add('theme-oled');
+        if (toggleIcon) toggleIcon.textContent = '☀️';
+        if (badgeOled) badgeOled.classList.remove('hidden');
+        if (badgeLight) badgeLight.classList.add('hidden');
+        if (cardOled) {
+          cardOled.className = 'p-4 rounded-2xl border text-right transition flex items-center justify-between gap-3 bg-black border-cyan-400 shadow-lg shadow-cyan-500/20';
+        }
+        if (cardLight) {
+          cardLight.className = 'p-4 rounded-2xl border text-right transition flex items-center justify-between gap-3 bg-white/5 border-white/10 hover:border-white/20';
+        }
+        if (showNotification) {
+          showToast('ערכת נושא OLED כהה 🌙', 'שחור מוחלט מושלם למסכי OLED וחיסכון בסוללה.', 'info');
+        }
+      }
+
+      try {
+        localStorage.setItem('priceradar_theme', themeName);
+      } catch (e) {}
+    }
+
+    function updateThemeSettingsUi() {
+      const isLight = document.documentElement.classList.contains('theme-light');
+      setAppTheme(isLight ? 'light' : 'oled', false);
+    }
+
     function renderSettingsValues() {
-      document.getElementById('dailyTimeInput').value = state.settings.dailyTime || '09:00';
+      const dailyTime = state.settings.dailyTime || '09:00';
+      set24HourPickerValue(dailyTime);
+      updateThemeSettingsUi();
       document.getElementById('checkIntervalSelect').value = String(state.settings.checkIntervalMinutes || 60);
       document.getElementById('tgBotTokenInput').value = state.settings.tgBotToken || '';
       document.getElementById('tgChatIdInput').value = state.settings.tgChatId || '';
@@ -4587,6 +4911,8 @@
 
     function initPriceRadarApp() {
       deduplicateAppDomIfNeeded();
+      populate24HourSelects();
+      initThemeSystem();
       loadState();
       renderAll();
 
@@ -5458,7 +5784,7 @@
         if (tgLink) {
           tgLink.href = `https://t.me/${botName}?start=${encodeURIComponent(state.settings.deviceId || 'PR')}`;
         }
-        document.getElementById('onboardingDailyTimeInput').value = state.settings.dailyTime || '09:00';
+        set24HourPickerValue(state.settings.dailyTime || '09:00');
         showOnboardingStep(1);
         document.getElementById('onboardingModal').classList.remove('hidden');
       }
