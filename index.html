@@ -3,7 +3,7 @@
 <head>
   <script>
     window.__APP_VERSION__ = "4.0.0";
-    window.__BUILD_TIMESTAMP__ = 1762280000;
+    window.__BUILD_TIMESTAMP__ = 1762310000;
     window.__OTA_RELEASE_NOTES__ = "v3.6.2: תיקון דיוק מחירים מעל 1,000 ש\"ח (תיקון קיצוץ 9685 ל-968), תיקון כיוון שעון 24H (מ-00:09 ל-09:00), ביטול התראות קופצות בהחלפת ערכת נושא, שיפור תהליך אישור הרשאות פוש, והבהרת שדות המעקב.";
 
     (function bootstrapTheme() {
@@ -1218,18 +1218,18 @@
   </main>
 
   <!-- Mobile Android Floating Liquid Glass Bottom Navigation Bar -->
-  <nav class="sm:hidden fixed bottom-3 left-3 right-3 z-40 liquid-glass rounded-3xl p-1.5 flex items-center justify-around shadow-2xl border border-white/25">
-    <button type="button" data-tab="dashboard" class="nav-tab-btn flex-1 py-2.5 rounded-2xl text-xs font-extrabold transition flex flex-col items-center gap-0.5 liquid-pill-active text-white">
-      <span class="text-base">🛍️</span>
-      <span>המוצרים שלי</span>
+  <nav id="mobileBottomNav" class="sm:hidden fixed left-3 right-3 z-50 liquid-glass rounded-3xl p-1.5 flex items-center justify-around shadow-2xl border border-white/25 select-none" style="bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));">
+    <button type="button" data-tab="dashboard" onclick="switchTab('dashboard')" class="nav-tab-btn flex-1 py-2.5 rounded-2xl text-xs font-extrabold transition flex flex-col items-center gap-0.5 liquid-pill-active text-white active:scale-95 cursor-pointer touch-manipulation">
+      <span class="text-base pointer-events-none">🛍️</span>
+      <span class="pointer-events-none">המוצרים שלי</span>
     </button>
-    <button type="button" data-tab="alerts" class="nav-tab-btn flex-1 py-2.5 rounded-2xl text-xs font-extrabold transition flex flex-col items-center gap-0.5 text-slate-300">
-      <span class="text-base">🔔</span>
-      <span>התראות</span>
+    <button type="button" data-tab="alerts" onclick="switchTab('alerts')" class="nav-tab-btn flex-1 py-2.5 rounded-2xl text-xs font-extrabold transition flex flex-col items-center gap-0.5 text-slate-300 active:scale-95 cursor-pointer touch-manipulation">
+      <span class="text-base pointer-events-none">🔔</span>
+      <span class="pointer-events-none">התראות</span>
     </button>
-    <button type="button" data-tab="settings" class="nav-tab-btn flex-1 py-2.5 rounded-2xl text-xs font-extrabold transition flex flex-col items-center gap-0.5 text-slate-300">
-      <span class="text-base">⚙️</span>
-      <span>הגדרות</span>
+    <button type="button" data-tab="settings" onclick="switchTab('settings')" class="nav-tab-btn flex-1 py-2.5 rounded-2xl text-xs font-extrabold transition flex flex-col items-center gap-0.5 text-slate-300 active:scale-95 cursor-pointer touch-manipulation">
+      <span class="text-base pointer-events-none">⚙️</span>
+      <span class="pointer-events-none">הגדרות</span>
     </button>
   </nav>
 
@@ -6214,6 +6214,7 @@
     // =========================================================================
     // EVENT LISTENERS & INITIALIZATION
     // =========================================================================
+    window.switchTab = switchTab;
     function switchTab(tabName) {
       state.ui.activeTab = tabName;
       ['dashboard', 'alerts', 'settings'].forEach(t => {
