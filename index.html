@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
   <script>
-    window.__APP_VERSION__ = "3.8.0";
+    window.__APP_VERSION__ = "3.8.1";
     window.__BUILD_TIMESTAMP__ = 1762240000;
     window.__OTA_RELEASE_NOTES__ = "v3.6.2: תיקון דיוק מחירים מעל 1,000 ש\"ח (תיקון קיצוץ 9685 ל-968), תיקון כיוון שעון 24H (מ-00:09 ל-09:00), ביטול התראות קופצות בהחלפת ערכת נושא, שיפור תהליך אישור הרשאות פוש, והבהרת שדות המעקב.";
 
@@ -393,35 +393,27 @@
             <h1 class="text-xl sm:text-2xl font-black tracking-tight bg-gradient-to-r from-white via-cyan-100 to-emerald-300 bg-clip-text text-transparent whitespace-nowrap">
               PriceRadar
             </h1>
-            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 tracking-wider">v3.8.0 PRO</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 tracking-wider">v3.8.1 PRO</span>
             <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot shrink-0" title="מעקב מחירים פעיל"></span>
           </div>
           <p class="text-[11px] text-slate-300/85 font-medium">מעקב מחירים חכם 24/7</p>
         </div>
       </div>
 
-      <!-- Clean Minimal Header Controls -->
+            <!-- Clean Minimal Header Controls (Spacious & Uncluttered) -->
       <div class="flex items-center gap-2 shrink-0">
         <!-- Sun/Moon Theme Toggle Button -->
         <button id="themeToggleBtn" type="button" title="החלף ערכת נושא (אולד / בהיר)" class="w-9 h-9 rounded-xl liquid-glass-soft hover:bg-white/15 flex items-center justify-center text-base transition">
           <span id="themeToggleIcon">☀️</span>
         </button>
 
+        <!-- Refresh All Prices -->
         <button id="checkAllNowBtn" type="button" class="px-3.5 sm:px-4 py-2 rounded-xl btn-gradient-primary text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-md">
           <svg id="checkAllSpinner" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
           </svg>
-          <span>רענן מחירים</span>
-        </button>
-
-        <button id="privacyModeBtn" type="button" title="מצב פרטיות (הסתר/הצג מחירים)" class="w-9 h-9 rounded-xl liquid-glass-soft hover:bg-white/15 flex items-center justify-center text-base transition">
-          <span id="privacyModeIcon">👁️</span>
-        </button>
-        <button id="openChangelogBtn" type="button" title="מה חדש בגרסה v3.8.0?" class="w-9 h-9 rounded-xl liquid-glass-soft hover:bg-white/15 flex items-center justify-center text-sm font-black text-amber-300 transition">
-          ✨
-        </button>
-        <button id="soundToggleBtn" type="button" title="הפעל/השתק צליל התראה" class="w-9 h-9 rounded-xl liquid-glass-soft hover:bg-white/15 flex items-center justify-center text-base transition">
-          <span id="soundIconOn">🔔</span>
+          <span class="hidden sm:inline">רענן מחירים</span>
+          <span class="sm:hidden">רענן</span>
         </button>
       </div>
     </div>
@@ -492,18 +484,7 @@
         </div>
       </div>
 
-      <!-- Seasonal Deals & Black Friday Live Countdown Banner -->
-      <div id="holidayDealsBanner" class="rounded-2xl bg-gradient-to-r from-purple-950/80 via-slate-900/90 to-cyan-950/80 border border-purple-400/40 p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg">
-        <div class="flex items-center gap-2.5">
-          <span class="text-2xl animate-pulse">🔥</span>
-          <div>
-            <div class="flex items-center gap-2">
-              <span id="holidayEventTitle" class="text-xs sm:text-sm font-black text-white">עונת המבצעים הגדולה (Black Friday & Cyber Week)</span>
-              <span class="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/30 text-purple-200 font-mono font-bold">SALE RADAR</span>
-            </div>
-            <p id="holidayEventSubtitle" class="text-[11px] text-slate-300">האפליקציה מגבירה בדיקות לזיהוי ירידות מחיר בזמן אמת</p>
-          </div>
-        </div>
+      
         <div class="flex items-center gap-2 shrink-0">
           <div id="holidayCountdownTimer" class="font-mono text-xs sm:text-sm font-black text-amber-300 px-3 py-1.5 rounded-xl bg-black/40 border border-amber-400/30">
             00:00:00
@@ -620,6 +601,7 @@
           <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
             <button type="button" data-filter="all" class="filter-chip px-3 py-1.5 rounded-xl text-xs font-extrabold liquid-pill-active text-white transition shrink-0">הכל</button>
             <button type="button" data-filter="dropped" class="filter-chip px-3 py-1.5 rounded-xl text-xs font-bold bg-white/10 text-slate-200 hover:bg-white/20 transition shrink-0">ירד המחיר 🔥</button>
+            <button type="button" data-filter="pinned" class="filter-chip px-3 py-1.5 rounded-xl text-xs font-bold bg-white/10 text-slate-200 hover:bg-white/20 transition shrink-0">מועדפים ⭐</button>
             <button type="button" data-filter="multi_store" class="filter-chip px-3 py-1.5 rounded-xl text-xs font-bold bg-white/10 text-slate-200 hover:bg-white/20 transition shrink-0">השוואת חנויות 🏪</button>
             <button type="button" data-filter="variants" class="filter-chip px-3 py-1.5 rounded-xl text-xs font-bold bg-white/10 text-slate-200 hover:bg-white/20 transition shrink-0">עם אפשרויות 🎯</button>
           </div>
@@ -705,31 +687,7 @@
         </div>
       </div>
 
-      <!-- Custom Folders & Collections Filter Bar -->
-      <div class="flex items-center justify-between gap-2 pt-1">
-        <div id="collectionsBar" class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1 flex-1"></div>
-        <button id="manageCollectionsBtn" type="button" title="נהל תיקייה חדשה" class="px-2.5 py-1.5 rounded-xl liquid-glass-soft hover:bg-white/20 text-xs font-extrabold text-cyan-200 shrink-0 border border-white/10 transition">
-          📁 + תיקייה
-        </button>
-      </div>
-
-      <!-- Cart Total Simulator Floating Summary -->
-      <div id="cartSimulatorBox" class="hidden rounded-2xl liquid-glass-soft border border-emerald-400/40 p-3 flex items-center justify-between gap-3 shadow-lg">
-        <div class="flex items-center gap-2">
-          <span class="text-xl">🛒</span>
-          <div>
-            <span class="text-xs font-black text-white">סימולציית עגלת קניות: </span>
-            <span id="cartSimProductsCount" class="text-xs text-slate-300 font-bold">(0 פריטים)</span>
-          </div>
-        </div>
-        <div class="flex items-center gap-3">
-          <div class="text-left">
-            <span id="cartSimTotalPrice" class="text-sm font-black text-emerald-300 font-mono">0 ₪</span>
-            <span id="cartSimTotalSavings" class="text-[10px] text-cyan-300 block font-bold">חיסכון: 0 ₪</span>
-          </div>
-          <button id="clearCartSimBtn" type="button" class="text-slate-400 hover:text-white text-xs px-2 py-1">✕ נקה</button>
-        </div>
-      </div>
+      
 
             <!-- Store Quick-Launcher Filter Carousel -->
       <div id="storeCarouselBar" class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1"></div>
@@ -1223,7 +1181,7 @@
         <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-white/10 text-xs">
           <div class="flex items-center gap-2 flex-wrap">
             <span class="text-slate-300 font-bold">גרסת מערכת:</span>
-            <span id="appVersionHeaderBadge" class="font-mono font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">v3.8.0 PRO</span>
+            <span id="appVersionHeaderBadge" class="font-mono font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">v3.8.1 PRO</span>
             <span id="cloudSyncBadge" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-teal-500/25 text-teal-200 border border-teal-400/30 flex items-center gap-1">☁️ ענן 24/7</span>
             <span class="text-slate-400">בדיקת מחירים אוטומטית הבאה: <span id="nextCheckTimer" class="font-mono font-bold text-cyan-300">--:--</span></span>
             <span class="hidden" id="headerDailyTime">09:00</span>
@@ -1239,7 +1197,7 @@
         <div class="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/15 via-teal-500/15 to-cyan-500/15 border border-emerald-400/30 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div class="space-y-1 text-center sm:text-right">
             <div class="flex items-center gap-2 justify-center sm:justify-start">
-              <span class="text-xs font-black text-emerald-300">📱 גרסת קובץ APK עדכנית: v3.8.0 PRO</span>
+              <span class="text-xs font-black text-emerald-300">📱 גרסת קובץ APK עדכנית: v3.8.1 PRO</span>
               <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 font-mono font-bold">RELEASE</span>
             </div>
             <p class="text-[11px] text-slate-300">הורדת קובץ ההתקנה העדכני (במידה ורוצים להתקין מחדש או על מכשיר נוסף)</p>
@@ -1253,7 +1211,7 @@
               class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl btn-gradient-emerald text-white text-xs font-extrabold flex items-center justify-center gap-2 shadow-lg hover:brightness-110 transition"
             >
               <span>⬇️</span>
-              <span>הורד APK מעודכן v3.8.0 PRO</span>
+              <span>הורד APK מעודכן v3.8.1 PRO</span>
             </a>
           </div>
         </div>
@@ -5765,6 +5723,7 @@
       const filtered = state.products.filter(p => {
         const offers = Array.isArray(p.storeOffers) ? p.storeOffers : [];
         if (state.ui.filter === 'dropped' && !(p.currentPrice < p.initialPrice)) return false;
+        if (state.ui.filter === 'pinned' && !p.pinned) return false;
         if (state.ui.filter === 'multi_store' && offers.length < 2) return false;
         if (state.ui.filter === 'variants' && (!p.SelectedVariant && (!p.variations || p.variations.length <= 1))) return false;
 
@@ -5933,157 +5892,74 @@
           return;
         }
 
-        // Target Price Hit Celebration Ribbon
+        // SPACIOUS GRID CARD (Klarna / Apple Grade Cleanliness)
         const isTargetMet = p.targetPrice && Number(p.currentPrice) <= Number(p.targetPrice);
-        const targetRibbonHtml = isTargetMet
-          ? '<div class="absolute -top-1 -right-1 px-4 py-1 rounded-bl-2xl bg-gradient-to-r from-amber-400 to-amber-600 text-slate-950 font-black text-[10px] shadow-lg flex items-center gap-1 z-20"><span>🎯 יעד המחיר הושג!</span></div>'
-          : '';
 
-        // SPACIOUS GRID CARD
-        card.className = `liquid-glass card-hover cursor-pointer rounded-3xl p-4 sm:p-5 flex flex-col justify-between gap-3.5 relative overflow-hidden transition-all duration-300 ${
+        card.className = `liquid-glass card-hover cursor-pointer rounded-3xl p-4 sm:p-5 flex flex-col justify-between gap-3 relative overflow-hidden transition-all duration-300 ${
           isTargetMet ? 'border-amber-400/90 shadow-2xl ring-2 ring-amber-400/40' : (p.pinned ? 'border-amber-400/80 shadow-xl shadow-amber-950/40 ring-1 ring-amber-400/40' : (isDropped ? 'border-emerald-400/60 shadow-xl shadow-emerald-950/40' : (isMultiStore ? 'border-cyan-400/45 shadow-xl shadow-cyan-950/30' : '')))
         }`;
 
-        const statusBadge = isDropped
-          ? `<span class="px-2.5 py-1 rounded-full text-[11px] font-black bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md shadow-emerald-500/30">🔥 ירד ב-${formatPrice(Math.abs(diff))} (-${pct}%)</span>`
-          : (isMultiStore && highestOfferPrice > bestOffer.currentPrice
-              ? `<span class="px-2.5 py-1 rounded-full text-[11px] font-black bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md">🏆 חיסכון ${formatPrice(highestOfferPrice - bestOffer.currentPrice)}</span>`
-              : `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-white/10 text-slate-200 border border-white/15">מחיר יציב</span>`);
-
-        // For Amazon products: ALWAYS show Free Shipping status & whether tracking is active!
-        const freeShippingPill = isAmazonProduct
-          ? (p.doesNotShipToIsrael
-              ? `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-rose-500/15 border border-rose-400/35 text-rose-200 text-[11px] font-extrabold">
-                   <span>🚫 לא נשלח לישראל</span>
-                 </span>`
-              : (p.freeShippingEligible
-                  ? `<button type="button" data-action="toggle_fs_track" data-id="${p.id}" title="לחץ להפעלה/כיבוי מעקב משלוח חינם" class="prod-action-btn inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/45 text-emerald-200 text-[11px] font-extrabold transition">
-                       <span>✈️ משלוח חינם לישראל</span>
-                       <span class="text-[10px] opacity-85">(${p.trackFreeShipping !== false ? 'מעקב פעיל 🔔' : 'מעקב כבוי'})</span>
-                     </button>`
-                  : `<button type="button" data-action="toggle_fs_track" data-id="${p.id}" title="לחץ להפעלה/כיבוי התראה כשייכנס למשלוח חינם" class="prod-action-btn inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg ${p.trackFreeShipping !== false ? 'bg-cyan-500/15 border-cyan-400/40 text-cyan-200' : 'bg-white/10 border-white/15 text-slate-300'} border text-[11px] font-extrabold hover:bg-cyan-500/25 transition">
-                       <span>📦 ללא משלוח חינם כרגע</span>
-                       <span class="text-[10px] ${p.trackFreeShipping !== false ? 'text-amber-300' : 'opacity-75'}">(${p.trackFreeShipping !== false ? 'במעקב משלוח 🔔' : 'ללא מעקב'})</span>
-                     </button>`))
-          : '';
-
-        const variantPill = p.SelectedVariant
-          ? `<button type="button" data-action="edit" data-id="${p.id}" class="prod-action-btn inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-cyan-500/15 border border-cyan-400/35 text-cyan-200 text-[11px] font-extrabold hover:bg-cyan-500/25 transition">
-               <span>🎯 ${escapeHtml(p.SelectedVariant)}</span>
-             </button>`
-          : '';
-
-        const multiStoreComparisonHtml = isMultiStore ? `
-          <div class="p-2.5 rounded-2xl bg-slate-950/75 border border-cyan-400/30 space-y-1.5">
-            <div class="flex items-center justify-between text-[11px]">
-              <span class="font-extrabold text-cyan-200 flex items-center gap-1">
-                <span>🏪</span>
-                <span>השוואת ${offers.length} חנויות:</span>
-              </span>
-              <button type="button" data-action="add_store" data-id="${p.id}" class="prod-action-btn text-[11px] font-extrabold text-cyan-300 hover:text-cyan-200 underline">
-                + הוסף חנות
-              </button>
-            </div>
-            <div class="space-y-1">
-              ${offers.map((off, idx) => {
-                const isCheapest = idx === 0;
-                const offMeta = getStoreMeta(off.url);
-                return `
-                  <div class="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-xl ${isCheapest ? 'bg-emerald-500/20 border border-emerald-400/40' : 'bg-slate-900/60 border border-slate-800'}">
-                    <button type="button" data-action="filter_store" data-store="${escapeHtml(off.store)}" title="סנן את כל המוצרים מ-${escapeHtml(off.store)}" class="prod-action-btn flex items-center gap-1.5 min-w-0 hover:underline text-right">
-                      <img src="${escapeHtml(off.favicon || offMeta.favicon)}" alt="" class="w-4 h-4 rounded-sm object-contain shrink-0" onerror="this.style.display='none'" />
-                      <span class="text-xs font-extrabold ${isCheapest ? 'text-emerald-200' : 'text-slate-200'} truncate">${escapeHtml(off.store)}</span>
-                      ${isCheapest ? `<span class="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-emerald-400 text-slate-950 shrink-0">הכי זול 🏆</span>` : ''}
-                    </button>
-                    <div class="flex items-center gap-2 shrink-0">
-                      <span class="text-xs font-black tabular-nums ${isCheapest ? 'text-emerald-300' : 'text-white'}">${formatPrice(off.currentPrice)}</span>
-                      <a href="${escapeHtml(off.url)}" target="_blank" rel="noopener noreferrer" class="prod-external-link text-[11px] font-extrabold px-2 py-0.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 border border-cyan-400/30 transition">
-                        לחנות ↗
-                      </a>
-                      <button type="button" data-action="remove_offer" data-id="${p.id}" data-offer-url="${escapeHtml(off.url)}" title="הסר חנות זו מהקובייה" class="prod-action-btn text-[11px] text-slate-400 hover:text-rose-300 px-1">
-                        ✕
-                      </button>
-                    </div>
-                  </div>
-                `;
-              }).join('')}
-            </div>
-          </div>
-        ` : '';
-
-        const primaryStoreName = isMultiStore ? bestOffer.store : p.store;
-        const isThisStoreFiltered = state.ui.storeFilter === primaryStoreName;
-
         card.innerHTML = `
-          ${targetRibbonHtml}
+          ${isTargetMet ? '<div class="absolute -top-1 -right-1 px-3.5 py-0.5 rounded-bl-2xl bg-gradient-to-r from-amber-400 to-amber-600 text-slate-950 font-black text-[10px] shadow-lg flex items-center gap-1 z-20"><span>🎯 יעד הושג!</span></div>' : ''}
+          
           <div class="space-y-3">
-            <!-- Top Store Bar & Deal Quality Badge + Pin Toggle -->
+            <!-- Header Row: Store Pill on Right, Deal Badge & Favorite Star on Left -->
             <div class="flex items-center justify-between gap-2">
-              <div class="flex items-center gap-1.5 min-w-0">
-                <input type="checkbox" data-action="toggle_cart_sim" data-id="${p.id}" ${state.selectedCartIds && state.selectedCartIds.has(p.id) ? 'checked' : ''} title="הוסף לסימולציית עגלת קניות" class="w-4 h-4 accent-emerald-400 rounded cursor-pointer shrink-0" />
-                <button type="button" data-action="filter_store" data-store="${escapeHtml(primaryStoreName)}" title="לחץ לסינון כל המוצרים מ-${escapeHtml(primaryStoreName)}" class="prod-action-btn flex items-center gap-1.5 px-2.5 py-1 rounded-xl ${isThisStoreFiltered ? 'bg-cyan-500/30 border-cyan-400 text-cyan-100 shadow-md' : 'bg-slate-800/80 hover:bg-cyan-500/20 border-slate-700/80 hover:border-cyan-400/40 text-slate-200'} border transition min-w-0">
-                  <img src="${escapeHtml(storeMeta.favicon)}" alt="" class="w-3.5 h-3.5 rounded-sm object-contain shrink-0" onerror="this.style.display='none'" />
-                  <span class="text-[11px] font-extrabold truncate">${escapeHtml(isMultiStore ? `${offers.length} חנויות (${bestOffer.store})` : p.store)}</span>
-                </button>
+              <button type="button" data-action="filter_store" data-store="${escapeHtml(primaryStoreName)}" title="סנן מוצרים מחנות זו" class="prod-action-btn flex items-center gap-1.5 px-2.5 py-1 rounded-xl ${isThisStoreFiltered ? 'bg-cyan-500/30 border-cyan-400 text-cyan-100 shadow-md' : 'bg-slate-800/80 hover:bg-cyan-500/20 border-slate-700/80 hover:border-cyan-400/40 text-slate-200'} border transition min-w-0">
+                <img src="${escapeHtml(storeMeta.favicon)}" alt="" class="w-3.5 h-3.5 rounded-sm object-contain shrink-0" onerror="this.style.display='none'" />
+                <span class="text-[11px] font-extrabold truncate">${escapeHtml(isMultiStore ? `${offers.length} חנויות (${bestOffer.store})` : p.store)}</span>
+              </button>
+
+              <div class="flex items-center gap-1.5 shrink-0">
+                ${statusBadge}
                 <button type="button" data-action="toggle_pin" data-id="${p.id}" title="${p.pinned ? 'בטל נעיצה' : 'נעץ מוצר בראש'}" class="prod-action-btn w-7 h-7 rounded-xl ${p.pinned ? 'bg-amber-400/25 text-amber-300 border border-amber-400/50 shadow-sm' : 'liquid-glass-soft text-slate-400 hover:text-amber-300'} text-xs flex items-center justify-center shrink-0 transition">
                   ⭐
                 </button>
               </div>
-              <div class="flex items-center gap-1.5 shrink-0">
-                <span class="text-[10px] px-2 py-0.5 rounded-full ${deal.colorClass} font-bold">${deal.label}</span>
-                ${statusBadge}
-              </div>
             </div>
 
-            <!-- Product Image + Title + Price Row -->
+            <!-- Main Body: High-Quality Thumbnail + Title + Meta Tags + Big Price -->
             <div class="flex items-center gap-3.5">
-              <div class="relative w-20 h-20 rounded-2xl overflow-hidden product-stage border border-white/15 shrink-0 p-1.5 flex items-center justify-center bg-slate-950/80">
+              <div class="relative w-20 h-20 sm:w-22 sm:h-22 rounded-2xl overflow-hidden product-stage border border-white/15 shrink-0 p-1.5 flex items-center justify-center bg-slate-950/80">
                 <img src="${escapeHtml(prodImg)}" alt="${escapeHtml(p.title)}" class="w-full h-full object-contain rounded-xl max-w-full h-auto" />
               </div>
               <div class="space-y-1.5 flex-1 min-w-0">
                 <h3 class="text-sm sm:text-base font-black text-white leading-snug line-clamp-2 hover:text-cyan-300 transition">${escapeHtml(p.title)}</h3>
-                <div class="flex flex-wrap items-center gap-1.5">
+                
+                <div class="flex flex-wrap items-center gap-1">
                   ${freeShippingPill}
                   ${variantPill}
+                  <span class="text-[10px] px-2 py-0.5 rounded-full ${deal.colorClass} font-bold">${deal.label}</span>
+                </div>
+
+                <div class="pt-0.5 flex items-baseline gap-2.5 flex-wrap">
+                  <span class="text-lg sm:text-xl font-black tabular-nums ${isDropped ? 'text-emerald-300' : 'text-white'}">${formatPrice(p.currentPrice)}</span>
+                  ${isDropped ? `<span class="text-xs font-bold text-slate-400 line-through tabular-nums">${formatPrice(p.initialPrice)}</span>` : `<span class="text-[11px] text-slate-400 font-semibold">התחלתי: ${formatPrice(p.initialPrice)}</span>`}
                   ${p.targetPrice ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-amber-400/20 text-amber-200 border border-amber-300/30">יעד: ${formatPrice(p.targetPrice)}</span>` : ''}
                 </div>
-                <div class="pt-0.5 flex items-center justify-between gap-2">
-                  <div class="flex items-baseline gap-2.5 flex-wrap">
-                    ${state.settings.privacyMode ? '<span class="text-lg sm:text-xl font-black text-cyan-200">₪••••</span>' : `<span class="text-lg sm:text-xl font-black tabular-nums ${isDropped ? 'text-emerald-300' : 'text-white'}">${formatPrice(p.currentPrice)}</span>`}
-                    ${isDropped ? `<span class="text-xs font-bold text-slate-400 line-through tabular-nums">${formatPrice(p.initialPrice)}</span>` : `<span class="text-[11px] text-slate-400 font-semibold">התחיל ב-${formatPrice(p.initialPrice)}</span>`}
-                    ${(p.lowestPrice && p.lowestPrice < p.currentPrice) ? `<span class="text-[11px] text-cyan-300 font-bold">שפל: ${formatPrice(p.lowestPrice)}</span>` : ''}
-                  </div>
-                  ${createMiniSparklineSvg(p.history, isDropped)}
-                </div>
-                ${p.customNote ? `<div class="pt-0.5"><span class="px-2 py-0.5 rounded-lg bg-purple-500/20 text-purple-200 border border-purple-400/30 text-[10px] font-bold">📝 ${escapeHtml(p.customNote)}</span></div>` : ''}
               </div>
             </div>
 
             ${multiStoreComparisonHtml}
           </div>
 
-          <!-- Clean Minimal Card Footer -->
+          <!-- Clean Minimal Footer: 3 Simple Button Groups (No Overcrowding!) -->
           <div class="pt-2.5 border-t border-slate-800/80 flex items-center justify-between gap-2">
             <div class="flex items-center gap-1.5">
-              <button type="button" data-action="mark_purchased" data-id="${p.id}" title="סמן מוצר זה כנרכש בהצלחה" class="prod-action-btn py-1.5 px-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/30 text-emerald-200 text-xs font-bold transition flex items-center gap-1">
-                <span>🛍️</span>
-              </button>
               <button type="button" data-action="check" data-id="${p.id}" class="prod-action-btn py-1.5 px-3 rounded-xl liquid-glass-soft hover:bg-cyan-500/20 hover:text-cyan-200 text-white text-xs font-extrabold transition flex items-center gap-1">
                 <span>🔄</span>
                 <span>בדוק</span>
               </button>
-              <button type="button" data-action="share_card" data-id="${p.id}" title="שתף כרטיס דיל גרפי מעוצב" class="prod-action-btn py-1.5 px-2.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400/35 text-purple-200 text-xs font-bold transition flex items-center gap-1">
-                <span>🎨</span>
-                <span class="hidden sm:inline">שתף דיל</span>
-              </button>
-              <a href="${escapeHtml(bestOffer.url || p.url)}" target="_blank" rel="noopener noreferrer" class="prod-external-link py-1.5 px-3 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-400/30 text-cyan-200 text-xs font-extrabold transition flex items-center gap-1">
-                <span>לחנות</span>
+              <a href="${escapeHtml(bestOffer.url || p.url)}" target="_blank" rel="noopener noreferrer" class="prod-external-link py-1.5 px-3.5 rounded-xl btn-gradient-primary text-slate-950 font-black text-xs transition flex items-center gap-1 shadow-md">
+                <span>פתח בחנות</span>
                 <span>↗</span>
               </a>
-              ${!isMultiStore ? `<button type="button" data-action="add_store" data-id="${p.id}" title="השווה מחיר מול חנות נוספת" class="prod-action-btn py-1.5 px-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-[11px] font-bold transition">+ חנות</button>` : ''}
             </div>
 
             <div class="flex items-center gap-1">
+              <button type="button" data-action="share_card" data-id="${p.id}" title="שתף כרטיס דיל גרפי מעוצב" class="prod-action-btn w-8 h-8 rounded-xl liquid-glass-soft hover:bg-purple-500/30 text-purple-300 text-xs flex items-center justify-center shrink-0 transition">
+                🎨
+              </button>
               <button type="button" data-action="edit" data-id="${p.id}" title="ערוך מוצר" class="prod-action-btn w-8 h-8 rounded-xl liquid-glass-soft hover:bg-white/20 text-white text-xs flex items-center justify-center shrink-0 transition">
                 ✏️
               </button>
@@ -7808,40 +7684,7 @@
     ↑
   </button>
 
-  <!-- Floating Batch Actions Bar (Multi-select) -->
-  <div id="batchActionBar" class="hidden fixed bottom-16 sm:bottom-6 left-1/2 -translate-x-1/2 z-40 px-5 py-3 rounded-2xl bg-slate-950/95 border border-cyan-400/50 shadow-2xl flex items-center gap-3 backdrop-blur-xl">
-    <span id="batchSelectedCount" class="text-xs font-black text-cyan-300">נבחרו 0 מוצרים</span>
-    <div class="h-4 w-[1px] bg-white/20"></div>
-    <button id="batchCheckBtn" type="button" class="px-3 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 text-xs font-extrabold transition">🔄 בדוק הכל</button>
-    <button id="batchArchiveBtn" type="button" class="px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 text-xs font-extrabold transition">🛍️ סמן כנרכשו</button>
-    <button id="batchDeleteBtn" type="button" class="px-3 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 text-xs font-extrabold transition">🗑️ מחק</button>
-    <button id="batchCancelBtn" type="button" class="text-slate-400 hover:text-white text-xs px-1">✕</button>
-  </div>
-
-
-  <!-- Bulk URL Import Modal -->
-  <div id="bulkImportModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-    <div class="liquid-glass rounded-3xl max-w-lg w-full p-5 sm:p-6 space-y-4 border border-purple-400/40">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <span class="text-2xl">📥</span>
-          <h3 class="text-base font-black text-white">יבוא קישורים מרוכז (Bulk Import)</h3>
-        </div>
-        <button id="closeBulkImportModalBtn" type="button" class="text-slate-400 hover:text-white text-base">✕</button>
-      </div>
-      <p class="text-xs text-slate-300">
-        הדבק מספר קישורים למוצרים (קישור אחד בכל שורה). האפליקציה תסרוק אותם בזה אחר זה ותוסיף אותם למעקב:
-      </p>
-      <textarea id="bulkImportTextarea" rows="6" placeholder="https://ksp.co.il/...
-https://www.amazon.com/...
-https://myrabbit.co.il/..." class="w-full p-3 rounded-2xl liquid-glass-input text-xs text-white font-mono dir-ltr outline-none"></textarea>
-      <div class="flex items-center justify-between pt-1">
-        <span id="bulkImportStatusText" class="text-xs text-cyan-300 font-bold"></span>
-        <div class="flex items-center gap-2">
-          <button id="cancelBulkImportBtn" type="button" class="px-4 py-2 rounded-xl liquid-glass-soft text-slate-300 text-xs font-bold">ביטול</button>
-          <button id="startBulkImportBtn" type="button" class="px-5 py-2 rounded-xl btn-gradient-primary text-slate-950 font-black text-xs shadow-md">התחל סריקה מרוכזת 🚀</button>
-        </div>
-      </div>
+  
     </div>
   </div>
 
