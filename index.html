@@ -1194,14 +1194,18 @@
 
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label for="modalCurrentPrice" class="block text-xs font-bold text-slate-200 mb-1">מחיר נוכחי (₪):</label>
-            <input id="modalCurrentPrice" type="number" step="0.01" min="0.01" required class="w-full px-3.5 py-2.5 rounded-2xl liquid-glass-input text-base font-black text-emerald-300 outline-none" />
-            <p class="text-[10px] text-slate-400 mt-1">מחיר שזוהה אוטומטית (ניתן לעריכה לדיוק)</p>
+            <label class="block text-xs font-bold text-slate-200 mb-1">מחיר נוכחי שנמצא:</label>
+            <div class="w-full px-3.5 py-2.5 rounded-2xl liquid-glass-input text-base font-black text-emerald-300 flex items-center justify-between border border-emerald-500/30 bg-emerald-950/20">
+              <span id="modalCurrentPriceDisplay" class="tabular-nums font-mono">--</span>
+              <span class="text-[11px] font-bold text-emerald-400">₪ חי מהאתר</span>
+            </div>
+            <input id="modalCurrentPrice" type="hidden" value="" />
+            <p class="text-[10px] text-slate-400 mt-1">נשלף אוטומטית ומסונכרן בלייב עם החנות</p>
           </div>
           <div>
-            <label for="modalTargetPrice" class="block text-xs font-bold text-slate-200 mb-1">מחיר יעד (אופציונלי, ₪):</label>
+            <label for="modalTargetPrice" class="block text-xs font-bold text-slate-200 mb-1">מחיר יעד להתראה (אופציונלי):</label>
             <input id="modalTargetPrice" type="number" step="0.01" min="0" placeholder="התראה בכל ירידה" class="w-full px-3.5 py-2.5 rounded-2xl liquid-glass-input text-sm text-white outline-none" />
-            <p class="text-[10px] text-slate-400 mt-1">השאר ריק לקבלת התראה בכל ירידה</p>
+            <p class="text-[10px] text-slate-400 mt-1">קבל התראה כשהמחיר יורד לסכום זה</p>
           </div>
         </div>
 
@@ -3525,7 +3529,12 @@
       document.getElementById('modalTitle').textContent = existingId ? 'עריכת מוצר והחלפת אפשרות' : 'אישור מוצר ובחירת אפשרות';
       document.getElementById('modalProductName').value = data.title || '';
       document.getElementById('modalProductUrl').value = data.url || '';
-      document.getElementById('modalCurrentPrice').value = data.price !== undefined && data.price !== '' ? data.price : '';
+      const rawPrice = data.price !== undefined && data.price !== '' ? data.price : '';
+      document.getElementById('modalCurrentPrice').value = rawPrice;
+      const curDisplayEl = document.getElementById('modalCurrentPriceDisplay');
+      if (curDisplayEl) {
+        curDisplayEl.textContent = rawPrice ? formatPrice(rawPrice).replace('₪', '').trim() : '--';
+      }
       document.getElementById('modalTargetPrice').value = data.targetPrice || '';
       const fsBox = document.getElementById('modalFreeShippingBox');
       const fsCheck = document.getElementById('modalTrackFreeShipping');
@@ -3641,6 +3650,10 @@
         btn.addEventListener('click', () => {
           document.getElementById('modalSelectedVariantText').value = v.label;
           document.getElementById('modalCurrentPrice').value = v.price;
+          const curDisplayEl = document.getElementById('modalCurrentPriceDisplay');
+          if (curDisplayEl) {
+            curDisplayEl.textContent = v.price ? formatPrice(v.price).replace('₪', '').trim() : '--';
+          }
           renderModalVariationsList();
         });
         listEl.appendChild(btn);
