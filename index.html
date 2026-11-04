@@ -2,8 +2,8 @@
 <html lang="he" dir="rtl">
 <head>
   <script>
-    window.__APP_VERSION__ = "3.8.2";
-    window.__BUILD_TIMESTAMP__ = 1762240000;
+    window.__APP_VERSION__ = "4.0.0";
+    window.__BUILD_TIMESTAMP__ = 1762280000;
     window.__OTA_RELEASE_NOTES__ = "v3.6.2: תיקון דיוק מחירים מעל 1,000 ש\"ח (תיקון קיצוץ 9685 ל-968), תיקון כיוון שעון 24H (מ-00:09 ל-09:00), ביטול התראות קופצות בהחלפת ערכת נושא, שיפור תהליך אישור הרשאות פוש, והבהרת שדות המעקב.";
 
     (function bootstrapTheme() {
@@ -369,6 +369,14 @@
   </style>
 </head>
 <body class="flex flex-col pb-24 sm:pb-10 selection:bg-cyan-500 selection:text-slate-950">
+  <!-- Scroll Progress Indicator (v4.0.0 ULTRA) -->
+  <div id="scrollProgressBar" class="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-400 via-emerald-400 to-indigo-500 z-50 transition-all duration-150" style="width: 0%;"></div>
+
+  <!-- Non-Intrusive Offline Status Bar -->
+  <div id="offlineStatusBar" class="hidden fixed top-2.5 left-1/2 -translate-x-1/2 z-50 px-4 py-1.5 rounded-full bg-amber-500 text-slate-950 font-black text-xs shadow-xl backdrop-blur-md flex items-center gap-2 border border-amber-300">
+    <span>📡</span>
+    <span>מצב לא מקוון — מציג נתונים מהמטמון המקומי</span>
+  </div>
 
   <!-- Animated Colorful Aurora Background -->
   <div class="aurora-bg">
@@ -393,7 +401,7 @@
             <h1 class="text-xl sm:text-2xl font-black tracking-tight bg-gradient-to-r from-white via-cyan-100 to-emerald-300 bg-clip-text text-transparent whitespace-nowrap">
               PriceRadar
             </h1>
-            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 tracking-wider">v3.8.2 PRO</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 tracking-wider">v4.0.0 ULTRA</span>
             <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot shrink-0" title="מעקב מחירים פעיל"></span>
           </div>
           <p class="text-[11px] text-slate-300/85 font-medium">מעקב מחירים חכם 24/7</p>
@@ -403,6 +411,9 @@
             <!-- Clean Minimal Header Controls (Spacious & Uncluttered) -->
       <div class="flex items-center gap-2 shrink-0">
         <!-- Sun/Moon Theme Toggle Button -->
+        <button id="openCommandPaletteBtn" type="button" title="חיפוש ופעולות מהירות (Ctrl+K / ⌘K)" class="w-9 h-9 rounded-xl liquid-glass-soft hover:bg-white/15 flex items-center justify-center text-sm text-cyan-200 transition">
+          <span class="font-mono font-bold">⌘K</span>
+        </button>
         <button id="themeToggleBtn" type="button" title="החלף ערכת נושא (אולד / בהיר)" class="w-9 h-9 rounded-xl liquid-glass-soft hover:bg-white/15 flex items-center justify-center text-base transition">
           <span id="themeToggleIcon">☀️</span>
         </button>
@@ -577,6 +588,8 @@
             <button type="button" data-filter="dropped" class="filter-chip px-3 py-1.5 rounded-xl text-xs font-bold bg-white/10 text-slate-200 hover:bg-white/20 transition shrink-0">ירד המחיר 🔥</button>
             <button type="button" data-filter="pinned" class="filter-chip px-3 py-1.5 rounded-xl text-xs font-bold bg-white/10 text-slate-200 hover:bg-white/20 transition shrink-0">מועדפים ⭐</button>
             <button type="button" data-filter="purchased" class="filter-chip px-3 py-1.5 rounded-xl text-xs font-bold bg-white/10 text-slate-200 hover:bg-white/20 transition shrink-0">נרכשו 🛍️</button>
+            <button type="button" data-filter="all_time_low" class="filter-chip px-3 py-1.5 rounded-xl text-xs font-bold bg-white/10 text-slate-200 hover:bg-white/20 transition shrink-0">שפל היסטורי 🏆</button>
+            <button type="button" data-filter="near_target" class="filter-chip px-3 py-1.5 rounded-xl text-xs font-bold bg-white/10 text-slate-200 hover:bg-white/20 transition shrink-0">קרוב ליעד 🎯</button>
             <button type="button" data-filter="multi_store" class="filter-chip px-3 py-1.5 rounded-xl text-xs font-bold bg-white/10 text-slate-200 hover:bg-white/20 transition shrink-0">השוואת חנויות 🏪</button>
             <button type="button" data-filter="variants" class="filter-chip px-3 py-1.5 rounded-xl text-xs font-bold bg-white/10 text-slate-200 hover:bg-white/20 transition shrink-0">עם אפשרויות 🎯</button>
           </div>
@@ -622,6 +635,9 @@
             <option value="savings_desc" class="bg-slate-900">↕️ החיסכון הגדול</option>
             <option value="store_az" class="bg-slate-900">↕️ לפי חנות (א-ת)</option>
             <option value="category" class="bg-slate-900">↕️ לפי תחום</option>
+            <option value="drop_pct_desc" class="bg-slate-900">↕️ אחוז ירידה (% הגדול ביותר)</option>
+            <option value="closest_target" class="bg-slate-900">↕️ הכי קרוב ליעד (🎯)</option>
+            <option value="title_az" class="bg-slate-900">↕️ שם מוצר (א-ת)</option>
           </select>
         </div>
       </div>
@@ -1137,7 +1153,7 @@
         <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-white/10 text-xs">
           <div class="flex items-center gap-2 flex-wrap">
             <span class="text-slate-300 font-bold">גרסת מערכת:</span>
-            <span id="appVersionHeaderBadge" class="font-mono font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">v3.8.2 PRO</span>
+            <span id="appVersionHeaderBadge" class="font-mono font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">v4.0.0 ULTRA</span>
             <span id="cloudSyncBadge" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-teal-500/25 text-teal-200 border border-teal-400/30 flex items-center gap-1">☁️ ענן 24/7</span>
             <span class="text-slate-400">בדיקת מחירים אוטומטית הבאה: <span id="nextCheckTimer" class="font-mono font-bold text-cyan-300">--:--</span></span>
             <span class="hidden" id="headerDailyTime">09:00</span>
@@ -1147,7 +1163,7 @@
           <div class="flex items-center gap-2">
             <button id="openChangelogBtn" type="button" class="px-3 py-1.5 rounded-xl liquid-glass-soft hover:bg-white/15 text-amber-200 text-xs font-bold transition flex items-center gap-1 border border-amber-400/30">
               <span>✨</span>
-              <span>מה חדש ב-v3.8.2?</span>
+              <span>מה חדש ב-v4.0.0 ULTRA?</span>
             </button>
             <button id="openOnboardingAgainBtn" type="button" class="px-3 py-1.5 rounded-xl liquid-glass-soft hover:bg-white/15 text-cyan-200 text-xs font-bold transition">
               📖 מדריך הגדרות
@@ -1159,7 +1175,7 @@
         <div class="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/15 via-teal-500/15 to-cyan-500/15 border border-emerald-400/30 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div class="space-y-1 text-center sm:text-right">
             <div class="flex items-center gap-2 justify-center sm:justify-start">
-              <span class="text-xs font-black text-emerald-300">📱 גרסת קובץ APK עדכנית: v3.8.2 PRO</span>
+              <span class="text-xs font-black text-emerald-300">📱 גרסת קובץ APK עדכנית: v4.0.0 ULTRA</span>
               <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 font-mono font-bold">RELEASE</span>
             </div>
             <p class="text-[11px] text-slate-300">הורדת קובץ ההתקנה העדכני (במידה ורוצים להתקין מחדש או על מכשיר נוסף)</p>
@@ -1173,7 +1189,7 @@
               class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl btn-gradient-emerald text-white text-xs font-extrabold flex items-center justify-center gap-2 shadow-lg hover:brightness-110 transition"
             >
               <span>⬇️</span>
-              <span>הורד APK מעודכן v3.8.2 PRO</span>
+              <span>הורד APK מעודכן v4.0.0 ULTRA</span>
             </a>
           </div>
         </div>
@@ -1623,6 +1639,39 @@
         </div>
       </div>
 
+      <!-- Visual Price Range Distribution Bar (v4.0.0 ULTRA) -->
+      <div id="detailsPriceDistributionBar" class="p-3.5 rounded-2xl liquid-glass-soft border border-white/10 space-y-2">
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-slate-300 font-bold flex items-center gap-1.5">
+            <span>📊</span>
+            <span>מיקום המחיר ביחס לטווח ההיסטורי:</span>
+          </span>
+          <span id="detailsDealScoreBadge" class="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-emerald-500/25 text-emerald-300 border border-emerald-400/40">דיל מעולה</span>
+        </div>
+        <div class="relative w-full h-3 bg-slate-900 rounded-full overflow-hidden p-0.5 border border-white/10">
+          <div id="detailsPriceGaugeFill" class="h-full rounded-full bg-gradient-to-r from-emerald-400 via-cyan-400 to-rose-400 transition-all duration-500" style="width: 50%;"></div>
+        </div>
+        <div class="flex items-center justify-between text-[10px] text-slate-400 font-mono">
+          <span>שפל: <b id="detailsGaugeMin" class="text-emerald-300">₪--</b></span>
+          <span>מקסימום: <b id="detailsGaugeMax" class="text-rose-300">₪--</b></span>
+        </div>
+      </div>
+
+      <!-- Eilat Duty-Free (17% VAT) Live Switch & Calculation (v4.0.0 ULTRA) -->
+      <div id="detailsEilatVatBox" class="p-3.5 rounded-2xl bg-gradient-to-r from-teal-950/60 via-slate-900/80 to-emerald-950/50 border border-teal-400/30 flex items-center justify-between gap-3 text-xs">
+        <div class="space-y-0.5">
+          <div class="flex items-center gap-1.5 font-bold text-teal-200">
+            <span>🏖️</span>
+            <span>חישוב מחיר פטור ממע"מ אילת (17% הנחה)</span>
+          </div>
+          <p id="detailsEilatCalculationText" class="text-[11px] text-slate-300">חיסכון נוסף של ₪0 בקנייה באילת</p>
+        </div>
+        <div class="text-left shrink-0">
+          <span class="text-[10px] text-slate-400 block">מחיר באילת:</span>
+          <span id="detailsEilatPriceValue" class="text-sm sm:text-base font-black text-teal-300 font-mono">₪--</span>
+        </div>
+      </div>
+
       <!-- Multi-Store Offers Comparison Table inside Details -->
       <div id="detailsStoresSection" class="space-y-2">
         <div class="flex items-center justify-between">
@@ -1661,6 +1710,10 @@
           <button id="detailsShareCardBtn" type="button" class="py-2.5 px-3.5 rounded-2xl bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400/40 text-purple-200 text-xs font-extrabold transition flex items-center gap-1.5">
             <span>🎨</span>
             <span>שתף כרטיס דיל</span>
+          </button>
+          <button id="detailsWhatsAppShareBtn" type="button" class="py-2.5 px-3 rounded-2xl bg-emerald-600/25 hover:bg-emerald-600/40 border border-emerald-400/40 text-emerald-200 text-xs font-extrabold transition flex items-center gap-1" title="שתף דיל בוואטסאפ">
+            <span>💬</span>
+            <span>וואטסאפ</span>
           </button>
           <button id="detailsMarkPurchasedBtn" type="button" class="py-2.5 px-3.5 rounded-2xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/40 text-emerald-200 text-xs font-extrabold transition flex items-center gap-1.5">
             <span>🛍️</span>
@@ -2500,27 +2553,37 @@
       };
     }
 
-    // Sparkline SVG Builder
-    function createMiniSparklineSvg(history, isDropped) {
+    // Enhanced Sparkline SVG Builder with Gradient Area & Glowing Tip (v4.0.0 ULTRA)
+    function createMiniSparklineSvg(history, isDropped, width = 64, height = 22) {
       if (!Array.isArray(history) || history.length < 2) return '';
       const prices = history.map(h => Number(h.price) || 0).filter(p => p > 0);
       if (prices.length < 2) return '';
       const min = Math.min(...prices);
       const max = Math.max(...prices);
       const range = (max - min) || 1;
-      const width = 56;
-      const height = 22;
       const step = width / (prices.length - 1);
-      const points = prices.map((pr, idx) => {
+      const coords = prices.map((pr, idx) => {
         const x = Math.round(idx * step);
         const y = Math.round(height - ((pr - min) / range) * (height - 6) - 3);
-        return `${x},${y}`;
-      }).join(' ');
-
+        return { x, y };
+      });
+      const pointsStr = coords.map(c => `${c.x},${c.y}`).join(' ');
+      const lastCoord = coords[coords.length - 1];
+      const areaPoints = `${coords[0].x},${height} ` + pointsStr + ` ${lastCoord.x},${height}`;
       const strokeColor = isDropped ? '#34d399' : '#06b6d4';
+      const gradId = 'spk_' + Math.random().toString(36).substr(2, 6);
+
       return `
-        <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" class="shrink-0 overflow-visible opacity-90" title="מגמת מחיר">
-          <polyline fill="none" stroke="${strokeColor}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" points="${points}" />
+        <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" class="shrink-0 overflow-visible opacity-90" title="מגמת מחיר היסטורית">
+          <defs>
+            <linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="${strokeColor}" stop-opacity="0.3"/>
+              <stop offset="100%" stop-color="${strokeColor}" stop-opacity="0.0"/>
+            </linearGradient>
+          </defs>
+          <polygon fill="url(#${gradId})" points="${areaPoints}" />
+          <polyline fill="none" stroke="${strokeColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="${pointsStr}" />
+          <circle cx="${lastCoord.x}" cy="${lastCoord.y}" r="2.5" fill="${strokeColor}" />
         </svg>
       `;
     }
@@ -2890,7 +2953,8 @@
     // =========================================================================
     // TOAST & DIALOG HELPERS
     // =========================================================================
-    function showToast(title, message, type = 'info') {
+    // Interactive Toast Engine with Undo (v4.0.0 ULTRA)
+    function showToast(title, message, type = 'info', undoAction = null) {
       const container = document.getElementById('toastContainer');
       if (!container) return;
       const styles = {
@@ -2905,20 +2969,30 @@
       toast.className = `pointer-events-auto liquid-glass rounded-2xl border p-4 shadow-2xl transition-all duration-300 ${styles[type] || styles.info}`;
       toast.innerHTML = `
         <div class="flex items-start justify-between gap-2.5">
-          <div class="flex items-start gap-2.5">
+          <div class="flex items-start gap-2.5 flex-1 min-w-0">
             <span class="text-lg">${icons[type] || '✨'}</span>
-            <div>
+            <div class="flex-1 min-w-0">
               <p class="text-xs font-extrabold text-white">${escapeHtml(title)}</p>
               <p class="text-xs text-slate-200 mt-0.5 leading-relaxed">${escapeHtml(message)}</p>
             </div>
           </div>
-          <button type="button" class="text-slate-400 hover:text-white text-xs px-1">✕</button>
+          <div class="flex items-center gap-1.5 shrink-0">
+            ${undoAction ? '<button type="button" class="toast-undo-btn px-2.5 py-1 rounded-xl bg-cyan-500/25 hover:bg-cyan-500/40 text-cyan-200 border border-cyan-400/50 text-xs font-black transition">בטל ↩️</button>' : ''}
+            <button type="button" class="toast-close-btn text-slate-400 hover:text-white text-xs px-1">✕</button>
+          </div>
         </div>
       `;
-      const closeBtn = toast.querySelector('button');
-      if (closeBtn) closeBtn.addEventListener('click', () => toast.remove());
+      const undoBtn = toast.querySelector('.toast-undo-btn');
+      if (undoBtn && undoAction) {
+        undoBtn.onclick = () => {
+          try { undoAction(); } catch (e) {}
+          toast.remove();
+        };
+      }
+      const closeBtn = toast.querySelector('.toast-close-btn');
+      if (closeBtn) closeBtn.onclick = () => toast.remove();
       container.prepend(toast);
-      setTimeout(() => { if (toast.parentNode) toast.remove(); }, 6500);
+      setTimeout(() => { if (toast.parentNode) toast.remove(); }, undoAction ? 8500 : 6500);
     }
 
     function openConfirmModal(title, message, onConfirm) {
@@ -4862,6 +4936,41 @@
       document.getElementById('detailsLowestPrice').textContent = formatPrice(p.lowestPrice || p.currentPrice);
       document.getElementById('detailsTargetPrice').textContent = p.targetPrice ? formatPrice(p.targetPrice) : 'כל ירידה 🔔';
       document.getElementById('detailsLastChecked').textContent = `בדיקה אחרונה: ${p.lastChecked || 'כעת'}`;
+      // Price Distribution Gauge & Range (v4.0.0 ULTRA)
+      const histPrices = Array.isArray(p.history) ? p.history.map(h => Number(h.price) || 0).filter(x => x > 0) : [];
+      histPrices.push(Number(p.currentPrice));
+      if (p.initialPrice) histPrices.push(Number(p.initialPrice));
+      if (p.lowestPrice) histPrices.push(Number(p.lowestPrice));
+      const minHist = Math.min(...histPrices);
+      const maxHist = Math.max(...histPrices);
+      const rangeHist = (maxHist - minHist) || 1;
+      const currPct = Math.min(100, Math.max(0, Math.round(((p.currentPrice - minHist) / rangeHist) * 100)));
+
+      const gaugeFill = document.getElementById('detailsPriceGaugeFill');
+      if (gaugeFill) gaugeFill.style.width = `${currPct}%`;
+      const gMin = document.getElementById('detailsGaugeMin');
+      if (gMin) gMin.textContent = formatPrice(minHist);
+      const gMax = document.getElementById('detailsGaugeMax');
+      if (gMax) gMax.textContent = formatPrice(maxHist);
+
+      // Eilat VAT Calculation (v4.0.0 ULTRA)
+      const eilatValEl = document.getElementById('detailsEilatPriceValue');
+      const eilatTextEl = document.getElementById('detailsEilatCalculationText');
+      if (eilatValEl && eilatTextEl) {
+        const eilatPrice = Math.round((p.currentPrice / 1.17) * 100) / 100;
+        const eilatSav = Math.round((p.currentPrice - eilatPrice) * 100) / 100;
+        eilatValEl.textContent = formatPrice(eilatPrice);
+        eilatTextEl.textContent = `חיסכון נוסף של ${formatPrice(eilatSav)} בקנייה באילת`;
+      }
+
+      // WhatsApp Direct Share (v4.0.0 ULTRA)
+      const waBtn = document.getElementById('detailsWhatsAppShareBtn');
+      if (waBtn) {
+        waBtn.onclick = () => {
+          const text = `מצאתי דיל ב-PriceRadar! 🔥\n${p.title}\nמחיר כעת: ${formatPrice(p.currentPrice)}${isDropped ? ` (ירד מ-${formatPrice(p.initialPrice)})` : ''}\nקישור: ${bestOffer.url || p.url}`;
+          window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+        };
+      }
 
       // Stores Comparison List
       const storesListEl = document.getElementById('detailsStoresList');
@@ -5582,6 +5691,15 @@
         if (state.ui.filter !== 'purchased' && p.isPurchased) return false; // Hide purchased from general watchlist unless filter is 'purchased'
         if (state.ui.filter === 'multi_store' && offers.length < 2) return false;
         if (state.ui.filter === 'variants' && (!p.SelectedVariant && (!p.variations || p.variations.length <= 1))) return false;
+        if (state.ui.filter === 'all_time_low') {
+          const isAtl = p.lowestPrice && Number(p.currentPrice) <= Number(p.lowestPrice) && Number(p.currentPrice) < Number(p.initialPrice);
+          if (!isAtl) return false;
+        }
+        if (state.ui.filter === 'near_target') {
+          if (!p.targetPrice || Number(p.currentPrice) <= Number(p.targetPrice)) return false;
+          const gapPct = (Number(p.currentPrice) - Number(p.targetPrice)) / Number(p.targetPrice);
+          if (gapPct > 0.15) return false;
+        }
 
         if (state.ui.storeFilter && state.ui.storeFilter !== 'all') {
           const hasStore = p.store === state.ui.storeFilter || offers.some(o => o.store === state.ui.storeFilter);
@@ -5663,6 +5781,19 @@
           const savA = Math.max(0, Number(a.initialPrice || 0) - Number(a.currentPrice || 0));
           const savB = Math.max(0, Number(b.initialPrice || 0) - Number(b.currentPrice || 0));
           return savB - savA;
+        }
+        if (sortBy === 'drop_pct_desc') {
+          const pctA = a.initialPrice > 0 ? ((a.initialPrice - a.currentPrice) / a.initialPrice) : 0;
+          const pctB = b.initialPrice > 0 ? ((b.initialPrice - b.currentPrice) / b.initialPrice) : 0;
+          return pctB - pctA;
+        }
+        if (sortBy === 'closest_target') {
+          const distA = a.targetPrice ? Math.abs(a.currentPrice - a.targetPrice) / a.targetPrice : 999;
+          const distB = b.targetPrice ? Math.abs(b.currentPrice - b.targetPrice) / b.targetPrice : 999;
+          return distA - distB;
+        }
+        if (sortBy === 'title_az') {
+          return String(a.title || '').localeCompare(String(b.title || ''), 'he');
         }
         if (sortBy === 'store_az') return String(a.store || '').localeCompare(String(b.store || ''), 'he');
         if (sortBy === 'category') {
@@ -5773,6 +5904,8 @@
         }
 
         // SPACIOUS GRID CARD (Klarna / Apple Grade Cleanliness)
+        const isATL = p.lowestPrice && Number(p.currentPrice) <= Number(p.lowestPrice) && Number(p.currentPrice) < Number(p.initialPrice);
+        const atlBadge = isATL ? '<span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/25 text-emerald-200 border border-emerald-400/40 font-black flex items-center gap-1 animate-pulse"><span>🏆</span><span>שפל היסטורי!</span></span>' : '';
         const isTargetMet = p.targetPrice && Number(p.currentPrice) <= Number(p.targetPrice);
 
         card.className = `liquid-glass card-hover cursor-pointer rounded-3xl p-4 sm:p-5 flex flex-col justify-between gap-3 relative overflow-hidden transition-all duration-300 ${
@@ -5812,10 +5945,11 @@
                   <span class="text-[10px] px-2 py-0.5 rounded-full ${deal.colorClass} font-bold">${deal.label}</span>
                 </div>
 
-                <div class="pt-0.5 flex items-baseline gap-2.5 flex-wrap">
+                <div class="pt-0.5 flex items-center justify-between gap-2 flex-wrap">
                   <span class="text-lg sm:text-xl font-black tabular-nums ${isDropped ? 'text-emerald-300' : 'text-white'}">${formatPrice(p.currentPrice)}</span>
                   ${isDropped ? `<span class="text-xs font-bold text-slate-400 line-through tabular-nums">${formatPrice(p.initialPrice)}</span>` : `<span class="text-[11px] text-slate-400 font-semibold">התחלתי: ${formatPrice(p.initialPrice)}</span>`}
                   ${p.targetPrice ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-amber-400/20 text-amber-200 border border-amber-300/30">יעד: ${formatPrice(p.targetPrice)}</span>` : ''}
+                  ${createMiniSparklineSvg(p.history, isDropped, 64, 22)}
                 </div>
               </div>
             </div>
@@ -6122,7 +6256,158 @@
       } catch (e) {}
     }
 
+    // =========================================================================
+    // SPOTLIGHT COMMAND PALETTE & POWER SHORTCUTS (v4.0.0 ULTRA)
+    // =========================================================================
+    function initCommandPalette() {
+      const modal = document.getElementById('commandPaletteModal');
+      const input = document.getElementById('commandPaletteInput');
+      const results = document.getElementById('commandPaletteResults');
+      const openBtn = document.getElementById('openCommandPaletteBtn');
+      if (!modal || !input || !results) return;
+
+      function openPalette() {
+        modal.classList.remove('hidden');
+        input.value = '';
+        input.focus();
+        renderPaletteItems('');
+        playAudioFx('pop');
+        triggerHaptic('light');
+      }
+
+      function closePalette() {
+        modal.classList.add('hidden');
+      }
+
+      if (openBtn) openBtn.onclick = openPalette;
+      modal.onclick = (e) => {
+        if (e.target === modal) closePalette();
+      };
+
+      function renderPaletteItems(q) {
+        const query = (q || '').trim().toLowerCase();
+        let itemsHtml = '';
+
+        const actions = [
+          { icon: '🔄', title: 'בדוק את כל המחירים עכשיו', action: () => { checkAllPricesNow(); } },
+          { icon: '📥', title: 'יבוא קישורים מרוכז (Bulk Import)', action: () => { const b = document.getElementById('bulkImportModal'); if (b) b.classList.remove('hidden'); } },
+          { icon: '📊', title: 'ייצוא רשימת מעקב לקובץ CSV / Excel', action: () => { const b = document.getElementById('exportCsvBtn'); if (b) b.click(); } },
+          { icon: '🖨️', title: 'הדפס דוח קניות מעוצב (PDF)', action: () => { const b = document.getElementById('printReportBtn'); if (b) b.click(); } },
+          { icon: '⚙️', title: 'מעבר למסך הגדרות מערכת', action: () => { switchTab('settings'); } },
+          { icon: '☀️/🌙', title: 'החלף ערכת נושא (OLED / בהיר)', action: () => { const b = document.getElementById('themeToggleBtn'); if (b) b.click(); } }
+        ];
+
+        const matchedActions = query
+          ? actions.filter(a => a.title.toLowerCase().includes(query))
+          : actions.slice(0, 3);
+
+        if (matchedActions.length > 0) {
+          itemsHtml += '<div class="text-[10px] font-extrabold text-cyan-300 px-2 py-1">פעולות מהירות</div>';
+          matchedActions.forEach((act, idx) => {
+            itemsHtml += `
+              <div class="palette-item p-2.5 rounded-xl hover:bg-cyan-500/20 text-slate-200 hover:text-white flex items-center justify-between cursor-pointer transition" data-action-idx="${idx}">
+                <div class="flex items-center gap-2">
+                  <span class="text-base">${act.icon}</span>
+                  <span class="font-bold text-xs">${escapeHtml(act.title)}</span>
+                </div>
+                <span class="text-[10px] text-cyan-300 font-mono">הפעל ↵</span>
+              </div>
+            `;
+          });
+        }
+
+        const matchedProds = (state.products || []).filter(p => {
+          if (!query) return true;
+          return (p.title || '').toLowerCase().includes(query) || (p.store || '').toLowerCase().includes(query);
+        }).slice(0, 6);
+
+        if (matchedProds.length > 0) {
+          itemsHtml += '<div class="text-[10px] font-extrabold text-emerald-300 px-2 pt-2 pb-1">מוצרים במעקב</div>';
+          matchedProds.forEach(p => {
+            itemsHtml += `
+              <div class="palette-prod-item p-2.5 rounded-xl hover:bg-emerald-500/20 text-slate-200 hover:text-white flex items-center justify-between cursor-pointer transition" data-prod-id="${p.id}">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <img src="${escapeHtml(p.image || getFallbackProductImage(p.url, p.category))}" class="w-7 h-7 rounded-lg object-contain bg-slate-900 border border-white/15 shrink-0" onerror="this.src=FALLBACK_IMAGES.hero" />
+                  <div class="min-w-0">
+                    <p class="font-bold text-xs text-white truncate max-w-xs">${escapeHtml(p.title)}</p>
+                    <p class="text-[10px] text-slate-400">${escapeHtml(p.store)}</p>
+                  </div>
+                </div>
+                <span class="font-mono font-bold text-emerald-300 text-xs">${formatPrice(p.currentPrice)}</span>
+              </div>
+            `;
+          });
+        }
+
+        results.innerHTML = itemsHtml || '<div class="p-4 text-center text-slate-400">לא נמצאו תוצאות. נסה מונח אחר.</div>';
+
+        results.querySelectorAll('.palette-item').forEach(el => {
+          const idx = Number(el.getAttribute('data-action-idx'));
+          el.onclick = () => {
+            closePalette();
+            if (matchedActions[idx] && matchedActions[idx].action) matchedActions[idx].action();
+          };
+        });
+
+        results.querySelectorAll('.palette-prod-item').forEach(el => {
+          const pid = el.getAttribute('data-prod-id');
+          el.onclick = () => {
+            closePalette();
+            openProductDetailsModal(pid);
+          };
+        });
+      }
+
+      input.oninput = () => renderPaletteItems(input.value);
+
+      window.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+          e.preventDefault();
+          if (modal.classList.contains('hidden')) openPalette();
+          else closePalette();
+        } else if (e.key === '?' && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+          e.preventDefault();
+          const sg = document.getElementById('shortcutsGuideModal');
+          if (sg) sg.classList.remove('hidden');
+        } else if (e.key === '/' && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+          e.preventDefault();
+          openPalette();
+        }
+      });
+    }
+
+    function initShortcutsGuideModal() {
+      const modal = document.getElementById('shortcutsGuideModal');
+      const closeBtn = document.getElementById('closeShortcutsGuideBtn');
+      const confirmBtn = document.getElementById('confirmShortcutsGuideBtn');
+      if (!modal) return;
+      if (closeBtn) closeBtn.onclick = () => modal.classList.add('hidden');
+      if (confirmBtn) confirmBtn.onclick = () => modal.classList.add('hidden');
+    }
+
+    function initScrollProgressAndNetwork() {
+      window.addEventListener('scroll', () => {
+        const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+        const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+        const scrolled = height > 0 ? (winScroll / height) * 100 : 0;
+        const bar = document.getElementById('scrollProgressBar');
+        if (bar) bar.style.width = scrolled + '%';
+      }, { passive: true });
+
+      const offlineBar = document.getElementById('offlineStatusBar');
+      window.addEventListener('offline', () => {
+        if (offlineBar) offlineBar.classList.remove('hidden');
+      });
+      window.addEventListener('online', () => {
+        if (offlineBar) offlineBar.classList.add('hidden');
+        showToast('מחובר לרשת 🚀', 'החיבור לאינטרנט פעיל כעת.', 'success');
+      });
+    }
+
     function initPriceRadarApp() {
+      initCommandPalette();
+      initShortcutsGuideModal();
+      initScrollProgressAndNetwork();
       // Holiday Deals Countdown Timer
       function updateHolidayCountdown() {
         const timerEl = document.getElementById('holidayCountdownTimer');
@@ -7613,7 +7898,7 @@ https://myrabbit.co.il/..." class="w-full p-3 rounded-2xl liquid-glass-input tex
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
           <span class="text-2xl">✨</span>
-          <h3 class="text-base font-black text-white">מה חדש ב-PriceRadar v3.8.2 PRO?</h3>
+          <h3 class="text-base font-black text-white">מה חדש ב-PriceRadar v4.0.0 ULTRA?</h3>
         </div>
         <button id="closeChangelogModalBtn" type="button" class="text-slate-400 hover:text-white text-base">✕</button>
       </div>
@@ -7638,6 +7923,59 @@ https://myrabbit.co.il/..." class="w-full p-3 rounded-2xl liquid-glass-input tex
         </div>
       </div>
       <button id="confirmChangelogBtn" type="button" class="w-full py-2.5 rounded-2xl btn-gradient-primary text-slate-950 font-black text-xs">הבנתי, תודה!</button>
+    </div>
+  </div>
+
+  <!-- MODAL: SPOTLIGHT COMMAND PALETTE (Ctrl+K / ⌘K) (v4.0.0 ULTRA) -->
+  <div id="commandPaletteModal" class="hidden fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 p-4 bg-black/85 backdrop-blur-md">
+    <div class="liquid-glass rounded-3xl max-w-xl w-full p-4 sm:p-5 space-y-3.5 border border-cyan-400/50 shadow-2xl relative overflow-hidden">
+      <div class="relative">
+        <input id="commandPaletteInput" type="text" placeholder="הקלד לחיפוש מוצר, חנות, או פקודה (בדוק, יצוא, הגדרות)..." class="w-full pl-10 pr-4 py-3 rounded-2xl liquid-glass-input text-sm text-white placeholder-slate-400 outline-none" autofocus />
+        <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-cyan-300 text-base font-mono">⌘K</span>
+      </div>
+      <div id="commandPaletteResults" class="max-h-80 overflow-y-auto space-y-1.5 pr-1 text-xs"></div>
+      <div class="pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400">
+        <div class="flex items-center gap-2">
+          <span>סגירה: <kbd class="px-1.5 py-0.5 rounded bg-white/10 font-mono text-slate-300">Esc</kbd></span>
+        </div>
+        <span class="font-extrabold text-cyan-300">PriceRadar v4.0.0 ULTRA</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: KEYBOARD SHORTCUTS GUIDE (?) (v4.0.0 ULTRA) -->
+  <div id="shortcutsGuideModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+    <div class="liquid-glass rounded-3xl max-w-md w-full p-5 sm:p-6 space-y-4 border border-cyan-400/40">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">⌨️</span>
+          <h3 class="text-base font-black text-white">קיצורי מקלדת שימושיים</h3>
+        </div>
+        <button id="closeShortcutsGuideBtn" type="button" class="text-slate-400 hover:text-white text-base">✕</button>
+      </div>
+      <div class="space-y-2 text-xs">
+        <div class="flex items-center justify-between p-2 rounded-xl liquid-glass-soft">
+          <span class="text-slate-200">פתיחת שורת פיקוד מהירה</span>
+          <kbd class="px-2 py-0.5 rounded-lg bg-white/15 text-cyan-200 font-mono font-bold">Ctrl + K / ⌘K</kbd>
+        </div>
+        <div class="flex items-center justify-between p-2 rounded-xl liquid-glass-soft">
+          <span class="text-slate-200">הוספת קישור מוצר חדש</span>
+          <kbd class="px-2 py-0.5 rounded-lg bg-white/15 text-cyan-200 font-mono font-bold">Ctrl + N</kbd>
+        </div>
+        <div class="flex items-center justify-between p-2 rounded-xl liquid-glass-soft">
+          <span class="text-slate-200">חיפוש ברשימת המוצרים</span>
+          <kbd class="px-2 py-0.5 rounded-lg bg-white/15 text-cyan-200 font-mono font-bold">Ctrl + F</kbd>
+        </div>
+        <div class="flex items-center justify-between p-2 rounded-xl liquid-glass-soft">
+          <span class="text-slate-200">סגירת חלונות ומודלים</span>
+          <kbd class="px-2 py-0.5 rounded-lg bg-white/15 text-cyan-200 font-mono font-bold">Esc</kbd>
+        </div>
+        <div class="flex items-center justify-between p-2 rounded-xl liquid-glass-soft">
+          <span class="text-slate-200">מדריך קיצורים זה</span>
+          <kbd class="px-2 py-0.5 rounded-lg bg-white/15 text-cyan-200 font-mono font-bold">?</kbd>
+        </div>
+      </div>
+      <button id="confirmShortcutsGuideBtn" type="button" class="w-full py-2.5 rounded-2xl btn-gradient-primary text-slate-950 font-black text-xs">הבנתי, תודה!</button>
     </div>
   </div>
 
