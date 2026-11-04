@@ -2,9 +2,9 @@
 <html lang="he" dir="rtl">
 <head>
   <script>
-    window.__APP_VERSION__ = "3.6.1";
-    window.__BUILD_TIMESTAMP__ = 1762190000;
-    window.__OTA_RELEASE_NOTES__ = "v3.6.1: תיקון מקיף לזיהוי משלוח חינם באמזון - בדיקה קפדנית לזכאות משלוח חינם לישראל מעל 49$ ומניעת זיהויים שגויים, וסימון מוצרים שאינם נשלחים לישראל.";
+    window.__APP_VERSION__ = "3.6.2";
+    window.__BUILD_TIMESTAMP__ = 1762240000;
+    window.__OTA_RELEASE_NOTES__ = "v3.6.2: תיקון דיוק מחירים מעל 1,000 ש\"ח (תיקון קיצוץ 9685 ל-968), תיקון כיוון שעון 24H (מ-00:09 ל-09:00), ביטול התראות קופצות בהחלפת ערכת נושא, שיפור תהליך אישור הרשאות פוש, והבהרת שדות המעקב.";
 
     (function bootstrapTheme() {
       try {
@@ -393,7 +393,7 @@
             <h1 class="text-xl sm:text-2xl font-black tracking-tight bg-gradient-to-r from-white via-cyan-100 to-emerald-300 bg-clip-text text-transparent whitespace-nowrap">
               PriceRadar
             </h1>
-            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 tracking-wider">v3.6.1</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 tracking-wider">v3.6.2</span>
             <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot shrink-0" title="מעקב מחירים פעיל"></span>
           </div>
           <p class="text-[11px] text-slate-300/85 font-medium">מעקב מחירים חכם 24/7</p>
@@ -613,9 +613,9 @@
           <div class="p-3.5 rounded-2xl liquid-glass-soft border border-teal-400/30">
             <div class="flex items-center gap-2">
               <span class="text-lg">🎯</span>
-              <p class="text-xs font-extrabold text-teal-200">2. בחר אפשרות</p>
+              <p class="text-xs font-extrabold text-teal-200">2. בחירת אפשרות (אופציונלי)</p>
             </div>
-            <p class="text-[11px] text-slate-300 mt-1">בחר משקל או מידה מתוך הדף בלחיצה אחת.</p>
+            <p class="text-[11px] text-slate-300 mt-1">יש מידה, משקל, צבע או מחיר אילת? בחר בקליק מה לעקוב.</p>
           </div>
           <div class="p-3.5 rounded-2xl liquid-glass-soft border border-emerald-400/30">
             <div class="flex items-center gap-2">
@@ -734,13 +734,13 @@
                 שעת התראה יומית קבועה (דו"ח יומי - שעון 24 שעות):
               </label>
               <div class="flex items-center gap-2">
-                <div class="flex items-center gap-1.5 px-3 py-2 rounded-2xl liquid-glass-input w-full sm:w-56 justify-center">
+                <div dir="ltr" class="flex items-center gap-1.5 px-3 py-2 rounded-2xl liquid-glass-input w-full sm:w-56 justify-center">
                   <select id="dailyHourSelect" aria-label="שעה" class="bg-transparent text-white font-mono text-base font-bold outline-none cursor-pointer text-center">
                   </select>
                   <span class="text-emerald-400 font-black text-lg select-none">:</span>
                   <select id="dailyMinuteSelect" aria-label="דקות" class="bg-transparent text-white font-mono text-base font-bold outline-none cursor-pointer text-center">
                   </select>
-                  <span class="text-[11px] text-slate-400 font-bold px-1.5 border-r border-white/10 select-none">24H</span>
+                  <span class="text-[11px] text-slate-400 font-bold px-1.5 border-l border-white/10 select-none">24H</span>
                 </div>
                 <input id="dailyTimeInput" type="hidden" value="09:00" />
               </div>
@@ -899,7 +899,7 @@
             </div>
             <div>
               <h3 class="text-base sm:text-lg font-extrabold text-white">פרטיות וסנכרון אישי (הפרדת משתמשים מלאה)</h3>
-              <p class="text-xs text-slate-300">כל מכשיר מקבל מזהה אנונימי מוצפן (Row-Level Security) כך שאף משתמש אחר לא יכול לראות את המוצרים שלך</p>
+              <p class="text-xs text-slate-300">כל מכשיר מקבל מזהה אנונימי מוצפן (Row-Level Security). הסנכרון מתבצע אוטומטית ברקע בכל הוספה ושינוי מוצר (הכפתור מטה לרענון מיידי יזום)</p>
             </div>
           </div>
           <button id="syncCloudNowBtn" type="button" class="px-4 py-2 rounded-2xl liquid-glass-soft hover:bg-white/20 text-xs font-extrabold text-emerald-200 border border-emerald-400/30 transition">
@@ -946,9 +946,9 @@
         <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-white/10 text-xs">
           <div class="flex items-center gap-2 flex-wrap">
             <span class="text-slate-300 font-bold">גרסת מערכת:</span>
-            <span id="appVersionHeaderBadge" class="font-mono font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">v3.6.1</span>
+            <span id="appVersionHeaderBadge" class="font-mono font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">v3.6.2</span>
             <span id="cloudSyncBadge" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-teal-500/25 text-teal-200 border border-teal-400/30 flex items-center gap-1">☁️ ענן 24/7</span>
-            <span class="text-slate-400">בדיקה הבאה: <span id="nextCheckTimer" class="font-mono font-bold text-cyan-300">--:--</span></span>
+            <span class="text-slate-400">בדיקת מחירים אוטומטית הבאה: <span id="nextCheckTimer" class="font-mono font-bold text-cyan-300">--:--</span></span>
             <span class="hidden" id="headerDailyTime">09:00</span>
             <span class="hidden" id="statDailyHour">09:00</span>
             <button id="sendDailyReportQuickBtn" type="button" class="hidden">שלח</button>
@@ -962,10 +962,10 @@
         <div class="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/15 via-teal-500/15 to-cyan-500/15 border border-emerald-400/30 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div class="space-y-1 text-center sm:text-right">
             <div class="flex items-center gap-2 justify-center sm:justify-start">
-              <span class="text-xs font-black text-emerald-300">📱 גרסת קובץ APK עדכנית: v3.6.1</span>
+              <span class="text-xs font-black text-emerald-300">📱 גרסת קובץ APK עדכנית: v3.6.2</span>
               <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 font-mono font-bold">RELEASE</span>
             </div>
-            <p class="text-[11px] text-slate-300">אם התקנת בעבר APK ומערכת ההפעלה דורשת התקנה מחדש, לחץ להורדה ישירה</p>
+            <p class="text-[11px] text-slate-300">הורדת קובץ ההתקנה העדכני (במידה ורוצים להתקין מחדש או על מכשיר נוסף)</p>
           </div>
           <div class="flex items-center gap-2 w-full sm:w-auto">
             <a
@@ -976,7 +976,7 @@
               class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl btn-gradient-emerald text-white text-xs font-extrabold flex items-center justify-center gap-2 shadow-lg hover:brightness-110 transition"
             >
               <span>⬇️</span>
-              <span>הורד APK מעודכן v3.6.1</span>
+              <span>הורד APK מעודכן v3.6.2</span>
             </a>
           </div>
         </div>
@@ -984,7 +984,7 @@
         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h4 class="text-sm font-extrabold text-white">איפוס רשימת המעקב</h4>
-            <p class="text-xs text-slate-300">מחיקת כל המוצרים וההתראות השמורים באפליקציה והתחלה מחדש</p>
+            <p class="text-xs text-slate-300">מחיקת כל המוצרים מהמעקב והיסטוריית התראות ירידת המחיר והתחלה מחדש</p>
           </div>
           <button id="resetAllDataBtn" type="button" class="px-4 py-2.5 rounded-2xl bg-rose-500/20 hover:bg-rose-500/35 text-rose-200 border border-rose-400/30 text-xs font-extrabold transition shrink-0">
             🗑️ איפוס מערכת ומחיקת הכל
@@ -1105,13 +1105,13 @@
             <label class="block text-xs font-bold text-emerald-200 mb-1">
               באיזו שעה תרצה לקבל את הדו"ח היומי המרוכז? (שעון 24 שעות)
             </label>
-            <div class="flex items-center gap-1.5 px-3 py-2 rounded-2xl liquid-glass-input w-full sm:w-52 justify-center">
+            <div dir="ltr" class="flex items-center gap-1.5 px-3 py-2 rounded-2xl liquid-glass-input w-full sm:w-52 justify-center">
               <select id="onboardingDailyHourSelect" aria-label="שעה" class="bg-transparent text-white font-mono text-base font-bold outline-none cursor-pointer text-center">
               </select>
               <span class="text-emerald-400 font-black text-lg select-none">:</span>
               <select id="onboardingDailyMinuteSelect" aria-label="דקות" class="bg-transparent text-white font-mono text-base font-bold outline-none cursor-pointer text-center">
               </select>
-              <span class="text-[11px] text-slate-400 font-bold px-1.5 border-r border-white/10 select-none">24H</span>
+              <span class="text-[11px] text-slate-400 font-bold px-1.5 border-l border-white/10 select-none">24H</span>
             </div>
             <input id="onboardingDailyTimeInput" type="hidden" value="09:00" />
           </div>
@@ -1196,10 +1196,12 @@
           <div>
             <label for="modalCurrentPrice" class="block text-xs font-bold text-slate-200 mb-1">מחיר נוכחי (₪):</label>
             <input id="modalCurrentPrice" type="number" step="0.01" min="0.01" required class="w-full px-3.5 py-2.5 rounded-2xl liquid-glass-input text-base font-black text-emerald-300 outline-none" />
+            <p class="text-[10px] text-slate-400 mt-1">מחיר שזוהה אוטומטית (ניתן לעריכה לדיוק)</p>
           </div>
           <div>
             <label for="modalTargetPrice" class="block text-xs font-bold text-slate-200 mb-1">מחיר יעד (אופציונלי, ₪):</label>
             <input id="modalTargetPrice" type="number" step="0.01" min="0" placeholder="התראה בכל ירידה" class="w-full px-3.5 py-2.5 rounded-2xl liquid-glass-input text-sm text-white outline-none" />
+            <p class="text-[10px] text-slate-400 mt-1">השאר ריק לקבלת התראה בכל ירידה</p>
           </div>
         </div>
 
@@ -1225,8 +1227,9 @@
 
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label for="modalSelectedVariantText" class="block text-xs font-bold text-slate-200 mb-1">אפשרות שנבחרה:</label>
-            <input id="modalSelectedVariantText" type="text" placeholder="למשל: 2 ק״ג / מידה 41" class="w-full px-3.5 py-2 rounded-2xl liquid-glass-input text-xs font-bold text-cyan-200 outline-none" />
+            <label for="modalSelectedVariantText" class="block text-xs font-bold text-slate-200 mb-1">אפשרות / וריאנט במעקב:</label>
+            <input id="modalSelectedVariantText" type="text" placeholder="למשל: מחיר רגיל / 2 ק״ג / שחור" class="w-full px-3.5 py-2 rounded-2xl liquid-glass-input text-xs font-bold text-cyan-200 outline-none" />
+            <p class="text-[10px] text-slate-400 mt-1">האפשרות שנבחרה (מידה, צבע או מחיר רגיל/אילת)</p>
           </div>
           <div>
             <label for="modalCategorySelect" class="block text-xs font-bold text-slate-200 mb-1">תחום / קטגוריה:</label>
@@ -2583,8 +2586,8 @@
       }
 
       // 1. Check Pricedrop KSP Mirror pattern ("₪369 מחיר נוכחי" or "מחיר נוכחי 369₪")
-      const pdMatch1 = cleanText.match(/₪\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*מחיר\s+(?:נוכחי|אחרון)/);
-      const pdMatch2 = cleanText.match(/מחיר\s+(?:נוכחי|אחרון)\s*[:\s\r\n]*?(?:₪\s*)?(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*₪?/);
+      const pdMatch1 = cleanText.match(/₪\s*((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?)\s*מחיר\s+(?:נוכחי|אחרון)/);
+      const pdMatch2 = cleanText.match(/מחיר\s+(?:נוכחי|אחרון)\s*[:\s\r\n]*?(?:₪\s*)?((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?)\s*₪?/);
       if (pdMatch1 || pdMatch2) {
         const regP = Number(((pdMatch1 && pdMatch1[1]) || (pdMatch2 && pdMatch2[1])).replace(/,/g, ''));
         if (regP > 5) {
@@ -2603,10 +2606,10 @@
       // 2. Machsanei Hashmal (payngo.co.il) & Traklin Hashmal (traklin.co.il) pattern:
       // Prioritize special/sale/buy button price ("לרכישה ב 999 ₪", "לרכישה עכשיו ב: ₪...") and Eilat price ("לרכישה באילת ב 846 ₪", "קנו באילת ב: ₪...")
       const payngoSpecialMatch =
-        cleanText.match(/לרכישה\s+(?:עכשיו\s+)?ב\s*[:\-\s\r\n]*?(?:₪\s*)?(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(?:₪|ש["״']ח)?/) ||
-        cleanText.match(/מחיר\s+(?:מיוחד|מבצע|מועדון|לאחר הנחה)\s*:\s*(?:לרכישה עכשיו ב\s*:\s*)?₪?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*₪?/);
-      const payngoRegMatches = [...cleanText.matchAll(/מחיר\s*(?:מיוחד|רגיל)?\s*:\s*(?:לרכישה עכשיו ב\s*:\s*)?₪?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*₪?/g)];
-      const payngoEilatMatch = cleanText.match(/(?:קנו\s+באילת\s+ב|לרכישה\s+באילת\s+ב)\s*[:\-\s\r\n]*?(?:₪\s*)?(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(?:₪|ש["״']ח)?/);
+        cleanText.match(/לרכישה\s+(?:עכשיו\s+)?ב\s*[:\-\s\r\n]*?(?:₪\s*)?((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?)\s*(?:₪|ש["״']ח)?/) ||
+        cleanText.match(/מחיר\s+(?:מיוחד|מבצע|מועדון|לאחר הנחה)\s*:\s*(?:לרכישה עכשיו ב\s*:\s*)?₪?\s*((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?)\s*₪?/);
+      const payngoRegMatches = [...cleanText.matchAll(/מחיר\s*(?:מיוחד|רגיל)?\s*:\s*(?:לרכישה עכשיו ב\s*:\s*)?₪?\s*((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?)\s*₪?/g)];
+      const payngoEilatMatch = cleanText.match(/(?:קנו\s+באילת\s+ב|לרכישה\s+באילת\s+ב)\s*[:\-\s\r\n]*?(?:₪\s*)?((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?)\s*(?:₪|ש["״']ח)?/);
       if (payngoSpecialMatch || payngoRegMatches.length > 0) {
         let pReg = 0;
         if (payngoSpecialMatch) {
@@ -2661,9 +2664,9 @@
       }
 
       // 3. Explicit "מחיר:" + "מחיר אילת:" pattern (KSP SSR & Israeli stores — prefer sale/lowest price when both regular & special appear)
-      const specialPriceMatch = mainText.match(/(?:מחיר\s+(?:מיוחד|מבצע|מועדון|לאחר הנחה)|לרכישה עכשיו ב)\s*:\s*(?:(?:₪|ש["״']ח|ILS)\s*)?(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)/i);
-      const regPriceMatch = mainText.match(/מחיר\s*:\s*(?:(?:₪|ש["״']ח|ILS)\s*)?(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)/i);
-      const eilatPriceMatch = mainText.match(/מחיר\s+אילת\s*:\s*(?:(?:₪|ש["״']ח|ILS)\s*)?(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)/i);
+      const specialPriceMatch = mainText.match(/(?:מחיר\s+(?:מיוחד|מבצע|מועדון|לאחר הנחה)|לרכישה עכשיו ב)\s*:\s*(?:(?:₪|ש["״']ח|ILS)\s*)?((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?)/i);
+      const regPriceMatch = mainText.match(/מחיר\s*:\s*(?:(?:₪|ש["״']ח|ILS)\s*)?((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?)/i);
+      const eilatPriceMatch = mainText.match(/מחיר\s+אילת\s*:\s*(?:(?:₪|ש["״']ח|ILS)\s*)?((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?)/i);
       if (specialPriceMatch || regPriceMatch) {
         const spP = specialPriceMatch ? Number(specialPriceMatch[1].replace(/,/g, '')) : 0;
         const rgP = regPriceMatch ? Number(regPriceMatch[1].replace(/,/g, '')) : 0;
@@ -2692,7 +2695,7 @@
           if (/משלוח|הובלה|קומה|מוביל|פירוק|דלת|איסוף|מינימום|מקסימום|קופון|בקנייה מעל|בהזמנות מעל|תוספת|החלפה|החזרה|תשלומים|shipping|delivery/i.test(line)) {
             continue;
           }
-          const multiCurrencyMatch = line.match(/(?:Price|Deal Price|Our Price|מחיר|מחיר מבצע)?\s*[:\s]*?(?:(?:US\s*)?([₪$€£]|USD|ILS|EUR|ש["״']ח)\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)|(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(?:[₪$€£]|USD|ILS|EUR|ש["״']ח))/i);
+          const multiCurrencyMatch = line.match(/(?:Price|Deal Price|Our Price|מחיר|מחיר מבצע)?\s*[:\s]*?(?:(?:US\s*)?([₪$€£]|USD|ILS|EUR|ש["״']ח)\s*((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?)|((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?)\s*(?:[₪$€£]|USD|ILS|EUR|ש["״']ח))/i);
           if (multiCurrencyMatch) {
             const val = Number((multiCurrencyMatch[2] || multiCurrencyMatch[3]).replace(/,/g, ''));
             if (val > 0.5 && val < 500000) {
@@ -2705,7 +2708,7 @@
       }
 
       // 5. Check explicit weight/pack price pairs in text (only explicit weight units like "2 ק"ג - 120 ₪", never bare numbers like "40-50 ₪")
-      const optionPairs = [...mainText.matchAll(/(\d+(?:\.\d+)?\s*(?:ק["״']ג|גרם|ליטר|מ["״']ל|יח'|יחידות))\s*-\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*[₪$€£]/g)];
+      const optionPairs = [...mainText.matchAll(/(\d+(?:\.\d+)?\s*(?:ק["״']ג|גרם|ליטר|מ["״']ל|יח'|יחידות))\s*-\s*((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?)\s*[₪$€£]/g)];
       if (optionPairs.length > 1 && result.variations.length === 0) {
         optionPairs.forEach((m, i) => {
           const lbl = m[1].trim();
@@ -2722,7 +2725,7 @@
 
       // 6. WooCommerce / Store Price Range (e.g. "₪120 – ₪195" or "$15 – $25")
       if (!result.price) {
-        const rangeMatch = mainText.match(/[₪$€£]\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*[–-]\s*[₪$€£]?\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)/);
+        const rangeMatch = mainText.match(/[₪$€£]\s*((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?)\s*[–-]\s*[₪$€£]?\s*((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?)/);
         if (rangeMatch) {
           const lowP = Number(rangeMatch[1].replace(/,/g, ''));
           const highP = Number(rangeMatch[2].replace(/,/g, ''));
@@ -2742,7 +2745,7 @@
         const lines = mainText.split(/[\r\n]+/);
         for (const line of lines) {
           if (/משלוח|איסוף|מינימום|מקסימום|קופון|בקנייה מעל|תוספת|החלפה|החזרה|shipping|delivery|shipping fee/i.test(line)) continue;
-          const m = line.match(/(?:מחיר מבצע|מחיר|Price)?\s*(?:[₪$€£]\s*(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)|(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*[₪$€£])/i);
+          const m = line.match(/(?:מחיר מבצע|מחיר|Price)?\s*(?:[₪$€£]\s*((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?)|((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?)\s*[₪$€£])/i);
           if (m) {
             const val = Number((m[1] || m[2]).replace(/,/g, ''));
             if (val > 2 && val < 500000) {
@@ -2875,8 +2878,8 @@
           result.title = trTitle.textContent.replace(/[\u200E\u200F\u202A-\u202E]/g, '').trim();
         }
         const fullCleanHtml = (doc.body ? doc.body.textContent : html).replace(/[\u200E\u200F\u202A-\u202E]/g, '');
-        const traklinRegM = fullCleanHtml.match(/לרכישה\s+(?:עכשיו\s+)?ב\s*[:\-\s\r\n]*?(?:₪\s*)?(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(?:₪|ש["״']ח|&#8362;)?/);
-        const traklinEilatM = fullCleanHtml.match(/(?:קנו\s+באילת\s+ב|לרכישה\s+באילת\s+ב)\s*[:\-\s\r\n]*?(?:₪\s*)?(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*(?:₪|ש["״']ח|&#8362;)?/);
+        const traklinRegM = fullCleanHtml.match(/לרכישה\s+(?:עכשיו\s+)?ב\s*[:\-\s\r\n]*?(?:₪\s*)?((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?)\s*(?:₪|ש["״']ח|&#8362;)?/);
+        const traklinEilatM = fullCleanHtml.match(/(?:קנו\s+באילת\s+ב|לרכישה\s+באילת\s+ב)\s*[:\-\s\r\n]*?(?:₪\s*)?((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?)\s*(?:₪|ש["״']ח|&#8362;)?/);
         if (traklinRegM) {
           const pReg = Number(traklinRegM[1].replace(/,/g, ''));
           if (pReg > 5) {
@@ -4872,9 +4875,6 @@
         if (cardLight) {
           cardLight.className = 'p-4 rounded-2xl border text-right transition flex items-center justify-between gap-3 bg-white border-emerald-500 shadow-lg shadow-emerald-500/15';
         }
-        if (showNotification) {
-          showToast('ערכת נושא בהירה ☀️', 'התצוגה שונתה למצב יום נקי, מואר וקריא.', 'info');
-        }
       } else {
         document.documentElement.classList.add('theme-oled');
         if (toggleIcon) toggleIcon.textContent = '☀️';
@@ -4885,9 +4885,6 @@
         }
         if (cardLight) {
           cardLight.className = 'p-4 rounded-2xl border text-right transition flex items-center justify-between gap-3 bg-white/5 border-white/10 hover:border-white/20';
-        }
-        if (showNotification) {
-          showToast('ערכת נושא OLED כהה 🌙', 'שחור מוחלט מושלם למסכי OLED וחיסכון בסוללה.', 'info');
         }
       }
 
@@ -5840,6 +5837,16 @@
         document.getElementById('onboardingStep1').classList.toggle('hidden', stepNum !== 1);
         document.getElementById('onboardingStep2').classList.toggle('hidden', stepNum !== 2);
         document.getElementById('onboardingStep3').classList.toggle('hidden', stepNum !== 3);
+
+        if (stepNum === 2) {
+          const isGranted = (typeof Notification !== 'undefined' && Notification.permission === 'granted');
+          if (isGranted) {
+            const btnText = document.getElementById('requestNativePermBtnText');
+            const statusText = document.getElementById('permStatusText');
+            if (btnText) btnText.textContent = '✅ התראות פוש כבר מאושרות במכשיר!';
+            if (statusText) statusText.textContent = 'מעולה! הרשאת ההתראות במכשיר כבר פעילה, לחץ על המשך להגדרת זמנים.';
+          }
+        }
       }
 
       function openOnboardingModal() {
@@ -5897,7 +5904,10 @@
       setTimeout(async () => {
         try {
           syncNativeAndroidCredentials();
-          await requestDeviceNotificationPermission();
+          const completed = localStorage.getItem('priceradar_onboarding_completed_v1');
+          if (completed) {
+            await requestDeviceNotificationPermission();
+          }
           await scheduleNativeDailyAndPeriodicNotifications();
         } catch (e) {}
       }, 800);
