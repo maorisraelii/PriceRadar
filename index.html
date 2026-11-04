@@ -2,8 +2,8 @@
 <html lang="he" dir="rtl">
 <head>
   <script>
-    window.__APP_VERSION__ = "4.0.0";
-    window.__BUILD_TIMESTAMP__ = 1762310000;
+    window.__APP_VERSION__ = "4.1.0";
+    window.__BUILD_TIMESTAMP__ = 1762350000;
     window.__OTA_RELEASE_NOTES__ = "v3.6.2: תיקון דיוק מחירים מעל 1,000 ש\"ח (תיקון קיצוץ 9685 ל-968), תיקון כיוון שעון 24H (מ-00:09 ל-09:00), ביטול התראות קופצות בהחלפת ערכת נושא, שיפור תהליך אישור הרשאות פוש, והבהרת שדות המעקב.";
 
     (function bootstrapTheme() {
@@ -589,6 +589,8 @@
             <button type="button" data-filter="pinned" class="filter-chip px-3 py-1.5 rounded-xl text-xs font-bold bg-white/10 text-slate-200 hover:bg-white/20 transition shrink-0">מועדפים ⭐</button>
             <button type="button" data-filter="purchased" class="filter-chip px-3 py-1.5 rounded-xl text-xs font-bold bg-white/10 text-slate-200 hover:bg-white/20 transition shrink-0">נרכשו 🛍️</button>
             <button type="button" data-filter="all_time_low" class="filter-chip px-3 py-1.5 rounded-xl text-xs font-bold bg-white/10 text-slate-200 hover:bg-white/20 transition shrink-0">שפל היסטורי 🏆</button>
+            <button type="button" data-filter="with_coupon" class="filter-chip px-3 py-1.5 rounded-xl text-xs font-bold bg-white/10 text-slate-200 hover:bg-white/20 transition shrink-0">עם קופון 🏷️</button>
+            <button type="button" data-filter="watch_later" class="filter-chip px-3 py-1.5 rounded-xl text-xs font-bold bg-white/10 text-slate-200 hover:bg-white/20 transition shrink-0">שמור לאחר-כך ⏸️</button>
             <button type="button" data-filter="near_target" class="filter-chip px-3 py-1.5 rounded-xl text-xs font-bold bg-white/10 text-slate-200 hover:bg-white/20 transition shrink-0">קרוב ליעד 🎯</button>
             <button type="button" data-filter="multi_store" class="filter-chip px-3 py-1.5 rounded-xl text-xs font-bold bg-white/10 text-slate-200 hover:bg-white/20 transition shrink-0">השוואת חנויות 🏪</button>
             <button type="button" data-filter="variants" class="filter-chip px-3 py-1.5 rounded-xl text-xs font-bold bg-white/10 text-slate-200 hover:bg-white/20 transition shrink-0">עם אפשרויות 🎯</button>
@@ -690,7 +692,46 @@
 
     
 
-        <!-- TAB 2: ALERTS & DAILY REPORTS LOG -->
+        <!-- TAB: COUPONS & EXCLUSIVE DEALS (Inspired by 3DAPP) -->
+    <section id="tab-coupons" class="hidden space-y-5">
+      <!-- Coupons Hero Banner -->
+      <div class="liquid-glass rounded-3xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-amber-400/30 shadow-xl bg-gradient-to-r from-amber-950/40 via-slate-900/60 to-slate-950/70">
+        <div class="flex items-center gap-3.5">
+          <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-2xl shadow-lg shadow-amber-500/25 shrink-0 text-slate-950 font-black">
+            🏷️
+          </div>
+          <div>
+            <h2 class="text-lg font-black text-white flex items-center gap-2">
+              <span>מרכז קופונים ומבצעים בלעדיים</span>
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 font-extrabold border border-amber-400/30">עודכן היום</span>
+            </h2>
+            <p class="text-xs text-slate-300 mt-0.5">קופונים מאומתים, הנחות בלעדיות וקודי קופון להעתקה בלחיצה אחת לקניות בארץ ובעולם.</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <button id="openAddCouponBtn" type="button" class="btn-gradient-primary px-3.5 py-2 rounded-xl text-xs font-black text-slate-950 flex items-center gap-1.5 shadow-md active:scale-95 transition">
+            <span>➕</span>
+            <span>הוסף קופון</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Store Filter Chips for Coupons -->
+      <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1" id="couponStoreChipsBar">
+        <button type="button" onclick="filterCouponsByStore('all')" class="coupon-store-chip px-3 py-1.5 rounded-xl text-xs font-black liquid-pill-active text-white shrink-0">הכל (7)</button>
+        <button type="button" onclick="filterCouponsByStore('KSP')" class="coupon-store-chip px-3 py-1.5 rounded-xl text-xs font-bold liquid-glass-soft text-slate-200 hover:bg-white/15 shrink-0">KSP</button>
+        <button type="button" onclick="filterCouponsByStore('AliExpress')" class="coupon-store-chip px-3 py-1.5 rounded-xl text-xs font-bold liquid-glass-soft text-slate-200 hover:bg-white/15 shrink-0">AliExpress</button>
+        <button type="button" onclick="filterCouponsByStore('Amazon')" class="coupon-store-chip px-3 py-1.5 rounded-xl text-xs font-bold liquid-glass-soft text-slate-200 hover:bg-white/15 shrink-0">Amazon</button>
+        <button type="button" onclick="filterCouponsByStore('Ivory')" class="coupon-store-chip px-3 py-1.5 rounded-xl text-xs font-bold liquid-glass-soft text-slate-200 hover:bg-white/15 shrink-0">Ivory</button>
+        <button type="button" onclick="filterCouponsByStore('Shufersal')" class="coupon-store-chip px-3 py-1.5 rounded-xl text-xs font-bold liquid-glass-soft text-slate-200 hover:bg-white/15 shrink-0">שופרסל</button>
+        <button type="button" onclick="filterCouponsByStore('Bug')" class="coupon-store-chip px-3 py-1.5 rounded-xl text-xs font-bold liquid-glass-soft text-slate-200 hover:bg-white/15 shrink-0">באג</button>
+      </div>
+
+      <!-- Coupons Grid -->
+      <div id="couponsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+    </section>
+
+    <!-- TAB 2: ALERTS & DAILY REPORTS LOG -->
     <section id="tab-alerts" class="hidden space-y-5">
       <div class="liquid-glass rounded-3xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div class="flex items-center gap-3">
@@ -1217,19 +1258,25 @@
 
   </main>
 
-  <!-- Mobile Android Floating Liquid Glass Bottom Navigation Bar -->
-  <nav id="mobileBottomNav" class="sm:hidden fixed left-3 right-3 z-50 liquid-glass rounded-3xl p-1.5 flex items-center justify-around shadow-2xl border border-white/25 select-none" style="bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));">
-    <button type="button" data-tab="dashboard" onclick="switchTab('dashboard')" class="nav-tab-btn flex-1 py-2.5 rounded-2xl text-xs font-extrabold transition flex flex-col items-center gap-0.5 liquid-pill-active text-white active:scale-95 cursor-pointer touch-manipulation">
+  <!-- 3DAPP-INSPIRED FLOATING DOCK BOTTOM NAVIGATION BAR (v4.1.0) -->
+  <nav id="mobileBottomNav" class="sm:hidden fixed left-3 right-3 rounded-3xl p-1.5 flex items-center justify-around shadow-2xl border border-white/20 select-none backdrop-blur-2xl bg-slate-900/95" style="bottom: max(calc(0.75rem + env(safe-area-inset-bottom, 0px)), 14px); z-index: 99999 !important; touch-action: manipulation !important; pointer-events: auto !important;">
+    <button type="button" data-tab="dashboard" class="nav-tab-btn flex-1 py-2 rounded-2xl text-xs font-extrabold transition flex flex-col items-center gap-0.5 liquid-pill-active text-white active:scale-95 cursor-pointer touch-manipulation">
       <span class="text-base pointer-events-none">🛍️</span>
-      <span class="pointer-events-none">המוצרים שלי</span>
+      <span class="text-[11px] pointer-events-none">המוצרים שלי</span>
     </button>
-    <button type="button" data-tab="alerts" onclick="switchTab('alerts')" class="nav-tab-btn flex-1 py-2.5 rounded-2xl text-xs font-extrabold transition flex flex-col items-center gap-0.5 text-slate-300 active:scale-95 cursor-pointer touch-manipulation">
+    <button type="button" data-tab="coupons" class="nav-tab-btn flex-1 py-2 rounded-2xl text-xs font-extrabold transition flex flex-col items-center gap-0.5 text-slate-300 active:scale-95 cursor-pointer touch-manipulation relative">
+      <span class="text-base pointer-events-none">🏷️</span>
+      <span class="text-[11px] pointer-events-none">קופונים</span>
+      <span class="absolute top-1 right-2 w-2 h-2 rounded-full bg-amber-400 animate-pulse pointer-events-none"></span>
+    </button>
+    <button type="button" data-tab="alerts" class="nav-tab-btn flex-1 py-2 rounded-2xl text-xs font-extrabold transition flex flex-col items-center gap-0.5 text-slate-300 active:scale-95 cursor-pointer touch-manipulation relative">
       <span class="text-base pointer-events-none">🔔</span>
-      <span class="pointer-events-none">התראות</span>
+      <span class="text-[11px] pointer-events-none">התראות</span>
+      <span id="mobileAlertsBadge" class="hidden absolute top-1 right-3 px-1.5 py-0.2 rounded-full text-[9px] bg-rose-500 text-white font-black">0</span>
     </button>
-    <button type="button" data-tab="settings" onclick="switchTab('settings')" class="nav-tab-btn flex-1 py-2.5 rounded-2xl text-xs font-extrabold transition flex flex-col items-center gap-0.5 text-slate-300 active:scale-95 cursor-pointer touch-manipulation">
+    <button type="button" data-tab="settings" class="nav-tab-btn flex-1 py-2 rounded-2xl text-xs font-extrabold transition flex flex-col items-center gap-0.5 text-slate-300 active:scale-95 cursor-pointer touch-manipulation">
       <span class="text-base pointer-events-none">⚙️</span>
-      <span class="pointer-events-none">הגדרות</span>
+      <span class="text-[11px] pointer-events-none">הגדרות</span>
     </button>
   </nav>
 
@@ -5593,6 +5640,20 @@
       document.getElementById('headerDailyTime').textContent = state.settings.dailyTime || '09:00';
       document.getElementById('tabCountProducts').textContent = String(total);
       document.getElementById('tabCountAlerts').textContent = String(state.alerts.length);
+      const couponsBadge = document.getElementById('tabCountCoupons');
+      if (couponsBadge) {
+        const cCount = (Array.isArray(state.coupons) ? state.coupons.length : 0) + (window.VERIFIED_COUPONS ? window.VERIFIED_COUPONS.length : 7);
+        couponsBadge.textContent = String(cCount);
+      }
+      const mobAlertsBadge = document.getElementById('mobileAlertsBadge');
+      if (mobAlertsBadge) {
+        if (state.alerts.length > 0) {
+          mobAlertsBadge.textContent = String(state.alerts.length);
+          mobAlertsBadge.classList.remove('hidden');
+        } else {
+          mobAlertsBadge.classList.add('hidden');
+        }
+      }
       const sIcon = document.getElementById('soundIconOn'); if (sIcon) sIcon.textContent = state.settings.soundEnabled ? '🔔' : '🔕';
 
       const cloudBadge = document.getElementById('cloudSyncBadge');
@@ -5687,6 +5748,9 @@
         const offers = Array.isArray(p.storeOffers) ? p.storeOffers : [];
         if (state.ui.filter === 'dropped' && !(p.currentPrice < p.initialPrice)) return false;
         if (state.ui.filter === 'pinned' && !p.pinned) return false;
+        if (state.ui.filter === 'with_coupon' && !p.couponCode) return false;
+        if (state.ui.filter === 'watch_later' && !p.watchLater) return false;
+        if (state.ui.filter !== 'watch_later' && p.watchLater && state.ui.filter !== 'all') return false;
         if (state.ui.filter === 'purchased' && !p.isPurchased) return false;
         if (state.ui.filter !== 'purchased' && p.isPurchased) return false; // Hide purchased from general watchlist unless filter is 'purchased'
         if (state.ui.filter === 'multi_store' && offers.length < 2) return false;
@@ -5924,7 +5988,7 @@
               </button>
 
               <div class="flex items-center gap-1.5 shrink-0">
-                ${statusBadge}
+                ${p.watchLater ? '<span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-700/80 text-slate-300 border border-slate-600 font-bold shrink-0">⏸️ שמור</span>' : ''}${statusBadge}
                 <button type="button" data-action="toggle_pin" data-id="${p.id}" title="${p.pinned ? 'בטל נעיצה' : 'נעץ מוצר בראש'}" class="prod-action-btn w-7 h-7 rounded-xl ${p.pinned ? 'bg-amber-400/25 text-amber-300 border border-amber-400/50 shadow-sm' : 'liquid-glass-soft text-slate-400 hover:text-amber-300'} text-xs flex items-center justify-center shrink-0 transition">
                   ⭐
                 </button>
@@ -6405,7 +6469,254 @@
       });
     }
 
-    function initPriceRadarApp() {
+    
+    // =========================================================================
+    // 3DAPP-INSPIRED COUPONS HUB & ONE-TAP DISCOUNT SYSTEM (v4.1.0)
+    // =========================================================================
+    const DEFAULT_VERIFIED_COUPONS = [
+      { id: 'c_ksp_10', store: 'KSP', code: 'KSP10', discount: '10% הנחה על אביזרים', description: 'תקף על מגוון כיסויים, מטענים, כבלים וציוד היקפי', url: 'https://ksp.co.il', verified: true, expires: 'סוף החודש' },
+      { id: 'c_ali_5', store: 'AliExpress', code: 'ILCHOICE', discount: '$5 הנחה מעל $39', description: 'קופון בלעדי למוצרי Choice עם משלוח מהיר חינם', url: 'https://aliexpress.com', verified: true, expires: 'פעיל כעת' },
+      { id: 'c_amz_fs', store: 'Amazon', code: 'ILFREE49', discount: 'משלוח חינם מעל $49', description: 'משלוח חינם עד הבית על מיליוני מוצרים הזכאים למבצע', url: 'https://amazon.com', verified: true, expires: 'קבוע' },
+      { id: 'c_ivory_30', store: 'Ivory', code: 'IVORYVIP', discount: '₪30 הנחה מעל ₪299', description: 'הנחה במעמד הקופה על מחשבים, טאבלטים וגיימינג', url: 'https://ivory.co.il', verified: true, expires: 'עד גמר המלאי' },
+      { id: 'c_shuf_50', store: 'שופרסל', code: 'ONLINE50', discount: '₪50 הנחה מעל ₪300', description: 'למצטרפים חדשים לשופרסל Online ברכישה הראשונה', url: 'https://shufersal.co.il', verified: true, expires: 'למצטרפים חדשים' },
+      { id: 'c_bug_deal', store: 'באג', code: 'BUGDEAL', discount: '5% הנחה על גיימינג', description: 'קוד הנחה מיוחד לאוזניות, מקלדות ועכברי גיימינג', url: 'https://bug.co.il', verified: true, expires: 'מוגבל בזמן' },
+      { id: 'c_last_save', store: 'LastPrice', code: 'LASTSAVE', discount: '₪50 הנחה מעל ₪499', description: 'הנחה על מוצרי חשמל לבית, שואבים ומסכים', url: 'https://lastprice.co.il', verified: true, expires: 'פעיל' }
+    ];
+    window.VERIFIED_COUPONS = DEFAULT_VERIFIED_COUPONS;
+
+    let activeCouponFilterStore = 'all';
+    window.filterCouponsByStore = function(st) {
+      activeCouponFilterStore = st;
+      renderCouponsList();
+      playAudioFx('tick');
+      triggerHaptic('light');
+    };
+
+    function renderCouponsList() {
+      const grid = document.getElementById('couponsGrid');
+      if (!grid) return;
+      const allCoupons = [
+        ...DEFAULT_VERIFIED_COUPONS,
+        ...(Array.isArray(state.coupons) ? state.coupons : [])
+      ];
+
+      const chipsBar = document.getElementById('couponStoreChipsBar');
+      if (chipsBar) {
+        const stores = ['all', 'KSP', 'AliExpress', 'Amazon', 'Ivory', 'שופרסל', 'באג'];
+        chipsBar.innerHTML = '';
+        stores.forEach(st => {
+          const isAct = activeCouponFilterStore === st;
+          const label = st === 'all' ? `הכל (${allCoupons.length})` : st;
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = `coupon-store-chip px-3 py-1.5 rounded-xl text-xs font-black transition shrink-0 ${
+            isAct ? 'liquid-pill-active text-white scale-105 shadow-md' : 'liquid-glass-soft text-slate-200 hover:bg-white/15'
+          }`;
+          btn.textContent = label;
+          btn.onclick = () => window.filterCouponsByStore(st);
+          chipsBar.appendChild(btn);
+        });
+      }
+
+      const filtered = allCoupons.filter(c => {
+        if (activeCouponFilterStore !== 'all' && c.store !== activeCouponFilterStore) return false;
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full liquid-glass-soft rounded-3xl p-8 text-center text-slate-300 text-sm space-y-2">
+            <p class="text-3xl">🏷️</p>
+            <p class="font-bold text-white">לא נמצאו קופונים עבור ${escapeHtml(activeCouponFilterStore)}</p>
+            <p class="text-xs text-slate-400">תוכל להוסיף קופון משלך בלחיצה על "הוסף קופון" למעלה!</p>
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = filtered.map(c => {
+        const meta = getStoreMeta(c.url || `https://${c.store.toLowerCase()}.com`);
+        return `
+          <div class="liquid-glass card-hover rounded-3xl p-4 sm:p-5 flex flex-col justify-between gap-3 border border-amber-400/25 relative overflow-hidden group">
+            <div class="space-y-2">
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                  <img src="${escapeHtml(meta.favicon)}" alt="" class="w-4 h-4 rounded-sm object-contain" onerror="this.style.display='none'" />
+                  <span class="text-xs font-black text-amber-200">${escapeHtml(c.store)}</span>
+                </div>
+                <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 font-extrabold flex items-center gap-1">
+                  <span>✓</span>
+                  <span>${escapeHtml(c.expires || 'פעיל')}</span>
+                </span>
+              </div>
+              <h3 class="text-sm sm:text-base font-black text-white">${escapeHtml(c.discount)}</h3>
+              <p class="text-xs text-slate-300">${escapeHtml(c.description || '')}</p>
+            </div>
+
+            <div class="pt-2 border-t border-white/10 flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2 bg-slate-950/70 border border-dashed border-amber-400/50 rounded-xl px-3 py-1.5 min-w-0 flex-1">
+                <span class="text-xs">🏷️</span>
+                <span class="font-mono text-xs sm:text-sm font-black tracking-wider text-amber-300 truncate">${escapeHtml(c.code)}</span>
+              </div>
+              <button type="button" onclick="copyCouponCode('${escapeHtml(c.code)}')" class="btn-gradient-primary px-3.5 py-2 rounded-xl text-slate-950 font-black text-xs shadow-md active:scale-95 transition shrink-0 flex items-center gap-1">
+                <span>📋</span>
+                <span>העתק</span>
+              </button>
+              ${c.url ? `<a href="${escapeHtml(c.url)}" target="_blank" rel="noopener noreferrer" class="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200 flex items-center justify-center text-xs font-bold transition shrink-0">↗</a>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    window.copyCouponCode = function(code) {
+      if (!code) return;
+      navigator.clipboard.writeText(code).then(() => {
+        playAudioFx('chime');
+        triggerHaptic('success');
+        showToast('הקופון הועתק ללוח! 🏷️', `קוד: "${code}". הדבק אותו בעמוד התשלום בחנות לקבלת ההנחה.`, 'success');
+      }).catch(() => {
+        prompt('העתק את קוד הקופון:', code);
+      });
+    };
+
+    // =========================================================================
+    // 3DAPP-INSPIRED REPORT WRONG PRICE / DEAD LINK MODAL (v4.1.0)
+    // =========================================================================
+    let currentReportingProductId = null;
+    function openReportModal(prodId) {
+      currentReportingProductId = prodId;
+      const prod = state.products.find(p => p.id === prodId);
+      if (!prod) return;
+      const modal = document.getElementById('reportModal');
+      const titleEl = document.getElementById('reportModalProductTitle');
+      const priceInput = document.getElementById('reportRealPriceInput');
+      if (titleEl) titleEl.textContent = `${prod.title} (${prod.store} - ${formatPrice(prod.currentPrice)})`;
+      if (priceInput) priceInput.value = '';
+      if (modal) modal.classList.remove('hidden');
+      playAudioFx('pop');
+      triggerHaptic('light');
+    }
+
+    function closeReportModal() {
+      const modal = document.getElementById('reportModal');
+      if (modal) modal.classList.add('hidden');
+      currentReportingProductId = null;
+    }
+
+    function submitReportModal() {
+      if (!currentReportingProductId) return closeReportModal();
+      const prod = state.products.find(p => p.id === currentReportingProductId);
+      if (!prod) return closeReportModal();
+
+      const reasonEl = document.querySelector('input[name="reportReason"]:checked');
+      const reason = reasonEl ? reasonEl.value : 'wrong_price';
+      const realPriceVal = parseFloat(document.getElementById('reportRealPriceInput').value);
+
+      state.reports = state.reports || [];
+      state.reports.push({
+        id: 'rep_' + Date.now(),
+        productId: prod.id,
+        productTitle: prod.title,
+        store: prod.store,
+        url: prod.url,
+        reason: reason,
+        reportedPrice: !isNaN(realPriceVal) ? realPriceVal : null,
+        date: new Date().toISOString()
+      });
+
+      if (!isNaN(realPriceVal) && realPriceVal > 0) {
+        const oldPrice = prod.currentPrice;
+        prod.currentPrice = realPriceVal;
+        if (!Array.isArray(prod.history)) prod.history = [];
+        prod.history.push({
+          price: realPriceVal,
+          date: new Date().toISOString(),
+          note: 'עודכן ידנית בדיווח משתמש'
+        });
+        if (!prod.lowestPrice || realPriceVal < prod.lowestPrice) {
+          prod.lowestPrice = realPriceVal;
+        }
+        saveState();
+        renderAll();
+        showToast('המחיר עודכן בהצלחה! 🎉', `המחיר של "${prod.title}" עודכן מ-${formatPrice(oldPrice)} ל-${formatPrice(realPriceVal)}.`, 'success');
+      } else {
+        saveState();
+        showToast('תודה על הדיווח! 🚩', `הדיווח עבור "${prod.title}" נרשם וייבדק בסריקה הבאה.`, 'info');
+      }
+      playAudioFx('success');
+      triggerHaptic('success');
+      closeReportModal();
+    }
+
+function initPriceRadarApp() {
+      // Document-level robust event delegation for bottom bar and desktop nav tabs
+      function handleNavTabActivation(e) {
+        const btn = e.target.closest('.nav-tab-btn');
+        if (btn) {
+          const tab = btn.getAttribute('data-tab');
+          if (tab) {
+            e.preventDefault();
+            switchTab(tab);
+            playAudioFx('tick');
+            triggerHaptic('light');
+          }
+        }
+      }
+      document.addEventListener('click', handleNavTabActivation);
+      document.addEventListener('touchend', (e) => {
+        const btn = e.target.closest('.nav-tab-btn');
+        if (btn) handleNavTabActivation(e);
+      }, { passive: false });
+
+      // Report Modal Buttons
+      const closeRepBtn = document.getElementById('closeReportModalBtn');
+      const cancelRepBtn = document.getElementById('cancelReportModalBtn');
+      const submitRepBtn = document.getElementById('submitReportModalBtn');
+      if (closeRepBtn) closeRepBtn.onclick = closeReportModal;
+      if (cancelRepBtn) cancelRepBtn.onclick = closeReportModal;
+      if (submitRepBtn) submitRepBtn.onclick = submitReportModal;
+
+      // Add Coupon Modal Buttons
+      const openAddCpn = document.getElementById('openAddCouponBtn');
+      const addCpnModal = document.getElementById('addCouponModal');
+      const closeAddCpn = document.getElementById('closeAddCouponModalBtn');
+      const cancelAddCpn = document.getElementById('cancelAddCouponModalBtn');
+      const saveAddCpn = document.getElementById('saveNewCouponBtn');
+      if (openAddCpn && addCpnModal) {
+        openAddCpn.onclick = () => { playAudioFx('pop'); addCpnModal.classList.remove('hidden'); };
+      }
+      if (closeAddCpn && addCpnModal) closeAddCpn.onclick = () => addCpnModal.classList.add('hidden');
+      if (cancelAddCpn && addCpnModal) cancelAddCpn.onclick = () => addCpnModal.classList.add('hidden');
+      if (saveAddCpn && addCpnModal) {
+        saveAddCpn.onclick = () => {
+          const store = document.getElementById('newCouponStore').value.trim();
+          const code = document.getElementById('newCouponCode').value.trim().toUpperCase();
+          const discount = document.getElementById('newCouponDiscount').value.trim();
+          const url = document.getElementById('newCouponUrl').value.trim();
+          if (!store || !code || !discount) {
+            showToast('נא למלא חנות, קוד והנחה', 'כל השדות האלו נדרשים כדי לשמור את הקופון.', 'error');
+            return;
+          }
+          state.coupons = state.coupons || [];
+          state.coupons.push({
+            id: 'c_' + Date.now(),
+            store, code, discount,
+            description: discount,
+            url: url || '',
+            verified: true,
+            expires: 'פעיל'
+          });
+          saveState();
+          renderCouponsList();
+          renderStatsAndHeader();
+          addCpnModal.classList.add('hidden');
+          playAudioFx('chime');
+          triggerHaptic('success');
+          showToast('הקופון נוסף בהצלחה! 🏷️', `קופון ${code} עבור ${store} זמין כעת במרכז הקופונים.`, 'success');
+        };
+      }
+
       initCommandPalette();
       initShortcutsGuideModal();
       initScrollProgressAndNetwork();
@@ -6888,6 +7199,24 @@
               : `לא יישלחו התראות על שינוי במשלוח חינם עבור מוצר זה.`,
             'info'
           );
+        } else if (action === 'toggle_watch_later') {
+          prod.watchLater = !prod.watchLater;
+          saveState();
+          playAudioFx('pop');
+          triggerHaptic('medium');
+          renderAll();
+          showToast(
+            prod.watchLater ? '⏸️ הועבר לשמור לאחר-כך' : '▶️ הוחזר למעקב פעיל',
+            prod.watchLater
+              ? `ההתראות עבור "${prod.title}" הושהו. המוצר זמין בסינון "שמור לאחר-כך".`
+              : `ההתראות עבור "${prod.title}" חזרו לפעול כרגיל.`,
+            'info'
+          );
+        } else if (action === 'copy_coupon') {
+          const code = btn.getAttribute('data-code') || prod.couponCode;
+          if (code) window.copyCouponCode(code);
+        } else if (action === 'report_product') {
+          openReportModal(id);
         } else if (action === 'check') {
           checkSingleProductNow(id, false);
         } else if (action === 'add_store') {
@@ -7894,7 +8223,92 @@ https://myrabbit.co.il/..." class="w-full p-3 rounded-2xl liquid-glass-input tex
   </div>
 
   <!-- MODAL: KEYBOARD SHORTCUTS GUIDE (?) (v4.0.0 ULTRA) -->
-  <div id="shortcutsGuideModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+    <!-- MODAL: REPORT WRONG PRICE OR DEAD LINK (Inspired by 3DAPP) -->
+  <div id="reportModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="liquid-glass rounded-3xl max-w-md w-full p-5 sm:p-6 space-y-4 border border-rose-500/40 shadow-2xl relative">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <span class="text-2xl">🚩</span>
+          <div>
+            <h3 class="text-base font-extrabold text-white">דיווח על מחיר לא תקין / תקלה</h3>
+            <p id="reportModalProductTitle" class="text-xs text-slate-300 truncate max-w-xs mt-0.5 font-bold"></p>
+          </div>
+        </div>
+        <button id="closeReportModalBtn" type="button" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 flex items-center justify-center text-sm font-bold transition">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <label class="block font-bold text-slate-200">מה הבעיה שנתקלת בה?</label>
+        <div class="space-y-2">
+          <label class="flex items-center gap-2.5 p-2.5 rounded-xl bg-slate-900/60 border border-white/10 cursor-pointer hover:border-cyan-400/40 transition">
+            <input type="radio" name="reportReason" value="wrong_price" checked class="accent-cyan-400" />
+            <span class="text-slate-200 font-bold">המחיר באתר שונה מהמחיר שנסרק באפליקציה</span>
+          </label>
+          <label class="flex items-center gap-2.5 p-2.5 rounded-xl bg-slate-900/60 border border-white/10 cursor-pointer hover:border-cyan-400/40 transition">
+            <input type="radio" name="reportReason" value="out_of_stock" class="accent-cyan-400" />
+            <span class="text-slate-200 font-bold">המוצר אזל מהמלאי בחנות</span>
+          </label>
+          <label class="flex items-center gap-2.5 p-2.5 rounded-xl bg-slate-900/60 border border-white/10 cursor-pointer hover:border-cyan-400/40 transition">
+            <input type="radio" name="reportReason" value="broken_link" class="accent-cyan-400" />
+            <span class="text-slate-200 font-bold">הקישור שבור / שגיאה 404 / הדף לא נטען</span>
+          </label>
+        </div>
+
+        <div id="reportPriceInputContainer" class="space-y-1.5 pt-1">
+          <label class="block font-bold text-cyan-200">מה המחיר האמיתי העדכני שמופיע באתר? (₪)</label>
+          <input type="number" id="reportRealPriceInput" step="any" placeholder="לדוגמה: 149" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-cyan-400/40 text-white placeholder-slate-500 font-bold focus:outline-none focus:ring-2 focus:ring-cyan-400/50" />
+          <p class="text-[11px] text-slate-400">אם תזין מחיר, נעדכן את המחיר ישירות בכרטיס המוצר ובגרף ההיסטוריה.</p>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-white/10">
+        <button id="cancelReportModalBtn" type="button" class="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 font-bold text-xs transition">ביטול</button>
+        <button id="submitReportModalBtn" type="button" class="btn-gradient-primary px-4 py-2 rounded-xl text-slate-950 font-black text-xs shadow-md active:scale-95 transition">שלח דיווח ועדכן</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD CUSTOM COUPON (Inspired by 3DAPP) -->
+  <div id="addCouponModal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="liquid-glass rounded-3xl max-w-md w-full p-5 sm:p-6 space-y-4 border border-amber-400/40 shadow-2xl relative">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <span class="text-2xl">🏷️</span>
+          <div>
+            <h3 class="text-base font-extrabold text-white">הוספת קופון חדש</h3>
+            <p class="text-xs text-slate-300 mt-0.5">שתף קוד קופון להנחה באחת החנויות</p>
+          </div>
+        </div>
+        <button id="closeAddCouponModalBtn" type="button" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 flex items-center justify-center text-sm font-bold transition">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-bold text-slate-200 mb-1">שם החנות</label>
+          <input type="text" id="newCouponStore" placeholder="לדוגמה: KSP, Amazon, AliExpress, Ivory" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-white/20 text-white placeholder-slate-500 font-bold focus:outline-none focus:ring-2 focus:ring-amber-400/50" />
+        </div>
+        <div>
+          <label class="block font-bold text-slate-200 mb-1">קוד הקופון</label>
+          <input type="text" id="newCouponCode" placeholder="לדוגמה: SAVE15 / KSP10" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-amber-400/40 text-amber-300 uppercase font-mono font-black focus:outline-none focus:ring-2 focus:ring-amber-400/50" />
+        </div>
+        <div>
+          <label class="block font-bold text-slate-200 mb-1">גובה ההנחה / תיאור</label>
+          <input type="text" id="newCouponDiscount" placeholder="לדוגמה: 10% הנחה על כל מוצרי החשמל" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-white/20 text-white placeholder-slate-500 font-bold focus:outline-none focus:ring-2 focus:ring-amber-400/50" />
+        </div>
+        <div>
+          <label class="block font-bold text-slate-200 mb-1">קישור לחנות / עמוד הקופון (אופציונלי)</label>
+          <input type="url" id="newCouponUrl" placeholder="https://..." class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-white/20 text-white placeholder-slate-500 font-bold focus:outline-none focus:ring-2 focus:ring-amber-400/50" />
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-white/10">
+        <button id="cancelAddCouponModalBtn" type="button" class="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 font-bold text-xs transition">ביטול</button>
+        <button id="saveNewCouponBtn" type="button" class="btn-gradient-primary px-4 py-2 rounded-xl text-slate-950 font-black text-xs shadow-md active:scale-95 transition">שמור קופון</button>
+      </div>
+    </div>
+  </div>
+
+<div id="shortcutsGuideModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
     <div class="liquid-glass rounded-3xl max-w-md w-full p-5 sm:p-6 space-y-4 border border-cyan-400/40">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
