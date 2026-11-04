@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
   <script>
-    window.__APP_VERSION__ = "3.6.2";
+    window.__APP_VERSION__ = "3.7.0";
     window.__BUILD_TIMESTAMP__ = 1762240000;
     window.__OTA_RELEASE_NOTES__ = "v3.6.2: תיקון דיוק מחירים מעל 1,000 ש\"ח (תיקון קיצוץ 9685 ל-968), תיקון כיוון שעון 24H (מ-00:09 ל-09:00), ביטול התראות קופצות בהחלפת ערכת נושא, שיפור תהליך אישור הרשאות פוש, והבהרת שדות המעקב.";
 
@@ -393,7 +393,7 @@
             <h1 class="text-xl sm:text-2xl font-black tracking-tight bg-gradient-to-r from-white via-cyan-100 to-emerald-300 bg-clip-text text-transparent whitespace-nowrap">
               PriceRadar
             </h1>
-            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 tracking-wider">v3.6.2</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 tracking-wider">v3.7.0</span>
             <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot shrink-0" title="מעקב מחירים פעיל"></span>
           </div>
           <p class="text-[11px] text-slate-300/85 font-medium">מעקב מחירים חכם 24/7</p>
@@ -448,6 +448,12 @@
 
     <!-- TAB 1: DASHBOARD -->
     <section id="tab-dashboard" class="space-y-4 sm:space-y-5">
+
+      <!-- Pull-to-Refresh Indicator (Mobile Touch) -->
+      <div id="pullToRefreshIndicator" class="hidden w-full overflow-hidden transition-all duration-200 flex items-center justify-center gap-2 py-2 text-cyan-300 text-xs font-black bg-cyan-950/40 rounded-2xl border border-cyan-500/20">
+        <span id="pullToRefreshIcon" class="inline-block transition-transform duration-200 text-sm">↓</span>
+        <span id="pullToRefreshText">משוך לרענון מחירים</span>
+      </div>
 
       <!-- Automatic Clipboard Link Detection Banner (Appears when entering the app with a copied link) -->
       <div id="clipboardDetectBanner" class="hidden rounded-2xl bg-gradient-to-r from-slate-900/95 via-cyan-950/90 to-slate-900/95 border border-cyan-400/50 p-4 shadow-2xl space-y-3 transition-all">
@@ -536,6 +542,31 @@
         </div>
       </div>
 
+      <!-- Gamified Savings Vault & XP Tier Widget -->
+      <div id="savingsVaultWidget" class="liquid-glass rounded-2xl p-3.5 sm:p-4 border border-cyan-500/30 flex flex-col sm:flex-row items-center justify-between gap-3 cursor-pointer hover:border-cyan-400/60 transition shadow-lg">
+        <div class="flex items-center gap-3 w-full sm:w-auto">
+          <div id="savingsVaultBadgeIcon" class="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-2xl shadow-lg shadow-amber-500/25 shrink-0">
+            🥉
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2">
+              <span id="savingsVaultRankText" class="text-xs sm:text-sm font-black text-white">צייד טירון 🥉</span>
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-200 border border-cyan-400/30 font-bold">כספת חיסכון</span>
+            </div>
+            <p id="savingsVaultDesc" class="text-[11px] text-slate-300 mt-0.5 truncate">עוד ₪100 לדרגת אשף מבצעים 🥈</p>
+          </div>
+        </div>
+        <div class="w-full sm:w-56 space-y-1.5">
+          <div class="flex items-center justify-between text-[10px] font-bold text-slate-300">
+            <span>התקדמות לדרגה הבאה</span>
+            <span id="savingsVaultPct" class="font-mono text-cyan-300">0%</span>
+          </div>
+          <div class="w-full h-2 rounded-full bg-slate-900 overflow-hidden border border-white/10">
+            <div id="savingsVaultProgressBar" class="h-full bg-gradient-to-r from-cyan-400 via-teal-400 to-emerald-400 transition-all duration-700" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+
       <!-- Active Store Filter Banner (Appears when clicking a store pill on any product card) -->
       <div id="activeStoreFilterBanner" class="hidden rounded-2xl bg-gradient-to-r from-emerald-500/20 via-teal-500/20 to-cyan-500/15 border border-emerald-400/30 px-4 py-2.5 flex items-center justify-between gap-3 shadow-lg">
         <div class="flex items-center gap-2 text-xs font-extrabold text-white">
@@ -559,10 +590,23 @@
             <button type="button" data-filter="variants" class="filter-chip px-3 py-1.5 rounded-xl text-xs font-bold bg-white/10 text-slate-200 hover:bg-white/20 transition shrink-0">עם אפשרויות 🎯</button>
           </div>
 
-          <!-- Search Input -->
-          <div class="relative flex-1 sm:max-w-xs">
-            <input id="searchProductsInput" type="text" placeholder="🔍 חיפוש מוצר, חנות או תחום..." class="w-full px-3 py-1.5 rounded-xl liquid-glass-input text-xs text-white placeholder-slate-400 outline-none" />
+          <!-- Search Input with Clear Button + View Mode Switcher -->
+          <div class="flex items-center gap-2 flex-1 sm:max-w-md">
+            <div class="relative flex-1">
+              <input id="searchProductsInput" type="text" placeholder="🔍 חיפוש מוצר, חנות או תחום..." class="w-full pl-7 pr-3 py-1.5 rounded-xl liquid-glass-input text-xs text-white placeholder-slate-400 outline-none" />
+              <button id="clearSearchBtn" type="button" class="hidden absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs">✕</button>
+            </div>
+            <button id="viewModeToggleBtn" type="button" title="החלף תצוגה (כרטיסים / רשימה קומפקטית)" class="px-3 py-1.5 rounded-xl liquid-glass-soft hover:bg-white/20 text-xs font-black text-cyan-200 border border-cyan-400/35 shrink-0 flex items-center gap-1.5 transition">
+              <span id="viewModeIcon">☰</span>
+              <span id="viewModeLabel" class="hidden sm:inline">רשימה</span>
+            </button>
           </div>
+        </div>
+
+        <!-- Filter Status & Live Results Count Strip -->
+        <div id="filterStatusRow" class="hidden flex items-center justify-between text-[11px] pt-1 border-t border-white/10 text-slate-300">
+          <span id="searchResultsCountBadge" class="font-extrabold text-cyan-300"></span>
+          <button id="resetAllFiltersBtn" type="button" class="text-xs text-cyan-300 hover:text-cyan-100 hover:underline font-bold">איפוס סינונים ✕</button>
         </div>
 
         <!-- Store Filter, Category Filter & Sort Selects (Compact 3-col even on mobile) -->
@@ -626,6 +670,9 @@
           </div>
         </div>
       </div>
+
+      <!-- Store Quick-Launcher Filter Carousel -->
+      <div id="storeCarouselBar" class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1"></div>
 
       <!-- Products Grid -->
       <div id="productsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-5"></div>
@@ -941,12 +988,88 @@
         </div>
       </div>
 
+      <!-- Sensory & Sound FX Studio Card -->
+      <div class="liquid-glass rounded-3xl p-5 sm:p-6 space-y-4 border border-cyan-500/25">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-2xl shadow-lg shadow-cyan-500/25">
+              🎧
+            </div>
+            <div>
+              <h3 class="text-base sm:text-lg font-extrabold text-white">אפקטים קוליים ורטט הפטי (Sensory Studio)</h3>
+              <p class="text-xs text-slate-300">צלילים סינתטיים מקצועיים (ללא טעינת קבצים) ורטט מגע בעת שימוש באפליקציה</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+          <div class="p-3.5 rounded-2xl liquid-glass-soft border border-white/10 space-y-3">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-xs font-black text-cyan-200">צלילי מערכת (Web Audio FX)</p>
+                <p class="text-[11px] text-slate-300">צלילי לחיצה, ירידת מחיר ואישור</p>
+              </div>
+              <input id="settingsSoundToggle" type="checkbox" checked class="w-5 h-5 accent-cyan-400 cursor-pointer" />
+            </div>
+            <div class="flex items-center gap-1.5 pt-1 flex-wrap">
+              <span class="text-[10px] text-slate-400 font-bold">דגימות צליל:</span>
+              <button id="previewPopBtn" type="button" class="px-2.5 py-1 rounded-xl bg-white/10 hover:bg-white/20 text-xs text-white font-bold transition">🫧 פופ</button>
+              <button id="previewChimeBtn" type="button" class="px-2.5 py-1 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-xs text-emerald-200 font-bold transition">🔔 ירידת מחיר</button>
+              <button id="previewTickBtn" type="button" class="px-2.5 py-1 rounded-xl bg-white/10 hover:bg-white/20 text-xs text-white font-bold transition">⚙️ תיק</button>
+              <button id="previewTrashBtn" type="button" class="px-2.5 py-1 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-xs text-rose-200 font-bold transition">💨 מחק</button>
+            </div>
+          </div>
+
+          <div class="p-3.5 rounded-2xl liquid-glass-soft border border-white/10 space-y-3">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-xs font-black text-cyan-200">רטט הפטי (Haptic Feedback)</p>
+                <p class="text-[11px] text-slate-300">רטט מגע בעת מחוות החלקה ופעולות</p>
+              </div>
+              <input id="settingsHapticToggle" type="checkbox" checked class="w-5 h-5 accent-cyan-400 cursor-pointer" />
+            </div>
+            <div class="flex items-center gap-2 pt-1">
+              <button id="previewHapticBtn" type="button" class="px-3 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-xs text-cyan-200 font-extrabold border border-cyan-400/30 transition">
+                📳 בדיקת רטט במכשיר
+              </button>
+              <button id="previewConfettiBtn" type="button" class="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-xs text-amber-200 font-extrabold border border-amber-400/30 transition">
+                🎉 הפעל קונפטי
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- JSON Watchlist Backup & Restore Card -->
+      <div class="liquid-glass rounded-3xl p-5 sm:p-6 space-y-4 border border-purple-500/25">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-2xl shadow-lg shadow-purple-500/25">
+              💾
+            </div>
+            <div>
+              <h3 class="text-base sm:text-lg font-extrabold text-white">גיבוי ושחזור מלא (קובץ JSON)</h3>
+              <p class="text-xs text-slate-300">שמור עותק של כל המוצרים, היסטוריית המחירים וההגדרות לקובץ במכשירך או שחזר מגיבוי קיים</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="exportBackupBtn" type="button" class="px-4 py-2 rounded-2xl btn-gradient-primary text-slate-950 font-black text-xs shadow-md transition">
+              💾 שמור גיבוי JSON
+            </button>
+            <label for="importBackupFileInput" class="px-4 py-2 rounded-2xl liquid-glass-soft hover:bg-white/20 text-purple-200 border border-purple-400/35 font-extrabold text-xs cursor-pointer transition">
+              📥 שחזר מגיבוי JSON
+            </label>
+            <input id="importBackupFileInput" type="file" accept=".json" class="hidden" />
+          </div>
+        </div>
+      </div>
+
       <!-- Clean Reset & App Status Card -->
       <div class="liquid-glass-soft rounded-3xl p-5 space-y-4">
         <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-white/10 text-xs">
           <div class="flex items-center gap-2 flex-wrap">
             <span class="text-slate-300 font-bold">גרסת מערכת:</span>
-            <span id="appVersionHeaderBadge" class="font-mono font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">v3.6.2</span>
+            <span id="appVersionHeaderBadge" class="font-mono font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">v3.7.0</span>
             <span id="cloudSyncBadge" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-teal-500/25 text-teal-200 border border-teal-400/30 flex items-center gap-1">☁️ ענן 24/7</span>
             <span class="text-slate-400">בדיקת מחירים אוטומטית הבאה: <span id="nextCheckTimer" class="font-mono font-bold text-cyan-300">--:--</span></span>
             <span class="hidden" id="headerDailyTime">09:00</span>
@@ -962,7 +1085,7 @@
         <div class="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/15 via-teal-500/15 to-cyan-500/15 border border-emerald-400/30 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div class="space-y-1 text-center sm:text-right">
             <div class="flex items-center gap-2 justify-center sm:justify-start">
-              <span class="text-xs font-black text-emerald-300">📱 גרסת קובץ APK עדכנית: v3.6.2</span>
+              <span class="text-xs font-black text-emerald-300">📱 גרסת קובץ APK עדכנית: v3.7.0</span>
               <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 font-mono font-bold">RELEASE</span>
             </div>
             <p class="text-[11px] text-slate-300">הורדת קובץ ההתקנה העדכני (במידה ורוצים להתקין מחדש או על מכשיר נוסף)</p>
@@ -976,7 +1099,7 @@
               class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl btn-gradient-emerald text-white text-xs font-extrabold flex items-center justify-center gap-2 shadow-lg hover:brightness-110 transition"
             >
               <span>⬇️</span>
-              <span>הורד APK מעודכן v3.6.2</span>
+              <span>הורד APK מעודכן v3.7.0</span>
             </a>
           </div>
         </div>
@@ -1205,7 +1328,15 @@
           <div>
             <label for="modalTargetPrice" class="block text-xs font-bold text-slate-200 mb-1">מחיר יעד להתראה (אופציונלי):</label>
             <input id="modalTargetPrice" type="number" step="0.01" min="0" placeholder="התראה בכל ירידה" class="w-full px-3.5 py-2.5 rounded-2xl liquid-glass-input text-sm text-white outline-none" />
-            <p class="text-[10px] text-slate-400 mt-1">קבל התראה כשהמחיר יורד לסכום זה</p>
+            <!-- Quick Target Presets -->
+            <div class="flex items-center gap-1.5 pt-1.5 flex-wrap">
+              <span class="text-[10px] text-slate-400 font-bold">קביעת יעד מהירה:</span>
+              <button type="button" data-preset="-5" class="target-preset-btn px-2 py-0.5 rounded-lg bg-white/10 hover:bg-emerald-500/30 text-emerald-300 text-[10px] font-bold border border-white/15 transition">-5%</button>
+              <button type="button" data-preset="-10" class="target-preset-btn px-2 py-0.5 rounded-lg bg-white/10 hover:bg-emerald-500/30 text-emerald-300 text-[10px] font-bold border border-white/15 transition">-10%</button>
+              <button type="button" data-preset="-15" class="target-preset-btn px-2 py-0.5 rounded-lg bg-white/10 hover:bg-emerald-500/30 text-emerald-300 text-[10px] font-bold border border-white/15 transition">-15%</button>
+              <button type="button" data-preset="-20" class="target-preset-btn px-2 py-0.5 rounded-lg bg-white/10 hover:bg-emerald-500/30 text-emerald-300 text-[10px] font-bold border border-white/15 transition">-20%</button>
+              <button type="button" data-preset="-50" class="target-preset-btn px-2 py-0.5 rounded-lg bg-white/10 hover:bg-cyan-500/30 text-cyan-300 text-[10px] font-bold border border-white/15 transition">-₪50</button>
+            </div>
           </div>
         </div>
 
@@ -1244,6 +1375,20 @@
               <option value="home" class="bg-slate-900">🏠 לבית ולמטבח</option>
               <option value="other" class="bg-slate-900">🛍️ כללי</option>
             </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label for="modalCustomNote" class="block text-xs font-bold text-slate-200 mb-1">הערה אישית / תיוג (אופציונלי):</label>
+            <input id="modalCustomNote" type="text" placeholder="למשל: מתנה ליום הולדת, מבצע סוף שנה..." class="w-full px-3.5 py-2 rounded-2xl liquid-glass-input text-xs text-white outline-none" />
+          </div>
+          <div class="flex items-center gap-2 pt-5">
+            <input id="modalPinnedCheckbox" type="checkbox" class="w-5 h-5 accent-amber-400 cursor-pointer rounded-lg" />
+            <label for="modalPinnedCheckbox" class="text-xs font-extrabold text-amber-200 cursor-pointer flex items-center gap-1">
+              <span>⭐</span>
+              <span>נעץ מוצר זה תמיד בראש הרשימה</span>
+            </label>
           </div>
         </div>
 
@@ -1492,6 +1637,7 @@
         dailyTime: '09:00',
         checkIntervalMinutes: 60,
         soundEnabled: true,
+        hapticEnabled: true,
         browserNotifEnabled: false,
         tgBotToken: '',
         tgChatId: '',
@@ -1511,6 +1657,7 @@
         categoryFilter: 'all',
         sortBy: 'newest',
         searchQuery: '',
+        viewMode: (typeof localStorage !== 'undefined' && localStorage.getItem('priceradar_view_mode')) || 'grid',
         nextCheckSeconds: 3600,
         pendingVariations: [],
         confirmCallback: null
@@ -1829,10 +1976,10 @@
     }
 
     // =========================================================================
-    // SOUND CHIME (Web Audio API)
+    // SENSORY ENGINE: SYNTH AUDIO + NATIVE HAPTICS + CANVAS CONFETTI
     // =========================================================================
     let audioCtx = null;
-    function playNotificationSound(type = 'drop') {
+    function playAudioFx(type = 'pop') {
       if (!state.settings.soundEnabled) return;
       try {
         if (!audioCtx) {
@@ -1842,21 +1989,675 @@
         }
         if (audioCtx.state === 'suspended') audioCtx.resume();
         const now = audioCtx.currentTime;
-        const notes = type === 'drop' ? [523.25, 659.25, 783.99, 1046.5] : [440, 554.37, 659.25];
-        notes.forEach((freq, idx) => {
+
+        if (type === 'pop') {
           const osc = audioCtx.createOscillator();
           const gain = audioCtx.createGain();
           osc.type = 'sine';
-          osc.frequency.setValueAtTime(freq, now + idx * 0.09);
-          gain.gain.setValueAtTime(0.001, now + idx * 0.09);
-          gain.gain.exponentialRampToValueAtTime(0.14, now + idx * 0.09 + 0.02);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.09 + 0.22);
+          osc.frequency.setValueAtTime(420, now);
+          osc.frequency.exponentialRampToValueAtTime(840, now + 0.045);
+          gain.gain.setValueAtTime(0.001, now);
+          gain.gain.linearRampToValueAtTime(0.12, now + 0.01);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
           osc.connect(gain);
           gain.connect(audioCtx.destination);
-          osc.start(now + idx * 0.09);
-          osc.stop(now + idx * 0.09 + 0.24);
-        });
+          osc.start(now);
+          osc.stop(now + 0.07);
+        } else if (type === 'tick') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(1400, now);
+          osc.frequency.exponentialRampToValueAtTime(600, now + 0.015);
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.02);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.025);
+        } else if (type === 'drop' || type === 'success') {
+          const notes = [523.25, 659.25, 783.99, 1046.5];
+          notes.forEach((freq, idx) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+            gain.gain.setValueAtTime(0.001, now + idx * 0.08);
+            gain.gain.exponentialRampToValueAtTime(0.14, now + idx * 0.08 + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.24);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now + idx * 0.08);
+            osc.stop(now + idx * 0.08 + 0.26);
+          });
+        } else if (type === 'trash') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(320, now);
+          osc.frequency.exponentialRampToValueAtTime(110, now + 0.12);
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.15);
+        } else if (type === 'fanfare') {
+          [523.25, 659.25, 783.99, 1046.50, 1318.51].forEach((freq, idx) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.05);
+            gain.gain.setValueAtTime(0.001, now + idx * 0.05);
+            gain.gain.linearRampToValueAtTime(0.10, now + idx * 0.05 + 0.03);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.05 + 0.45);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now + idx * 0.05);
+            osc.stop(now + idx * 0.05 + 0.48);
+          });
+        }
       } catch (e) {}
+    }
+
+    function playNotificationSound(type = 'drop') {
+      playAudioFx(type);
+    }
+
+    function triggerHaptic(type = 'light') {
+      if (state.settings.hapticEnabled === false) return;
+      try {
+        if ('vibrate' in navigator) {
+          if (type === 'light') navigator.vibrate(12);
+          else if (type === 'medium') navigator.vibrate(28);
+          else if (type === 'heavy') navigator.vibrate(50);
+          else if (type === 'success') navigator.vibrate([15, 60, 25]);
+          else if (type === 'warning') navigator.vibrate([30, 80, 30]);
+        }
+      } catch (e) {}
+    }
+
+    let confettiAnimationId = null;
+    function launchConfetti(originX = 0.5, originY = 0.35) {
+      try {
+        const canvas = document.getElementById('confettiCanvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        canvas.classList.remove('hidden');
+
+        const colors = ['#10b981', '#06b6d4', '#f59e0b', '#ec4899', '#8b5cf6', '#3b82f6', '#34d399', '#fbbf24'];
+        const particles = [];
+        const count = 75;
+
+        for (let i = 0; i < count; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = 4 + Math.random() * 9;
+          particles.push({
+            x: originX * canvas.width,
+            y: originY * canvas.height,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed - 3.5,
+            w: 8 + Math.random() * 8,
+            h: 5 + Math.random() * 6,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            rotation: Math.random() * 360,
+            vRot: (Math.random() - 0.5) * 12,
+            gravity: 0.18,
+            drag: 0.982,
+            opacity: 1
+          });
+        }
+
+        if (confettiAnimationId) cancelAnimationFrame(confettiAnimationId);
+
+        let startTime = performance.now();
+        function frame() {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          let alive = false;
+          particles.forEach(p => {
+            p.vx *= p.drag;
+            p.vy *= p.drag;
+            p.vy += p.gravity;
+            p.x += p.vx;
+            p.y += p.vy;
+            p.rotation += p.vRot;
+            p.opacity -= 0.012;
+
+            if (p.opacity > 0 && p.y < canvas.height + 50) {
+              alive = true;
+              ctx.save();
+              ctx.translate(p.x, p.y);
+              ctx.rotate((p.rotation * Math.PI) / 180);
+              ctx.globalAlpha = Math.max(0, p.opacity);
+              ctx.fillStyle = p.color;
+              ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+              ctx.restore();
+            }
+          });
+
+          if (alive && performance.now() - startTime < 3200) {
+            confettiAnimationId = requestAnimationFrame(frame);
+          } else {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            canvas.classList.add('hidden');
+          }
+        }
+        confettiAnimationId = requestAnimationFrame(frame);
+      } catch (e) {}
+    }
+
+    // Rolling Odometer Number Ticker
+    function animateNumber(element, targetNum, prefix = '', suffix = '', duration = 550) {
+      if (!element) return;
+      const target = Number(targetNum) || 0;
+      const start = Number(element.getAttribute('data-num-val')) || 0;
+      element.setAttribute('data-num-val', target);
+      if (start === target) {
+        element.textContent = `${prefix}${target.toLocaleString('he-IL')}${suffix}`;
+        return;
+      }
+      const startTime = performance.now();
+      function update(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = 1 - (1 - progress) * (1 - progress);
+        const currentVal = Math.round(start + (target - start) * eased);
+        element.textContent = `${prefix}${currentVal.toLocaleString('he-IL')}${suffix}`;
+        if (progress < 1) {
+          requestAnimationFrame(update);
+        } else {
+          element.textContent = `${prefix}${target.toLocaleString('he-IL')}${suffix}`;
+        }
+      }
+      requestAnimationFrame(update);
+    }
+
+    // AI Deal Quality Score Algorithm (0-100)
+    function calculateDealScore(product) {
+      if (!product) return { score: 50, label: 'רגיל', colorClass: 'text-slate-300 bg-slate-800/80 border-slate-700' };
+      const cur = Number(product.currentPrice) || 0;
+      const init = Number(product.initialPrice) || cur;
+      const lowest = Number(product.lowestPrice) || cur;
+      let score = 50;
+
+      if (cur < init && init > 0) {
+        const dropPct = ((init - cur) / init) * 100;
+        score += Math.min(35, Math.round(dropPct * 1.2));
+      } else if (cur > init && init > 0) {
+        score -= Math.min(25, Math.round(((cur - init) / init) * 50));
+      }
+
+      if (cur > 0 && cur <= lowest) {
+        score += 15;
+      }
+
+      if (Array.isArray(product.storeOffers) && product.storeOffers.length > 1) {
+        const prices = product.storeOffers.map(o => Number(o.currentPrice) || 0).filter(p => p > 0);
+        if (prices.length > 1) {
+          const maxP = Math.max(...prices);
+          if (cur < maxP) {
+            score += Math.min(15, Math.round(((maxP - cur) / maxP) * 30));
+          }
+        }
+      }
+
+      if (product.freeShippingEligible) {
+        score += 10;
+      }
+
+      score = Math.max(15, Math.min(99, Math.round(score)));
+
+      let label = 'מחיר רגיל';
+      let colorClass = 'text-slate-200 bg-slate-800/80 border-slate-700/80';
+      if (score >= 88) {
+        label = `מציאה לוהטת! 🔥 ${score}/100`;
+        colorClass = 'text-emerald-300 bg-emerald-500/20 border-emerald-400/40 shadow-sm shadow-emerald-500/20';
+      } else if (score >= 72) {
+        label = `דיל מעולה ⚡ ${score}/100`;
+        colorClass = 'text-cyan-200 bg-cyan-500/20 border-cyan-400/40';
+      } else if (score >= 55) {
+        label = `מחיר טוב 👍 ${score}/100`;
+        colorClass = 'text-teal-200 bg-teal-500/15 border-teal-400/30';
+      } else {
+        label = `מחיר רגיל ⏳ ${score}/100`;
+        colorClass = 'text-amber-200 bg-amber-500/15 border-amber-400/30';
+      }
+
+      return { score, label, colorClass };
+    }
+
+    // Gamified Savings Tiers
+    function getSavingsTier(totalSavings) {
+      const sav = Number(totalSavings) || 0;
+      if (sav >= 2000) {
+        return {
+          rank: 'מאסטר שופינג 💎',
+          badge: '💎',
+          current: sav,
+          next: null,
+          pct: 100,
+          desc: 'חסכת מעל ₪2,000! הגעת לדרגת השיא באפליקציה!'
+        };
+      }
+      if (sav >= 500) {
+        return {
+          rank: 'מלך הדילים 🥇',
+          badge: '🥇',
+          current: sav,
+          next: 2000,
+          pct: Math.min(100, Math.round(((sav - 500) / 1500) * 100)),
+          desc: `עוד ₪${(2000 - sav).toLocaleString('he-IL')} לדרגת מאסטר שופינג 💎`
+        };
+      }
+      if (sav >= 100) {
+        return {
+          rank: 'אשף מבצעים 🥈',
+          badge: '🥈',
+          current: sav,
+          next: 500,
+          pct: Math.min(100, Math.round(((sav - 100) / 400) * 100)),
+          desc: `עוד ₪${(500 - sav).toLocaleString('he-IL')} לדרגת מלך הדילים 🥇`
+        };
+      }
+      return {
+        rank: 'צייד טירון 🥉',
+        badge: '🥉',
+        current: sav,
+        next: 100,
+        pct: Math.min(100, Math.round((sav / 100) * 100)),
+        desc: `עוד ₪${(100 - sav).toLocaleString('he-IL')} לדרגת אשף מבצעים 🥈`
+      };
+    }
+
+    // Sparkline SVG Builder
+    function createMiniSparklineSvg(history, isDropped) {
+      if (!Array.isArray(history) || history.length < 2) return '';
+      const prices = history.map(h => Number(h.price) || 0).filter(p => p > 0);
+      if (prices.length < 2) return '';
+      const min = Math.min(...prices);
+      const max = Math.max(...prices);
+      const range = (max - min) || 1;
+      const width = 56;
+      const height = 22;
+      const step = width / (prices.length - 1);
+      const points = prices.map((pr, idx) => {
+        const x = Math.round(idx * step);
+        const y = Math.round(height - ((pr - min) / range) * (height - 6) - 3);
+        return `${x},${y}`;
+      }).join(' ');
+
+      const strokeColor = isDropped ? '#34d399' : '#06b6d4';
+      return `
+        <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" class="shrink-0 overflow-visible opacity-90" title="מגמת מחיר">
+          <polyline fill="none" stroke="${strokeColor}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" points="${points}" />
+        </svg>
+      `;
+    }
+
+    // Mobile Swipe Gesture Handler on Cards
+    function initCardSwipeGestures(cardEl, productId) {
+      let touchStartX = 0;
+      let touchStartY = 0;
+      let currentTranslateX = 0;
+      let isSwiping = false;
+
+      cardEl.addEventListener('touchstart', (e) => {
+        if (e.touches.length !== 1) return;
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        currentTranslateX = 0;
+        isSwiping = false;
+        cardEl.style.transition = 'none';
+      }, { passive: true });
+
+      cardEl.addEventListener('touchmove', (e) => {
+        if (e.touches.length !== 1) return;
+        const diffX = e.touches[0].clientX - touchStartX;
+        const diffY = e.touches[0].clientY - touchStartY;
+
+        if (!isSwiping && Math.abs(diffY) > Math.abs(diffX)) return;
+
+        if (Math.abs(diffX) > 15) {
+          isSwiping = true;
+          const resistance = Math.abs(diffX) > 100 ? 0.45 : 0.8;
+          currentTranslateX = diffX * resistance;
+          cardEl.style.transform = `translateX(${currentTranslateX}px)`;
+        }
+      }, { passive: true });
+
+      cardEl.addEventListener('touchend', () => {
+        cardEl.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+        cardEl.style.transform = 'translateX(0px)';
+
+        if (!isSwiping) return;
+
+        const prod = state.products.find(p => p.id === productId);
+        if (!prod) return;
+
+        if (currentTranslateX > 75) {
+          prod.pinned = !prod.pinned;
+          saveState(false, true);
+          renderAll();
+          playAudioFx('tick');
+          triggerHaptic('medium');
+          showToast(
+            prod.pinned ? '⭐ נעוץ בראש הרשימה!' : 'הנעיצה בוטלה',
+            `"${prod.title}" ${prod.pinned ? 'יופיע תמיד ראשון ברשימה.' : 'הוחזר לסדר הרגיל.'}`,
+            'info'
+          );
+        } else if (currentTranslateX < -75) {
+          triggerHaptic('warning');
+          playAudioFx('pop');
+          openConfirmModal(
+            'הסרת מוצר מהמעקב',
+            `האם להסיר את "${prod.title}" מרשימת המעקב שלך?`,
+            () => {
+              state.products = state.products.filter(p => p.id !== prod.id);
+              saveState(false, true);
+              renderAll();
+              playAudioFx('trash');
+              triggerHaptic('success');
+              showToast('המוצר הוסר', `"${prod.title}" נמחק מהמעקב.`, 'info');
+            }
+          );
+        }
+      });
+    }
+
+    // Pull-to-Refresh Controller
+    function initPullToRefresh() {
+      const pullIndicator = document.getElementById('pullToRefreshIndicator');
+      const pullIcon = document.getElementById('pullToRefreshIcon');
+      const pullText = document.getElementById('pullToRefreshText');
+      if (!pullIndicator) return;
+
+      let startY = 0;
+      let pullDistance = 0;
+      let isPulling = false;
+
+      window.addEventListener('touchstart', (e) => {
+        if (window.scrollY <= 5 && e.touches.length === 1) {
+          startY = e.touches[0].clientY;
+          isPulling = true;
+          pullDistance = 0;
+        } else {
+          isPulling = false;
+        }
+      }, { passive: true });
+
+      window.addEventListener('touchmove', (e) => {
+        if (!isPulling || e.touches.length !== 1) return;
+        const currentY = e.touches[0].clientY;
+        const diff = currentY - startY;
+        if (diff > 10 && window.scrollY <= 5) {
+          pullDistance = Math.min(diff * 0.45, 95);
+          pullIndicator.style.height = `${pullDistance}px`;
+          pullIndicator.classList.remove('hidden');
+          if (pullDistance > 65) {
+            pullText.textContent = 'שחרר לרענון מחירים...';
+            pullIcon.style.transform = 'rotate(180deg)';
+          } else {
+            pullText.textContent = 'משוך לרענון מחירים';
+            pullIcon.style.transform = 'rotate(0deg)';
+          }
+        }
+      }, { passive: true });
+
+      window.addEventListener('touchend', () => {
+        if (!isPulling) return;
+        isPulling = false;
+        if (pullDistance > 65) {
+          pullText.textContent = 'מרענן מחירים מהחנויות...';
+          pullIcon.classList.add('animate-spin');
+          triggerHaptic('medium');
+          playAudioFx('pop');
+          checkAllProductsNow(false);
+          setTimeout(() => {
+            pullIndicator.style.height = '0px';
+            setTimeout(() => {
+              pullIndicator.classList.add('hidden');
+              pullIcon.classList.remove('animate-spin');
+            }, 300);
+          }, 1200);
+        } else {
+          pullIndicator.style.height = '0px';
+          setTimeout(() => pullIndicator.classList.add('hidden'), 250);
+        }
+        pullDistance = 0;
+      });
+    }
+
+    // Shareable Deal Card Generator
+    async function generateAndShareDealCard(product) {
+      if (!product) return;
+      playAudioFx('pop');
+      triggerHaptic('medium');
+      showToast('🎨 מעצב כרטיס דיל...', 'יוצר תמונת דיל שיתופית ברזולוציה גבוהה.', 'info');
+
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 1080;
+        canvas.height = 1080;
+        const ctx = canvas.getContext('2d');
+
+        const bgGrad = ctx.createLinearGradient(0, 0, 1080, 1080);
+        bgGrad.addColorStop(0, '#090d16');
+        bgGrad.addColorStop(0.5, '#0d192b');
+        bgGrad.addColorStop(1, '#052e25');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, 1080, 1080);
+
+        const glow1 = ctx.createRadialGradient(250, 250, 10, 250, 250, 450);
+        glow1.addColorStop(0, 'rgba(6, 182, 212, 0.25)');
+        glow1.addColorStop(1, 'rgba(6, 182, 212, 0)');
+        ctx.fillStyle = glow1;
+        ctx.fillRect(0, 0, 1080, 1080);
+
+        const glow2 = ctx.createRadialGradient(850, 850, 10, 850, 850, 500);
+        glow2.addColorStop(0, 'rgba(16, 185, 129, 0.3)');
+        glow2.addColorStop(1, 'rgba(16, 185, 129, 0)');
+        ctx.fillStyle = glow2;
+        ctx.fillRect(0, 0, 1080, 1080);
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+        ctx.lineWidth = 3;
+        roundRect(ctx, 70, 70, 940, 940, 40);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 44px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.textAlign = 'right';
+        ctx.direction = 'rtl';
+        ctx.fillText('PriceRadar ⚡', 970, 150);
+
+        ctx.font = 'bold 28px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.fillStyle = '#67e8f9';
+        ctx.fillText(`חנות: ${product.store || 'אונליין'}`, 970, 195);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '900 42px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        const titleText = (product.title || '').length > 60 ? (product.title.slice(0, 57) + '...') : product.title;
+        wrapText(ctx, titleText, 540, 280, 860, 54);
+
+        const curPrice = Number(product.currentPrice) || 0;
+        const initPrice = Number(product.initialPrice) || curPrice;
+        const diff = initPrice - curPrice;
+
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.15)';
+        ctx.strokeStyle = 'rgba(52, 211, 153, 0.5)';
+        ctx.lineWidth = 2.5;
+        roundRect(ctx, 120, 470, 840, 240, 30);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#34d399';
+        ctx.font = '900 88px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.fillText(`₪${curPrice.toLocaleString('he-IL')}`, 540, 580);
+
+        if (diff > 0) {
+          ctx.fillStyle = '#94a3b8';
+          ctx.font = 'bold 36px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+          ctx.fillText(`במקום ₪${initPrice.toLocaleString('he-IL')} (חיסכון של ₪${diff.toLocaleString('he-IL')} 🔥)`, 540, 650);
+        } else {
+          ctx.fillStyle = '#cbd5e1';
+          ctx.font = 'bold 32px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+          ctx.fillText('מחיר מעודכן בלייב מהחנות', 540, 645);
+        }
+
+        const deal = calculateDealScore(product);
+        ctx.fillStyle = 'rgba(6, 182, 212, 0.2)';
+        ctx.strokeStyle = 'rgba(6, 182, 212, 0.5)';
+        roundRect(ctx, 280, 750, 520, 70, 35);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#a5f3fc';
+        ctx.font = 'bold 30px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.fillText(deal.label, 540, 796);
+
+        ctx.fillStyle = '#64748b';
+        ctx.font = 'bold 24px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.fillText('מעקב מחירים חכם ואוטומטי 24/7 | PriceRadar', 540, 930);
+
+        canvas.toBlob(async (blob) => {
+          if (!blob) return;
+          const file = new File([blob], `deal-${product.id}.png`, { type: 'image/png' });
+          if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+            try {
+              await navigator.share({
+                title: product.title,
+                text: `ראו איזה דיל מצאתי ב-PriceRadar! ${product.title} עולה כעת רק ₪${curPrice.toLocaleString('he-IL')} ב-${product.store}!`,
+                files: [file]
+              });
+              triggerHaptic('success');
+              return;
+            } catch (err) {}
+          }
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `priceradar-deal-${(product.store || 'deal').toLowerCase()}.png`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          showToast('הכרטיס הורד בהצלחה! 🎨', 'התמונה שמורה ומוכנה לשיתוף בווצאפ / אינסטגרם.', 'success');
+          triggerHaptic('success');
+        }, 'image/png');
+      } catch (e) {
+        showToast('שגיאה ביצירת הכרטיס', 'לא ניתן היה לייצר את התמונה.', 'warning');
+      }
+    }
+
+    function roundRect(ctx, x, y, width, height, radius) {
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + width - radius, y);
+      ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+      ctx.lineTo(x + width, y + height - radius);
+      ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+      ctx.lineTo(x + radius, y + height);
+      ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+    }
+
+    function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+      const words = text.split(' ');
+      let line = '';
+      let curY = y;
+      for (let n = 0; n < words.length; n++) {
+        const testLine = line + words[n] + ' ';
+        const metrics = ctx.measureText(testLine);
+        if (metrics.width > maxWidth && n > 0) {
+          ctx.fillText(line, x, curY);
+          line = words[n] + ' ';
+          curY += lineHeight;
+        } else {
+          line = testLine;
+        }
+      }
+      ctx.fillText(line, x, curY);
+    }
+
+    // Full JSON Backup & Restore
+    function exportWatchlistBackup() {
+      playAudioFx('pop');
+      triggerHaptic('medium');
+      const backupData = {
+        app: 'PriceRadar',
+        version: APP_VERSION,
+        exportedAt: new Date().toISOString(),
+        productsCount: state.products.length,
+        settings: state.settings,
+        products: state.products,
+        alerts: state.alerts
+      };
+      const jsonStr = JSON.stringify(backupData, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const dateStr = new Date().toISOString().slice(0, 10);
+      a.href = url;
+      a.download = `priceradar-backup-${dateStr}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('גיבוי JSON נשמר בהצלחה! 💾', `גובו ${state.products.length} מוצרים וכל היסטוריית המעקב.`, 'success');
+      playAudioFx('success');
+      triggerHaptic('success');
+    }
+
+    function importWatchlistBackup(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if (!parsed || (!Array.isArray(parsed.products) && !parsed.app)) {
+            throw new Error('קובץ הגיבוי אינו תקין');
+          }
+          const importedProducts = Array.isArray(parsed.products) ? parsed.products : [];
+          if (importedProducts.length === 0) {
+            showToast('הקובץ אינו מכיל מוצרים', 'לא נמצאו מוצרים לשחזור.', 'warning');
+            return;
+          }
+          const existingIds = new Set(state.products.map(p => p.id));
+          let addedCount = 0;
+          let updatedCount = 0;
+          importedProducts.forEach(imp => {
+            if (existingIds.has(imp.id)) {
+              const idx = state.products.findIndex(p => p.id === imp.id);
+              state.products[idx] = { ...state.products[idx], ...imp };
+              updatedCount++;
+            } else {
+              state.products.push(imp);
+              addedCount++;
+            }
+          });
+          if (Array.isArray(parsed.alerts)) {
+            state.alerts = [...parsed.alerts, ...state.alerts].slice(0, 100);
+          }
+          saveState(false, true);
+          renderAll();
+          showToast('השחזור הושלם בהצלחה! 🎉', `נוספו ${addedCount} מוצרים חדשים, עודכנו ${updatedCount}.`, 'success');
+          playAudioFx('success');
+          triggerHaptic('success');
+          launchConfetti();
+        } catch (err) {
+          showToast('שגיאה בשחזור הקובץ', 'וודא שבחרת קובץ JSON תקין שיוצא מ-PriceRadar.', 'error');
+        }
+      };
+      reader.readAsText(file);
     }
 
     // =========================================================================
@@ -3564,6 +4365,10 @@
       state.ui.pendingDoesNotShip = Boolean(data.doesNotShipToIsrael);
       document.getElementById('modalSelectedVariantText').value = data.SelectedVariant || '';
       document.getElementById('modalCategorySelect').value = data.category || 'other';
+      const customNoteEl = document.getElementById('modalCustomNote');
+      if (customNoteEl) customNoteEl.value = data.customNote || '';
+      const pinnedEl = document.getElementById('modalPinnedCheckbox');
+      if (pinnedEl) pinnedEl.checked = !!data.pinned;
 
       // Populate Multi-Store Merge Selector (for adding a new product when other products exist)
       const mergeSection = document.getElementById('modalMergeSection');
@@ -3791,6 +4596,17 @@
         } else {
           amzCard.classList.add('hidden');
         }
+      }
+
+      const dealInfo = calculateDealScore(p);
+      const dealScoreBadge = document.getElementById('detailsDealScoreBadge');
+      if (dealScoreBadge) {
+        dealScoreBadge.className = `text-[11px] font-black px-3 py-1 rounded-full ${dealInfo.colorClass}`;
+        dealScoreBadge.textContent = dealInfo.label;
+      }
+      const shareDealBtn = document.getElementById('detailsShareCardBtn');
+      if (shareDealBtn) {
+        shareDealBtn.onclick = () => generateAndShareDealCard(p);
       }
 
       // 4 Price Boxes
@@ -4409,9 +5225,21 @@
         }
       });
 
-      document.getElementById('statTotalProducts').textContent = String(total);
-      document.getElementById('statPriceDrops').textContent = String(drops);
-      document.getElementById('statTotalSavings').textContent = formatPrice(totalSavings);
+      animateNumber(document.getElementById('statTotalProducts'), total);
+      animateNumber(document.getElementById('statPriceDrops'), drops);
+      animateNumber(document.getElementById('statTotalSavings'), Math.round(totalSavings), '', ' ₪');
+
+      const tier = getSavingsTier(totalSavings);
+      const vaultRank = document.getElementById('savingsVaultRankText');
+      const vaultBadge = document.getElementById('savingsVaultBadgeIcon');
+      const vaultDesc = document.getElementById('savingsVaultDesc');
+      const vaultPct = document.getElementById('savingsVaultPct');
+      const vaultBar = document.getElementById('savingsVaultProgressBar');
+      if (vaultRank) vaultRank.textContent = tier.rank;
+      if (vaultBadge) vaultBadge.textContent = tier.badge;
+      if (vaultDesc) vaultDesc.textContent = tier.desc;
+      if (vaultPct) vaultPct.textContent = `${tier.pct}%`;
+      if (vaultBar) vaultBar.style.width = `${tier.pct}%`;
       document.getElementById('statDailyHour').textContent = state.settings.dailyTime || '09:00';
       document.getElementById('headerDailyTime').textContent = state.settings.dailyTime || '09:00';
       document.getElementById('tabCountProducts').textContent = String(total);
@@ -4532,9 +5360,60 @@
         return true;
       });
 
-      // Apply Sorting
+      // Store Quick-Launcher Filter Carousel Population
+      const carouselEl = document.getElementById('storeCarouselBar');
+      if (carouselEl) {
+        carouselEl.innerHTML = '';
+        const allBtn = document.createElement('button');
+        allBtn.type = 'button';
+        const isAllActive = (!state.ui.storeFilter || state.ui.storeFilter === 'all');
+        allBtn.className = `store-carousel-chip px-3.5 py-1.5 rounded-xl text-xs font-black shrink-0 transition flex items-center gap-1.5 ${
+          isAllActive ? 'btn-gradient-primary text-slate-950 shadow-md scale-105' : 'liquid-glass-soft text-slate-200 hover:bg-white/15'
+        }`;
+        allBtn.innerHTML = `<span>🏪 הכל</span><span class="text-[10px] px-1.5 py-0.2 rounded-full ${isAllActive ? 'bg-black/20 text-slate-950' : 'bg-white/15 text-slate-300'}">${state.products.length}</span>`;
+        allBtn.onclick = () => {
+          playAudioFx('tick');
+          triggerHaptic('light');
+          applyStoreFilterByName('all');
+        };
+        carouselEl.appendChild(allBtn);
+
+        Array.from(allStoresSet).sort((a, b) => a.localeCompare(b, 'he')).forEach(stName => {
+          const count = state.products.filter(p => p.store === stName || (Array.isArray(p.storeOffers) && p.storeOffers.some(o => o.store === stName))).length;
+          const chipBtn = document.createElement('button');
+          chipBtn.type = 'button';
+          const isThisActive = state.ui.storeFilter === stName;
+          chipBtn.className = `store-carousel-chip px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 transition flex items-center gap-1.5 ${
+            isThisActive ? 'bg-cyan-500 text-slate-950 shadow-md font-black scale-105' : 'liquid-glass-soft text-slate-200 hover:bg-white/15'
+          }`;
+          chipBtn.innerHTML = `<span>${escapeHtml(stName)}</span><span class="text-[10px] px-1.5 py-0.2 rounded-full ${isThisActive ? 'bg-black/20 text-slate-950 font-black' : 'bg-white/15 text-slate-300'}">${count}</span>`;
+          chipBtn.onclick = () => {
+            playAudioFx('tick');
+            triggerHaptic('light');
+            applyStoreFilterByName(stName);
+          };
+          carouselEl.appendChild(chipBtn);
+        });
+      }
+
+      // Live search & results count update
+      const countBadge = document.getElementById('searchResultsCountBadge');
+      const statusRow = document.getElementById('filterStatusRow');
+      if (countBadge && statusRow) {
+        const isFiltering = q || (state.ui.storeFilter && state.ui.storeFilter !== 'all') || (state.ui.categoryFilter && state.ui.categoryFilter !== 'all') || (state.ui.filter && state.ui.filter !== 'all');
+        if (isFiltering) {
+          countBadge.textContent = `נמצאו ${filtered.length} מתוך ${state.products.length} מוצרים`;
+          statusRow.classList.remove('hidden');
+        } else {
+          statusRow.classList.add('hidden');
+        }
+      }
+
+      // Apply Sorting (Pinned products always stay on top)
       const sortBy = state.ui.sortBy || 'newest';
       filtered.sort((a, b) => {
+        if (a.pinned && !b.pinned) return -1;
+        if (!a.pinned && b.pinned) return 1;
         if (sortBy === 'price_asc') return Number(a.currentPrice || 0) - Number(b.currentPrice || 0);
         if (sortBy === 'price_desc') return Number(b.currentPrice || 0) - Number(a.currentPrice || 0);
         if (sortBy === 'savings_desc') {
@@ -4580,11 +5459,55 @@
 
         const isAmazonProduct = isAmazonUrlOrStore(p.url, p.store) || offers.some(o => isAmazonUrlOrStore(o.url, o.store));
 
+        const deal = calculateDealScore(p);
         const card = document.createElement('div');
         card.id = `prod_card_${p.id}`;
         card.setAttribute('data-card-id', p.id);
+
+        if (state.ui.viewMode === 'compact') {
+          // COMPACT VIEW MODE (Dense financial portfolio style)
+          card.className = `liquid-glass card-hover cursor-pointer rounded-2xl p-3 sm:p-3.5 flex items-center justify-between gap-3 transition-all duration-200 ${
+            p.pinned ? 'border-amber-400/70 shadow-lg shadow-amber-950/30 ring-1 ring-amber-400/30' : (isDropped ? 'border-emerald-400/50 shadow-md shadow-emerald-950/30' : '')
+          }`;
+          card.innerHTML = `
+            <div class="flex items-center gap-3 min-w-0 flex-1">
+              <div class="relative w-12 h-12 rounded-xl overflow-hidden product-stage border border-white/10 shrink-0 p-1 flex items-center justify-center bg-slate-950/80">
+                <img src="${escapeHtml(prodImg)}" alt="${escapeHtml(p.title)}" class="w-full h-full object-contain rounded-lg" />
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="text-xs sm:text-sm font-black text-white truncate max-w-xs">${escapeHtml(p.title)}</span>
+                  ${p.pinned ? '<span class="text-[10px] px-1.5 py-0.2 rounded-md bg-amber-400/20 text-amber-300 border border-amber-400/30 font-bold shrink-0">⭐</span>' : ''}
+                  <span class="text-[10px] px-2 py-0.2 rounded-md ${deal.colorClass} font-bold shrink-0">${deal.label}</span>
+                </div>
+                <div class="flex items-center gap-2 mt-0.5 text-[11px] text-slate-300">
+                  <span class="font-bold text-slate-200">${escapeHtml(p.store)}</span>
+                  ${p.SelectedVariant ? `<span>•</span><span class="text-cyan-200 truncate">${escapeHtml(p.SelectedVariant)}</span>` : ''}
+                  ${(p.lowestPrice && p.lowestPrice < p.currentPrice) ? `<span>•</span><span class="text-cyan-300 font-bold">שפל: ${formatPrice(p.lowestPrice)}</span>` : ''}
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2.5 shrink-0">
+              ${createMiniSparklineSvg(p.history, isDropped)}
+              <div class="text-left">
+                <p class="text-sm sm:text-base font-black tabular-nums ${isDropped ? 'text-emerald-300' : 'text-white'}">${formatPrice(p.currentPrice)}</p>
+                ${isDropped ? `<p class="text-[10px] line-through text-slate-400 tabular-nums">${formatPrice(p.initialPrice)}</p>` : ''}
+              </div>
+              <div class="flex items-center gap-1">
+                <button type="button" data-action="toggle_pin" data-id="${p.id}" title="${p.pinned ? 'בטל נעיצה' : 'נעץ בראש'}" class="prod-action-btn w-7 h-7 rounded-lg liquid-glass-soft text-xs flex items-center justify-center text-slate-300 hover:text-amber-300 transition">${p.pinned ? '⭐' : '☆'}</button>
+                <button type="button" data-action="share_card" data-id="${p.id}" title="שתף דיל מעוצב" class="prod-action-btn w-7 h-7 rounded-lg liquid-glass-soft text-xs flex items-center justify-center text-purple-300 hover:text-purple-200 transition">🎨</button>
+                <a href="${escapeHtml(bestOffer.url || p.url)}" target="_blank" rel="noopener noreferrer" class="prod-external-link w-7 h-7 rounded-lg bg-cyan-500/20 text-cyan-200 text-xs flex items-center justify-center font-bold">↗</a>
+              </div>
+            </div>
+          `;
+          initCardSwipeGestures(card, p.id);
+          grid.appendChild(card);
+          return;
+        }
+
+        // SPACIOUS GRID CARD
         card.className = `liquid-glass card-hover cursor-pointer rounded-3xl p-4 sm:p-5 flex flex-col justify-between gap-3.5 relative overflow-hidden transition-all duration-300 ${
-          isDropped ? 'border-emerald-400/60 shadow-xl shadow-emerald-950/40' : (isMultiStore ? 'border-cyan-400/45 shadow-xl shadow-cyan-950/30' : '')
+          p.pinned ? 'border-amber-400/80 shadow-xl shadow-amber-950/40 ring-1 ring-amber-400/40' : (isDropped ? 'border-emerald-400/60 shadow-xl shadow-emerald-950/40' : (isMultiStore ? 'border-cyan-400/45 shadow-xl shadow-cyan-950/30' : ''))
         }`;
 
         const statusBadge = isDropped
@@ -4659,13 +5582,19 @@
 
         card.innerHTML = `
           <div class="space-y-3">
-            <!-- Top Store Bar & Status Badge -->
+            <!-- Top Store Bar & Deal Quality Badge + Pin Toggle -->
             <div class="flex items-center justify-between gap-2">
-              <button type="button" data-action="filter_store" data-store="${escapeHtml(primaryStoreName)}" title="לחץ לסינון כל המוצרים מ-${escapeHtml(primaryStoreName)}" class="prod-action-btn flex items-center gap-1.5 px-2.5 py-1 rounded-xl ${isThisStoreFiltered ? 'bg-cyan-500/30 border-cyan-400 text-cyan-100 shadow-md' : 'bg-slate-800/80 hover:bg-cyan-500/20 border-slate-700/80 hover:border-cyan-400/40 text-slate-200'} border transition min-w-0">
-                <img src="${escapeHtml(storeMeta.favicon)}" alt="" class="w-3.5 h-3.5 rounded-sm object-contain shrink-0" onerror="this.style.display='none'" />
-                <span class="text-[11px] font-extrabold truncate">${escapeHtml(isMultiStore ? `${offers.length} חנויות (${bestOffer.store})` : p.store)}</span>
-              </button>
-              <div class="shrink-0">
+              <div class="flex items-center gap-1.5 min-w-0">
+                <button type="button" data-action="filter_store" data-store="${escapeHtml(primaryStoreName)}" title="לחץ לסינון כל המוצרים מ-${escapeHtml(primaryStoreName)}" class="prod-action-btn flex items-center gap-1.5 px-2.5 py-1 rounded-xl ${isThisStoreFiltered ? 'bg-cyan-500/30 border-cyan-400 text-cyan-100 shadow-md' : 'bg-slate-800/80 hover:bg-cyan-500/20 border-slate-700/80 hover:border-cyan-400/40 text-slate-200'} border transition min-w-0">
+                  <img src="${escapeHtml(storeMeta.favicon)}" alt="" class="w-3.5 h-3.5 rounded-sm object-contain shrink-0" onerror="this.style.display='none'" />
+                  <span class="text-[11px] font-extrabold truncate">${escapeHtml(isMultiStore ? `${offers.length} חנויות (${bestOffer.store})` : p.store)}</span>
+                </button>
+                <button type="button" data-action="toggle_pin" data-id="${p.id}" title="${p.pinned ? 'בטל נעיצה' : 'נעץ מוצר בראש'}" class="prod-action-btn w-7 h-7 rounded-xl ${p.pinned ? 'bg-amber-400/25 text-amber-300 border border-amber-400/50 shadow-sm' : 'liquid-glass-soft text-slate-400 hover:text-amber-300'} text-xs flex items-center justify-center shrink-0 transition">
+                  ⭐
+                </button>
+              </div>
+              <div class="flex items-center gap-1.5 shrink-0">
+                <span class="text-[10px] px-2 py-0.5 rounded-full ${deal.colorClass} font-bold">${deal.label}</span>
                 ${statusBadge}
               </div>
             </div>
@@ -4682,11 +5611,15 @@
                   ${variantPill}
                   ${p.targetPrice ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-amber-400/20 text-amber-200 border border-amber-300/30">יעד: ${formatPrice(p.targetPrice)}</span>` : ''}
                 </div>
-                <div class="pt-0.5 flex items-baseline gap-2.5 flex-wrap">
-                  <span class="text-lg sm:text-xl font-black tabular-nums ${isDropped ? 'text-emerald-300' : 'text-white'}">${formatPrice(p.currentPrice)}</span>
-                  ${isDropped ? `<span class="text-xs font-bold text-slate-400 line-through tabular-nums">${formatPrice(p.initialPrice)}</span>` : `<span class="text-[11px] text-slate-400 font-semibold">התחיל ב-${formatPrice(p.initialPrice)}</span>`}
-                  ${(p.lowestPrice && p.lowestPrice < p.currentPrice) ? `<span class="text-[11px] text-cyan-300 font-bold">שפל: ${formatPrice(p.lowestPrice)}</span>` : ''}
+                <div class="pt-0.5 flex items-center justify-between gap-2">
+                  <div class="flex items-baseline gap-2.5 flex-wrap">
+                    <span class="text-lg sm:text-xl font-black tabular-nums ${isDropped ? 'text-emerald-300' : 'text-white'}">${formatPrice(p.currentPrice)}</span>
+                    ${isDropped ? `<span class="text-xs font-bold text-slate-400 line-through tabular-nums">${formatPrice(p.initialPrice)}</span>` : `<span class="text-[11px] text-slate-400 font-semibold">התחיל ב-${formatPrice(p.initialPrice)}</span>`}
+                    ${(p.lowestPrice && p.lowestPrice < p.currentPrice) ? `<span class="text-[11px] text-cyan-300 font-bold">שפל: ${formatPrice(p.lowestPrice)}</span>` : ''}
+                  </div>
+                  ${createMiniSparklineSvg(p.history, isDropped)}
                 </div>
+                ${p.customNote ? `<div class="pt-0.5"><span class="px-2 py-0.5 rounded-lg bg-purple-500/20 text-purple-200 border border-purple-400/30 text-[10px] font-bold">📝 ${escapeHtml(p.customNote)}</span></div>` : ''}
               </div>
             </div>
 
@@ -4699,6 +5632,10 @@
               <button type="button" data-action="check" data-id="${p.id}" class="prod-action-btn py-1.5 px-3 rounded-xl liquid-glass-soft hover:bg-cyan-500/20 hover:text-cyan-200 text-white text-xs font-extrabold transition flex items-center gap-1">
                 <span>🔄</span>
                 <span>בדוק</span>
+              </button>
+              <button type="button" data-action="share_card" data-id="${p.id}" title="שתף כרטיס דיל גרפי מעוצב" class="prod-action-btn py-1.5 px-2.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400/35 text-purple-200 text-xs font-bold transition flex items-center gap-1">
+                <span>🎨</span>
+                <span class="hidden sm:inline">שתף דיל</span>
               </button>
               <a href="${escapeHtml(bestOffer.url || p.url)}" target="_blank" rel="noopener noreferrer" class="prod-external-link py-1.5 px-3 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-400/30 text-cyan-200 text-xs font-extrabold transition flex items-center gap-1">
                 <span>לחנות</span>
@@ -4718,6 +5655,7 @@
           </div>
         `;
 
+        initCardSwipeGestures(card, p.id);
         grid.appendChild(card);
       });
     }
@@ -5314,6 +6252,19 @@
             sourceMethod: 'עריכת מוצר ואפשרויות',
             category: prod.category
           }, prod.id);
+        } else if (action === 'toggle_pin') {
+          prod.pinned = !prod.pinned;
+          saveState(false, true);
+          renderAll();
+          playAudioFx('tick');
+          triggerHaptic('medium');
+          showToast(
+            prod.pinned ? '⭐ המוצר נעוץ בראש!' : 'הנעיצה בוטלה',
+            `"${prod.title}" ${prod.pinned ? 'יופיע תמיד ראשון ברשימה.' : 'הוחזר לסדר הרגיל.'}`,
+            'info'
+          );
+        } else if (action === 'share_card') {
+          generateAndShareDealCard(prod);
         } else if (action === 'delete') {
           openConfirmModal(
             'הסרת מוצר מהמעקב',
@@ -5826,6 +6777,148 @@
         pullStateFromGithubCloud(true);
       }
 
+      // View Mode Switcher
+      const viewModeBtn = document.getElementById('viewModeToggleBtn');
+      const viewModeIcon = document.getElementById('viewModeIcon');
+      const viewModeLabel = document.getElementById('viewModeLabel');
+      if (viewModeBtn) {
+        const updateViewBtnDisplay = () => {
+          if (state.ui.viewMode === 'compact') {
+            viewModeIcon.textContent = '🔲';
+            viewModeLabel.textContent = 'כרטיסים';
+          } else {
+            viewModeIcon.textContent = '☰';
+            viewModeLabel.textContent = 'רשימה';
+          }
+        };
+        updateViewBtnDisplay();
+        viewModeBtn.addEventListener('click', () => {
+          playAudioFx('tick');
+          triggerHaptic('light');
+          state.ui.viewMode = state.ui.viewMode === 'compact' ? 'grid' : 'compact';
+          localStorage.setItem('priceradar_view_mode', state.ui.viewMode);
+          updateViewBtnDisplay();
+          renderProductsGrid();
+        });
+      }
+
+      // Clear search button
+      const clearSearchBtn = document.getElementById('clearSearchBtn');
+      const searchInput = document.getElementById('searchProductsInput');
+      if (clearSearchBtn && searchInput) {
+        searchInput.addEventListener('input', () => {
+          clearSearchBtn.classList.toggle('hidden', !searchInput.value.trim());
+          state.ui.searchQuery = searchInput.value;
+          renderProductsGrid();
+        });
+        clearSearchBtn.addEventListener('click', () => {
+          searchInput.value = '';
+          state.ui.searchQuery = '';
+          clearSearchBtn.classList.add('hidden');
+          renderProductsGrid();
+          playAudioFx('tick');
+        });
+      }
+
+      // Reset All Filters button
+      const resetFiltersBtn = document.getElementById('resetAllFiltersBtn');
+      if (resetFiltersBtn) {
+        resetFiltersBtn.addEventListener('click', () => {
+          state.ui.filter = 'all';
+          state.ui.storeFilter = 'all';
+          state.ui.categoryFilter = 'all';
+          state.ui.searchQuery = '';
+          if (searchInput) {
+            searchInput.value = '';
+            clearSearchBtn.classList.add('hidden');
+          }
+          document.querySelectorAll('.filter-chip').forEach(c => {
+            if (c.getAttribute('data-filter') === 'all') {
+              c.classList.add('liquid-pill-active', 'text-white');
+              c.classList.remove('bg-white/10', 'text-slate-200');
+            } else {
+              c.classList.remove('liquid-pill-active', 'text-white');
+              c.classList.add('bg-white/10', 'text-slate-200');
+            }
+          });
+          playAudioFx('pop');
+          triggerHaptic('light');
+          renderProductsGrid();
+        });
+      }
+
+      // Sensory Studio Sound & Haptic Toggles & Previews
+      const soundTgl = document.getElementById('settingsSoundToggle');
+      if (soundTgl) {
+        soundTgl.checked = state.settings.soundEnabled !== false;
+        soundTgl.addEventListener('change', () => {
+          state.settings.soundEnabled = soundTgl.checked;
+          saveState();
+          playAudioFx('tick');
+        });
+      }
+
+      const hapticTgl = document.getElementById('settingsHapticToggle');
+      if (hapticTgl) {
+        hapticTgl.checked = state.settings.hapticEnabled !== false;
+        hapticTgl.addEventListener('change', () => {
+          state.settings.hapticEnabled = hapticTgl.checked;
+          saveState();
+          triggerHaptic('medium');
+        });
+      }
+
+      // Audio & Sensory Preview Buttons
+      const pPop = document.getElementById('previewPopBtn');
+      if (pPop) pPop.onclick = () => { playAudioFx('pop'); triggerHaptic('light'); };
+      const pChime = document.getElementById('previewChimeBtn');
+      if (pChime) pChime.onclick = () => { playAudioFx('drop'); triggerHaptic('success'); };
+      const pTick = document.getElementById('previewTickBtn');
+      if (pTick) pTick.onclick = () => { playAudioFx('tick'); triggerHaptic('light'); };
+      const pTrash = document.getElementById('previewTrashBtn');
+      if (pTrash) pTrash.onclick = () => { playAudioFx('trash'); triggerHaptic('warning'); };
+      const pHaptic = document.getElementById('previewHapticBtn');
+      if (pHaptic) pHaptic.onclick = () => { triggerHaptic('heavy'); };
+      const pConfetti = document.getElementById('previewConfettiBtn');
+      if (pConfetti) pConfetti.onclick = () => { launchConfetti(); playAudioFx('fanfare'); triggerHaptic('success'); };
+
+      // JSON Watchlist Backup & Restore
+      const exportBtn = document.getElementById('exportBackupBtn');
+      if (exportBtn) exportBtn.onclick = () => exportWatchlistBackup();
+      const importInput = document.getElementById('importBackupFileInput');
+      if (importInput) {
+        importInput.addEventListener('change', (e) => {
+          if (e.target.files && e.target.files[0]) {
+            importWatchlistBackup(e.target.files[0]);
+            importInput.value = '';
+          }
+        });
+      }
+
+      // Target Price Quick Presets in modal
+      document.querySelectorAll('.target-preset-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          playAudioFx('tick');
+          triggerHaptic('light');
+          const presetVal = btn.getAttribute('data-preset');
+          const curVal = Number(document.getElementById('modalCurrentPrice').value) || 0;
+          const targetInput = document.getElementById('modalTargetPrice');
+          if (!targetInput || curVal <= 0) return;
+
+          if (presetVal === '-50') {
+            targetInput.value = Math.max(1, Math.round(curVal - 50));
+          } else {
+            const pct = Math.abs(Number(presetVal)) / 100;
+            targetInput.value = Math.max(1, Math.round(curVal * (1 - pct)));
+          }
+          targetInput.classList.add('ring-2', 'ring-emerald-400');
+          setTimeout(() => targetInput.classList.remove('ring-2', 'ring-emerald-400'), 1200);
+        });
+      });
+
+      // Init Pull to refresh
+      initPullToRefresh();
+
       document.getElementById('resetAllDataBtn').addEventListener('click', () => {
         openConfirmModal(
           'איפוס מלא של האפליקציה',
@@ -6023,5 +7116,7 @@
       setTimeout(deduplicateAppDomIfNeeded, 800);
     }
   </script>
+  <!-- Confetti Canvas -->
+  <canvas id="confettiCanvas" class="fixed inset-0 pointer-events-none z-50 w-full h-full hidden"></canvas>
 </body>
 </html>
