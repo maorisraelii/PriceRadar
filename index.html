@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
   <script>
-    window.__APP_VERSION__ = "3.7.0";
+    window.__APP_VERSION__ = "3.8.0";
     window.__BUILD_TIMESTAMP__ = 1762240000;
     window.__OTA_RELEASE_NOTES__ = "v3.6.2: תיקון דיוק מחירים מעל 1,000 ש\"ח (תיקון קיצוץ 9685 ל-968), תיקון כיוון שעון 24H (מ-00:09 ל-09:00), ביטול התראות קופצות בהחלפת ערכת נושא, שיפור תהליך אישור הרשאות פוש, והבהרת שדות המעקב.";
 
@@ -393,7 +393,7 @@
             <h1 class="text-xl sm:text-2xl font-black tracking-tight bg-gradient-to-r from-white via-cyan-100 to-emerald-300 bg-clip-text text-transparent whitespace-nowrap">
               PriceRadar
             </h1>
-            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 tracking-wider">v3.7.0</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 tracking-wider">v3.8.0 PRO</span>
             <span class="w-2 h-2 rounded-full bg-emerald-400 pulse-dot shrink-0" title="מעקב מחירים פעיל"></span>
           </div>
           <p class="text-[11px] text-slate-300/85 font-medium">מעקב מחירים חכם 24/7</p>
@@ -414,6 +414,12 @@
           <span>רענן מחירים</span>
         </button>
 
+        <button id="privacyModeBtn" type="button" title="מצב פרטיות (הסתר/הצג מחירים)" class="w-9 h-9 rounded-xl liquid-glass-soft hover:bg-white/15 flex items-center justify-center text-base transition">
+          <span id="privacyModeIcon">👁️</span>
+        </button>
+        <button id="openChangelogBtn" type="button" title="מה חדש בגרסה v3.8.0?" class="w-9 h-9 rounded-xl liquid-glass-soft hover:bg-white/15 flex items-center justify-center text-sm font-black text-amber-300 transition">
+          ✨
+        </button>
         <button id="soundToggleBtn" type="button" title="הפעל/השתק צליל התראה" class="w-9 h-9 rounded-xl liquid-glass-soft hover:bg-white/15 flex items-center justify-center text-base transition">
           <span id="soundIconOn">🔔</span>
         </button>
@@ -434,6 +440,12 @@
         <span>🔔</span>
         <span>התראות</span>
         <span id="tabCountAlerts" class="px-2 py-0.5 rounded-full text-[11px] bg-white/15 text-white font-extrabold">0</span>
+      </button>
+
+      <button type="button" data-tab="archive" class="nav-tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 text-slate-200 hover:bg-white/10">
+        <span>🛍️</span>
+        <span>נרכשו</span>
+        <span id="tabCountPurchased" class="px-2 py-0.5 rounded-full text-[11px] bg-emerald-500/20 text-emerald-300 font-extrabold">0</span>
       </button>
 
       <button type="button" data-tab="settings" class="nav-tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 text-slate-200 hover:bg-white/10">
@@ -476,6 +488,28 @@
           </button>
           <button id="ignoreClipboardBannerBtn" type="button" class="py-2.5 px-4 rounded-xl liquid-glass-soft hover:bg-white/15 text-slate-200 text-xs font-bold transition">
             לא תודה
+          </button>
+        </div>
+      </div>
+
+      <!-- Seasonal Deals & Black Friday Live Countdown Banner -->
+      <div id="holidayDealsBanner" class="rounded-2xl bg-gradient-to-r from-purple-950/80 via-slate-900/90 to-cyan-950/80 border border-purple-400/40 p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg">
+        <div class="flex items-center gap-2.5">
+          <span class="text-2xl animate-pulse">🔥</span>
+          <div>
+            <div class="flex items-center gap-2">
+              <span id="holidayEventTitle" class="text-xs sm:text-sm font-black text-white">עונת המבצעים הגדולה (Black Friday & Cyber Week)</span>
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/30 text-purple-200 font-mono font-bold">SALE RADAR</span>
+            </div>
+            <p id="holidayEventSubtitle" class="text-[11px] text-slate-300">האפליקציה מגבירה בדיקות לזיהוי ירידות מחיר בזמן אמת</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <div id="holidayCountdownTimer" class="font-mono text-xs sm:text-sm font-black text-amber-300 px-3 py-1.5 rounded-xl bg-black/40 border border-amber-400/30">
+            00:00:00
+          </div>
+          <button id="openBulkImportBtn" type="button" class="px-3 py-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 text-xs font-bold border border-purple-400/30 transition">
+            📥 יבוא מרוכז
           </button>
         </div>
       </div>
@@ -671,7 +705,33 @@
         </div>
       </div>
 
-      <!-- Store Quick-Launcher Filter Carousel -->
+      <!-- Custom Folders & Collections Filter Bar -->
+      <div class="flex items-center justify-between gap-2 pt-1">
+        <div id="collectionsBar" class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1 flex-1"></div>
+        <button id="manageCollectionsBtn" type="button" title="נהל תיקייה חדשה" class="px-2.5 py-1.5 rounded-xl liquid-glass-soft hover:bg-white/20 text-xs font-extrabold text-cyan-200 shrink-0 border border-white/10 transition">
+          📁 + תיקייה
+        </button>
+      </div>
+
+      <!-- Cart Total Simulator Floating Summary -->
+      <div id="cartSimulatorBox" class="hidden rounded-2xl liquid-glass-soft border border-emerald-400/40 p-3 flex items-center justify-between gap-3 shadow-lg">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">🛒</span>
+          <div>
+            <span class="text-xs font-black text-white">סימולציית עגלת קניות: </span>
+            <span id="cartSimProductsCount" class="text-xs text-slate-300 font-bold">(0 פריטים)</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="text-left">
+            <span id="cartSimTotalPrice" class="text-sm font-black text-emerald-300 font-mono">0 ₪</span>
+            <span id="cartSimTotalSavings" class="text-[10px] text-cyan-300 block font-bold">חיסכון: 0 ₪</span>
+          </div>
+          <button id="clearCartSimBtn" type="button" class="text-slate-400 hover:text-white text-xs px-2 py-1">✕ נקה</button>
+        </div>
+      </div>
+
+            <!-- Store Quick-Launcher Filter Carousel -->
       <div id="storeCarouselBar" class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1"></div>
 
       <!-- Products Grid -->
@@ -679,7 +739,36 @@
 
     </section>
 
-    <!-- TAB 2: ALERTS & DAILY REPORTS LOG -->
+    <!-- TAB: PURCHASED PRODUCTS ARCHIVE -->
+    <section id="tab-archive" class="hidden space-y-5">
+      <div class="liquid-glass rounded-3xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-emerald-400/40">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-2xl shadow-lg shadow-emerald-500/25 shrink-0">
+            🛍️
+          </div>
+          <div>
+            <h2 class="text-lg font-extrabold text-white">מוצרים שנרכשו בהצלחה (ארכיון רכישות)</h2>
+            <p class="text-xs sm:text-sm text-slate-300">
+              מוצרים שכבר קנית! המחירים שלהם אינם מפריעים למעקב הפעיל, אך סך החיסכון שלהם נשמר לתמיד.
+            </p>
+          </div>
+        </div>
+        <div class="p-3 rounded-2xl bg-emerald-950/60 border border-emerald-400/35 text-center sm:text-left shrink-0">
+          <p class="text-[10px] font-bold text-emerald-200">סך חיסכון ממוצרים שנקנו</p>
+          <p id="statPurchasedLifetimeSavings" class="text-lg font-black text-emerald-300 tabular-nums font-mono">0 ₪</p>
+        </div>
+      </div>
+
+      <div id="purchasedEmptyState" class="liquid-glass-soft rounded-3xl p-10 text-center space-y-2">
+        <p class="text-3xl">🛍️</p>
+        <h4 class="text-base font-extrabold text-white">עדיין לא סימנת מוצרים כנרכשו</h4>
+        <p class="text-xs text-slate-400">כשאתה קונה מוצר, לחץ על "סמן כנרכש" בכרטיס המוצר כדי להעביר אותו לכאן ולשמור את החיסכון שלך!</p>
+      </div>
+
+      <div id="purchasedProductsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+    </section>
+
+        <!-- TAB 2: ALERTS & DAILY REPORTS LOG -->
     <section id="tab-alerts" class="hidden space-y-5">
       <div class="liquid-glass rounded-3xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div class="flex items-center gap-3">
@@ -937,6 +1026,71 @@
 
       </div>
 
+            <!-- Advanced Automation, DND Quiet Hours & Webhook Card -->
+      <div class="liquid-glass rounded-3xl p-5 sm:p-6 space-y-4 border border-cyan-500/25">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-cyan-600 flex items-center justify-center text-2xl shadow-lg shadow-indigo-500/25">
+            🌙
+          </div>
+          <div>
+            <h3 class="text-base sm:text-lg font-extrabold text-white">אוטומציה, שעות שקטות (DND) והתראות חיצוניות</h3>
+            <p class="text-xs text-slate-300">הגדרת זמני שקט, עוצמת שמע ותמיכה ב-Webhooks (Discord/Slack/Home Assistant)</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+          <!-- DND Quiet Hours -->
+          <div class="p-3.5 rounded-2xl liquid-glass-soft border border-white/10 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-black text-cyan-200">🌙 שעות שקטות (Do Not Disturb)</span>
+              <input id="settingsDndToggle" type="checkbox" class="w-5 h-5 accent-cyan-400 cursor-pointer" />
+            </div>
+            <p class="text-[11px] text-slate-300">השתקת צלילים ורטט בשעות הלילה:</p>
+            <div class="flex items-center gap-2 text-xs font-mono">
+              <input id="settingsDndStart" type="time" value="23:00" class="px-2.5 py-1.5 rounded-xl liquid-glass-input text-white dir-ltr text-center" />
+              <span class="text-slate-400">עד</span>
+              <input id="settingsDndEnd" type="time" value="07:30" class="px-2.5 py-1.5 rounded-xl liquid-glass-input text-white dir-ltr text-center" />
+            </div>
+          </div>
+
+          <!-- Sound Volume Slider -->
+          <div class="p-3.5 rounded-2xl liquid-glass-soft border border-white/10 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-black text-cyan-200">🔊 עוצמת צלילי מערכת</span>
+              <span id="soundVolumeLabel" class="text-xs font-mono font-bold text-slate-200">80%</span>
+            </div>
+            <input id="settingsSoundVolume" type="range" min="10" max="100" value="80" class="w-full accent-cyan-400 cursor-pointer" />
+            <p class="text-[10px] text-slate-400">שליטה על עוצמת הסאונד הפנימי באפליקציה</p>
+          </div>
+        </div>
+
+        <!-- Custom Webhook URL -->
+        <div class="p-3.5 rounded-2xl liquid-glass-soft border border-white/10 space-y-2">
+          <label for="settingsWebhookUrl" class="block text-xs font-black text-cyan-200">כתובת Webhook להתראות חיצוניות (Discord / Slack / Home Assistant):</label>
+          <div class="flex items-center gap-2">
+            <input id="settingsWebhookUrl" type="url" placeholder="https://discord.com/api/webhooks/... או https://hooks.slack.com/..." class="flex-1 px-3 py-2 rounded-xl liquid-glass-input text-xs text-white font-mono dir-ltr outline-none" />
+            <button id="testWebhookBtn" type="button" class="px-3 py-2 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 text-xs font-bold border border-cyan-400/30 transition shrink-0">
+              בדוק 🚀
+            </button>
+          </div>
+        </div>
+
+        <!-- CSV Export & Printable Report -->
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-white/10">
+          <span class="text-xs text-slate-300 font-bold">דוחות ויצוא נתונים מתקדם:</span>
+          <div class="flex items-center gap-2">
+            <button id="exportCsvBtn" type="button" class="px-3.5 py-1.5 rounded-xl liquid-glass-soft hover:bg-white/15 text-emerald-200 text-xs font-extrabold border border-emerald-400/30 transition flex items-center gap-1">
+              <span>📊</span>
+              <span>יצוא ל-Excel / CSV</span>
+            </button>
+            <button id="printReportBtn" type="button" class="px-3.5 py-1.5 rounded-xl liquid-glass-soft hover:bg-white/15 text-cyan-200 text-xs font-extrabold border border-cyan-400/30 transition flex items-center gap-1">
+              <span>🖨️</span>
+              <span>דוח מודפס</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
             <!-- Multi-User Isolated Cloud Protection Card -->
       <div class="liquid-glass rounded-3xl p-5 sm:p-6 space-y-4 border border-emerald-400/30">
         <div class="flex items-center justify-between flex-wrap gap-2">
@@ -1069,7 +1223,7 @@
         <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-white/10 text-xs">
           <div class="flex items-center gap-2 flex-wrap">
             <span class="text-slate-300 font-bold">גרסת מערכת:</span>
-            <span id="appVersionHeaderBadge" class="font-mono font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">v3.7.0</span>
+            <span id="appVersionHeaderBadge" class="font-mono font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">v3.8.0 PRO</span>
             <span id="cloudSyncBadge" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-teal-500/25 text-teal-200 border border-teal-400/30 flex items-center gap-1">☁️ ענן 24/7</span>
             <span class="text-slate-400">בדיקת מחירים אוטומטית הבאה: <span id="nextCheckTimer" class="font-mono font-bold text-cyan-300">--:--</span></span>
             <span class="hidden" id="headerDailyTime">09:00</span>
@@ -1085,7 +1239,7 @@
         <div class="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/15 via-teal-500/15 to-cyan-500/15 border border-emerald-400/30 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div class="space-y-1 text-center sm:text-right">
             <div class="flex items-center gap-2 justify-center sm:justify-start">
-              <span class="text-xs font-black text-emerald-300">📱 גרסת קובץ APK עדכנית: v3.7.0</span>
+              <span class="text-xs font-black text-emerald-300">📱 גרסת קובץ APK עדכנית: v3.8.0 PRO</span>
               <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 font-mono font-bold">RELEASE</span>
             </div>
             <p class="text-[11px] text-slate-300">הורדת קובץ ההתקנה העדכני (במידה ורוצים להתקין מחדש או על מכשיר נוסף)</p>
@@ -1099,7 +1253,7 @@
               class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl btn-gradient-emerald text-white text-xs font-extrabold flex items-center justify-center gap-2 shadow-lg hover:brightness-110 transition"
             >
               <span>⬇️</span>
-              <span>הורד APK מעודכן v3.7.0</span>
+              <span>הורד APK מעודכן v3.8.0 PRO</span>
             </a>
           </div>
         </div>
@@ -1633,11 +1787,20 @@
     const state = {
       products: [],
       alerts: [],
+      purchased: [],
+      collections: ['הכל', 'גאדג׳טים', 'לבית', 'מתנות', 'אופנה'],
+      selectedCartIds: new Set(),
       settings: {
         dailyTime: '09:00',
         checkIntervalMinutes: 60,
         soundEnabled: true,
+        soundVolume: 0.8,
         hapticEnabled: true,
+        dndEnabled: false,
+        dndStart: '23:00',
+        dndEnd: '07:30',
+        webhookUrl: '',
+        privacyMode: false,
         browserNotifEnabled: false,
         tgBotToken: '',
         tgChatId: '',
@@ -1685,6 +1848,8 @@
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed.products)) state.products = parsed.products;
           if (Array.isArray(parsed.alerts)) state.alerts = parsed.alerts;
+          if (Array.isArray(parsed.purchased)) state.purchased = parsed.purchased;
+          if (Array.isArray(parsed.collections)) state.collections = parsed.collections;
           if (parsed.settings && typeof parsed.settings === 'object') {
             state.settings = Object.assign({}, state.settings, parsed.settings);
           }
@@ -1743,6 +1908,8 @@
       const serialized = JSON.stringify({
         products: state.products,
         alerts: state.alerts,
+        purchased: state.purchased || [],
+        collections: state.collections || [],
         settings: state.settings
       });
       try {
@@ -1976,6 +2143,136 @@
     }
 
     // =========================================================================
+    // SHOPPING INTELLIGENCE & UTILITIES (100X EXPANSION)
+    // =========================================================================
+
+    // Clean tracking garbage from URLs automatically
+    function stripTrackingUrlParams(rawUrl) {
+      if (!rawUrl || typeof rawUrl !== 'string') return rawUrl;
+      try {
+        const u = new URL(rawUrl.trim());
+        const trackingKeys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'fbclid', 'gclid', 'igshid', '_ga', 'mc_cid', 'mc_eid', 'ref_', 'pf_rd_r', 'pf_rd_p'];
+        trackingKeys.forEach(k => u.searchParams.delete(k));
+        return u.toString();
+      } catch (e) {
+        return rawUrl.trim();
+      }
+    }
+
+    // Eilat Tax Exemption Calculator (-17% VAT)
+    function calculateEilatTaxPrice(price) {
+      const p = Number(price) || 0;
+      if (p <= 0) return 0;
+      return Math.round(p / 1.17);
+    }
+
+    // Live Currency Conversions Estimate
+    function getEstimatedCurrencies(ilsPrice) {
+      const p = Number(ilsPrice) || 0;
+      if (p <= 0) return { usd: 0, eur: 0 };
+      const usdRate = 3.75;
+      const eurRate = 4.05;
+      return {
+        usd: Math.round(p / usdRate),
+        eur: Math.round(p / eurRate)
+      };
+    }
+
+    // AI Price Drop Likelihood Predictor
+    function predictPriceDropChance(product) {
+      if (!product) return { pct: 50, label: 'בינוני' };
+      const cur = Number(product.currentPrice) || 0;
+      const init = Number(product.initialPrice) || cur;
+      let chance = 45;
+      if (cur > init) chance += 25; // Price recently rose, high chance of reverting
+      if (Array.isArray(product.storeOffers) && product.storeOffers.length > 1) chance += 15; // Competitors drive cuts
+      if (product.variations && product.variations.length > 2) chance += 10;
+      chance = Math.min(95, Math.max(15, chance));
+      let label = chance > 70 ? 'גבוה 🔥' : (chance > 45 ? 'בינוני ⚡' : 'נמוך ⏳');
+      return { pct: chance, label };
+    }
+
+    // Export Watchlist to CSV
+    function exportWatchlistToCsv() {
+      playAudioFx('pop');
+      triggerHaptic('medium');
+      const items = state.products;
+      if (!items || items.length === 0) {
+        showToast('אין מוצרים ליצוא', 'רשימת המעקב ריקה כרגע.', 'warning');
+        return;
+      }
+      const headers = ['שם המוצר', 'חנות', 'מחיר נוכחי (₪)', 'מחיר התחלתי (₪)', 'שפל היסטורי (₪)', 'חיסכון (₪)', 'יעד מחיר', 'משלוח חינם', 'בדיקה אחרונה', 'קישור'];
+      const rows = items.map(p => {
+        const cur = Number(p.currentPrice) || 0;
+        const init = Number(p.initialPrice) || cur;
+        const sav = Math.max(0, init - cur);
+        return [
+          `"${(p.title || '').replace(/"/g, '""')}"`,
+          `"${(p.store || '').replace(/"/g, '""')}"`,
+          cur,
+          init,
+          p.lowestPrice || cur,
+          sav,
+          p.targetPrice || '',
+          p.freeShippingEligible ? 'כן' : 'לא',
+          `"${p.lastChecked || ''}"`,
+          `"${p.url || ''}"`
+        ].join(',');
+      });
+      const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\r\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const dStr = new Date().toISOString().slice(0, 10);
+      a.href = url;
+      a.download = `priceradar-watchlist-${dStr}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('דוח CSV הורד בהצלחה! 📊', `יוצאו ${items.length} מוצרים לקובץ Excel.`, 'success');
+      playAudioFx('success');
+      triggerHaptic('success');
+    }
+
+    // Printable HTML Watchlist Report
+    function printWatchlistReport() {
+      playAudioFx('pop');
+      window.print();
+    }
+
+    // Webhook Notification Trigger
+    async function sendWebhookAlert(title, message, productUrl = '') {
+      const url = (state.settings.webhookUrl || '').trim();
+      if (!url) return;
+      try {
+        await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: 'PriceRadar Alert ⚡',
+            content: `**${title}**\n${message}\n${productUrl}`
+          })
+        });
+      } catch (e) {}
+    }
+
+    // Do Not Disturb (DND) Check
+    function isCurrentlyQuietHours() {
+      if (!state.settings.dndEnabled) return false;
+      const now = new Date();
+      const curMins = now.getHours() * 60 + now.getMinutes();
+      const [sh, sm] = (state.settings.dndStart || '23:00').split(':').map(Number);
+      const [eh, em] = (state.settings.dndEnd || '07:30').split(':').map(Number);
+      const startMins = sh * 60 + sm;
+      const endMins = eh * 60 + em;
+      if (startMins > endMins) {
+        return curMins >= startMins || curMins < endMins;
+      }
+      return curMins >= startMins && curMins < endMins;
+    }
+
+        // =========================================================================
     // SENSORY ENGINE: SYNTH AUDIO + NATIVE HAPTICS + CANVAS CONFETTI
     // =========================================================================
     let audioCtx = null;
@@ -1987,8 +2284,10 @@
           if (!AudioContextClass) return;
           audioCtx = new AudioContextClass();
         }
+        if (isCurrentlyQuietHours()) return;
         if (audioCtx.state === 'suspended') audioCtx.resume();
         const now = audioCtx.currentTime;
+        const vol = (state.settings.soundVolume !== undefined ? state.settings.soundVolume : 80) / 100;
 
         if (type === 'pop') {
           const osc = audioCtx.createOscillator();
@@ -1997,7 +2296,7 @@
           osc.frequency.setValueAtTime(420, now);
           osc.frequency.exponentialRampToValueAtTime(840, now + 0.045);
           gain.gain.setValueAtTime(0.001, now);
-          gain.gain.linearRampToValueAtTime(0.12, now + 0.01);
+          gain.gain.linearRampToValueAtTime(0.12 * vol, now + 0.01);
           gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
           osc.connect(gain);
           gain.connect(audioCtx.destination);
@@ -2009,7 +2308,7 @@
           osc.type = 'triangle';
           osc.frequency.setValueAtTime(1400, now);
           osc.frequency.exponentialRampToValueAtTime(600, now + 0.015);
-          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.setValueAtTime(0.08 * vol, now);
           gain.gain.exponentialRampToValueAtTime(0.001, now + 0.02);
           osc.connect(gain);
           gain.connect(audioCtx.destination);
@@ -2065,7 +2364,7 @@
     }
 
     function triggerHaptic(type = 'light') {
-      if (state.settings.hapticEnabled === false) return;
+      if (state.settings.hapticEnabled === false || isCurrentlyQuietHours()) return;
       try {
         if ('vibrate' in navigator) {
           if (type === 'light') navigator.vibrate(12);
@@ -5206,11 +5505,140 @@
     // =========================================================================
     // RENDER UI
     // =========================================================================
-    function renderAll() {
+    // Render Custom Collections / Folders Bar
+    function renderCollectionsBar() {
+      const bar = document.getElementById('collectionsBar');
+      if (!bar) return;
+      bar.innerHTML = '';
+      const list = Array.isArray(state.collections) && state.collections.length > 0
+        ? state.collections
+        : ['הכל', 'גאדג׳טים', 'לבית', 'מתנות', 'אופנה'];
+
+      const activeCol = state.ui.activeCollection || 'הכל';
+
+      list.forEach(colName => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        const isActive = activeCol === colName;
+        btn.className = `px-3 py-1 rounded-xl text-xs font-bold shrink-0 transition flex items-center gap-1 ${
+          isActive ? 'bg-purple-500 text-white font-black shadow-md' : 'liquid-glass-soft text-slate-300 hover:bg-white/15'
+        }`;
+        btn.innerHTML = `<span>📁</span><span>${escapeHtml(colName)}</span>`;
+        btn.onclick = () => {
+          playAudioFx('tick');
+          triggerHaptic('light');
+          state.ui.activeCollection = colName;
+          renderCollectionsBar();
+          renderProductsGrid();
+        };
+        bar.appendChild(btn);
+      });
+    }
+
+    // Render Purchased / Archived Products
+    function renderPurchasedArchive() {
+      const grid = document.getElementById('purchasedProductsGrid');
+      const emptyBox = document.getElementById('purchasedEmptyState');
+      const counterEl = document.getElementById('tabCountPurchased');
+      const lifetimeSavingsEl = document.getElementById('statPurchasedLifetimeSavings');
+      if (!grid) return;
+
+      const purchasedList = Array.isArray(state.purchased) ? state.purchased : [];
+      if (counterEl) counterEl.textContent = String(purchasedList.length);
+
+      let totalLifeSav = 0;
+      purchasedList.forEach(p => {
+        const init = Number(p.initialPrice) || Number(p.currentPrice) || 0;
+        const paid = Number(p.purchasePrice) || Number(p.currentPrice) || 0;
+        totalLifeSav += Math.max(0, init - paid);
+      });
+      if (lifetimeSavingsEl) lifetimeSavingsEl.textContent = formatPrice(totalLifeSav);
+
+      if (purchasedList.length === 0) {
+        if (emptyBox) emptyBox.classList.remove('hidden');
+        grid.innerHTML = '';
+        return;
+      }
+      if (emptyBox) emptyBox.classList.add('hidden');
+      grid.innerHTML = '';
+
+      purchasedList.forEach(p => {
+        const card = document.createElement('div');
+        const init = Number(p.initialPrice) || Number(p.currentPrice) || 0;
+        const paid = Number(p.purchasePrice) || Number(p.currentPrice) || 0;
+        const sav = Math.max(0, init - paid);
+        card.className = 'liquid-glass rounded-3xl p-4 sm:p-5 flex flex-col justify-between gap-3 border border-emerald-400/40 relative overflow-hidden';
+        card.innerHTML = `
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-14 h-14 rounded-2xl bg-slate-950/80 p-1 border border-white/10 shrink-0 flex items-center justify-center">
+                <img src="${escapeHtml(p.image || '')}" alt="" class="w-full h-full object-contain rounded-xl" />
+              </div>
+              <div class="min-w-0">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="text-xs sm:text-sm font-black text-white truncate max-w-xs">${escapeHtml(p.title)}</span>
+                  <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-400/40 font-bold shrink-0">✅ נרכש</span>
+                </div>
+                <p class="text-[11px] text-slate-300 mt-0.5">${escapeHtml(p.store)} • נקנה ב-${formatPrice(paid)}</p>
+                ${sav > 0 ? `<p class="text-[11px] text-emerald-300 font-extrabold mt-0.5">🎉 נחסכו ${formatPrice(sav)} בקנייה זו!</p>` : ''}
+              </div>
+            </div>
+            <button type="button" data-action="unarchive" data-id="${p.id}" title="החזר למעקב פעיל" class="px-2.5 py-1 rounded-xl liquid-glass-soft text-[11px] text-cyan-200 font-bold hover:bg-white/20 transition shrink-0">
+              ↩️ החזר למעקב
+            </button>
+          </div>
+        `;
+        card.querySelector('[data-action="unarchive"]').onclick = () => {
+          state.purchased = state.purchased.filter(item => item.id !== p.id);
+          delete p.purchasePrice;
+          state.products.unshift(p);
+          saveState(false, true);
+          renderAll();
+          showToast('המוצר הוחזר למעקב', `"${p.title}" חזר לרשימת המוצרים הפעילה.`, 'info');
+        };
+        grid.appendChild(card);
+      });
+    }
+
+    // Update Cart Total Simulator
+    function updateCartSimulator() {
+      const box = document.getElementById('cartSimulatorBox');
+      const countEl = document.getElementById('cartSimProductsCount');
+      const priceEl = document.getElementById('cartSimTotalPrice');
+      const savEl = document.getElementById('cartSimTotalSavings');
+      if (!box || !countEl || !priceEl || !savEl) return;
+
+      const ids = state.selectedCartIds || new Set();
+      if (ids.size === 0) {
+        box.classList.add('hidden');
+        return;
+      }
+      box.classList.remove('hidden');
+
+      let totalPrice = 0;
+      let totalSav = 0;
+      state.products.forEach(p => {
+        if (ids.has(p.id)) {
+          const cur = Number(p.currentPrice) || 0;
+          const init = Number(p.initialPrice) || cur;
+          totalPrice += cur;
+          totalSav += Math.max(0, init - cur);
+        }
+      });
+
+      countEl.textContent = `(${ids.size} מוצרים)`;
+      priceEl.textContent = formatPrice(totalPrice);
+      savEl.textContent = totalSav > 0 ? `חיסכון: ${formatPrice(totalSav)}` : 'מחיר רגיל';
+    }
+
+        function renderAll() {
       renderStatsAndHeader();
+      renderCollectionsBar();
       renderProductsGrid();
+      renderPurchasedArchive();
       renderAlertsLog();
       renderSettingsValues();
+      updateCartSimulator();
     }
 
     function renderStatsAndHeader() {
@@ -5505,9 +5933,15 @@
           return;
         }
 
+        // Target Price Hit Celebration Ribbon
+        const isTargetMet = p.targetPrice && Number(p.currentPrice) <= Number(p.targetPrice);
+        const targetRibbonHtml = isTargetMet
+          ? '<div class="absolute -top-1 -right-1 px-4 py-1 rounded-bl-2xl bg-gradient-to-r from-amber-400 to-amber-600 text-slate-950 font-black text-[10px] shadow-lg flex items-center gap-1 z-20"><span>🎯 יעד המחיר הושג!</span></div>'
+          : '';
+
         // SPACIOUS GRID CARD
         card.className = `liquid-glass card-hover cursor-pointer rounded-3xl p-4 sm:p-5 flex flex-col justify-between gap-3.5 relative overflow-hidden transition-all duration-300 ${
-          p.pinned ? 'border-amber-400/80 shadow-xl shadow-amber-950/40 ring-1 ring-amber-400/40' : (isDropped ? 'border-emerald-400/60 shadow-xl shadow-emerald-950/40' : (isMultiStore ? 'border-cyan-400/45 shadow-xl shadow-cyan-950/30' : ''))
+          isTargetMet ? 'border-amber-400/90 shadow-2xl ring-2 ring-amber-400/40' : (p.pinned ? 'border-amber-400/80 shadow-xl shadow-amber-950/40 ring-1 ring-amber-400/40' : (isDropped ? 'border-emerald-400/60 shadow-xl shadow-emerald-950/40' : (isMultiStore ? 'border-cyan-400/45 shadow-xl shadow-cyan-950/30' : '')))
         }`;
 
         const statusBadge = isDropped
@@ -5581,10 +6015,12 @@
         const isThisStoreFiltered = state.ui.storeFilter === primaryStoreName;
 
         card.innerHTML = `
+          ${targetRibbonHtml}
           <div class="space-y-3">
             <!-- Top Store Bar & Deal Quality Badge + Pin Toggle -->
             <div class="flex items-center justify-between gap-2">
               <div class="flex items-center gap-1.5 min-w-0">
+                <input type="checkbox" data-action="toggle_cart_sim" data-id="${p.id}" ${state.selectedCartIds && state.selectedCartIds.has(p.id) ? 'checked' : ''} title="הוסף לסימולציית עגלת קניות" class="w-4 h-4 accent-emerald-400 rounded cursor-pointer shrink-0" />
                 <button type="button" data-action="filter_store" data-store="${escapeHtml(primaryStoreName)}" title="לחץ לסינון כל המוצרים מ-${escapeHtml(primaryStoreName)}" class="prod-action-btn flex items-center gap-1.5 px-2.5 py-1 rounded-xl ${isThisStoreFiltered ? 'bg-cyan-500/30 border-cyan-400 text-cyan-100 shadow-md' : 'bg-slate-800/80 hover:bg-cyan-500/20 border-slate-700/80 hover:border-cyan-400/40 text-slate-200'} border transition min-w-0">
                   <img src="${escapeHtml(storeMeta.favicon)}" alt="" class="w-3.5 h-3.5 rounded-sm object-contain shrink-0" onerror="this.style.display='none'" />
                   <span class="text-[11px] font-extrabold truncate">${escapeHtml(isMultiStore ? `${offers.length} חנויות (${bestOffer.store})` : p.store)}</span>
@@ -5613,7 +6049,7 @@
                 </div>
                 <div class="pt-0.5 flex items-center justify-between gap-2">
                   <div class="flex items-baseline gap-2.5 flex-wrap">
-                    <span class="text-lg sm:text-xl font-black tabular-nums ${isDropped ? 'text-emerald-300' : 'text-white'}">${formatPrice(p.currentPrice)}</span>
+                    ${state.settings.privacyMode ? '<span class="text-lg sm:text-xl font-black text-cyan-200">₪••••</span>' : `<span class="text-lg sm:text-xl font-black tabular-nums ${isDropped ? 'text-emerald-300' : 'text-white'}">${formatPrice(p.currentPrice)}</span>`}
                     ${isDropped ? `<span class="text-xs font-bold text-slate-400 line-through tabular-nums">${formatPrice(p.initialPrice)}</span>` : `<span class="text-[11px] text-slate-400 font-semibold">התחיל ב-${formatPrice(p.initialPrice)}</span>`}
                     ${(p.lowestPrice && p.lowestPrice < p.currentPrice) ? `<span class="text-[11px] text-cyan-300 font-bold">שפל: ${formatPrice(p.lowestPrice)}</span>` : ''}
                   </div>
@@ -5629,6 +6065,9 @@
           <!-- Clean Minimal Card Footer -->
           <div class="pt-2.5 border-t border-slate-800/80 flex items-center justify-between gap-2">
             <div class="flex items-center gap-1.5">
+              <button type="button" data-action="mark_purchased" data-id="${p.id}" title="סמן מוצר זה כנרכש בהצלחה" class="prod-action-btn py-1.5 px-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/30 text-emerald-200 text-xs font-bold transition flex items-center gap-1">
+                <span>🛍️</span>
+              </button>
               <button type="button" data-action="check" data-id="${p.id}" class="prod-action-btn py-1.5 px-3 rounded-xl liquid-glass-soft hover:bg-cyan-500/20 hover:text-cyan-200 text-white text-xs font-extrabold transition flex items-center gap-1">
                 <span>🔄</span>
                 <span>בדוק</span>
@@ -5919,6 +6358,221 @@
     }
 
     function initPriceRadarApp() {
+      // Holiday Deals Countdown Timer
+      function updateHolidayCountdown() {
+        const timerEl = document.getElementById('holidayCountdownTimer');
+        if (!timerEl) return;
+        // Target: upcoming Black Friday / Cyber Week
+        const now = new Date();
+        const year = now.getFullYear();
+        let target = new Date(year, 10, 27, 0, 0, 0); // Nov 27
+        if (now > target) target = new Date(year + 1, 10, 27, 0, 0, 0);
+        const diff = Math.max(0, target - now);
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+        const mins = Math.floor((diff / (1000 * 60)) % 60);
+        const secs = Math.floor((diff / 1000) % 60);
+        timerEl.textContent = `${days}d ${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      }
+      setInterval(updateHolidayCountdown, 1000);
+      updateHolidayCountdown();
+
+      // Scroll to Top FAB Button
+      const scrollFab = document.getElementById('scrollToTopBtn');
+      if (scrollFab) {
+        window.addEventListener('scroll', () => {
+          scrollFab.classList.toggle('hidden', window.scrollY < 300);
+        }, { passive: true });
+        scrollFab.addEventListener('click', () => {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          playAudioFx('tick');
+          triggerHaptic('light');
+        });
+      }
+
+      // Privacy Mode Toggle (Gift Mode)
+      const privBtn = document.getElementById('privacyModeBtn');
+      const privIcon = document.getElementById('privacyModeIcon');
+      if (privBtn) {
+        privBtn.addEventListener('click', () => {
+          state.settings.privacyMode = !state.settings.privacyMode;
+          if (privIcon) privIcon.textContent = state.settings.privacyMode ? '🙈' : '👁️';
+          playAudioFx('tick');
+          triggerHaptic('medium');
+          renderProductsGrid();
+          showToast(
+            state.settings.privacyMode ? 'מצב פרטיות הופעל 🙈' : 'מצב פרטיות בוטל 👁️',
+            state.settings.privacyMode ? 'המחירים מוסתרים כדי שתוכל לגלוש בחופשיות.' : 'המחירים מוצגים כרגיל.',
+            'info'
+          );
+        });
+      }
+
+      // Desktop Keyboard Shortcuts
+      window.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+          e.preventDefault();
+          const sInput = document.getElementById('searchProductsInput');
+          if (sInput) sInput.focus();
+        } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n') {
+          e.preventDefault();
+          const uInput = document.getElementById('urlInput');
+          if (uInput) uInput.focus();
+        } else if (e.key === 'Escape') {
+          ['bulkImportModal', 'changelogModal', 'productDetailsModal', 'productConfirmModal'].forEach(id => {
+            const m = document.getElementById(id);
+            if (m) m.classList.add('hidden');
+          });
+        }
+      });
+
+      // Changelog Modal
+      const openChgBtn = document.getElementById('openChangelogBtn');
+      const chgModal = document.getElementById('changelogModal');
+      const closeChgBtn = document.getElementById('closeChangelogModalBtn');
+      const confirmChgBtn = document.getElementById('confirmChangelogBtn');
+      if (openChgBtn && chgModal) {
+        openChgBtn.onclick = () => { playAudioFx('pop'); chgModal.classList.remove('hidden'); };
+        if (closeChgBtn) closeChgBtn.onclick = () => chgModal.classList.add('hidden');
+        if (confirmChgBtn) confirmChgBtn.onclick = () => chgModal.classList.add('hidden');
+      }
+
+      // Bulk URL Import Modal
+      const openBulkBtn = document.getElementById('openBulkImportBtn');
+      const bulkModal = document.getElementById('bulkImportModal');
+      const closeBulkBtn = document.getElementById('closeBulkImportModalBtn');
+      const cancelBulkBtn = document.getElementById('cancelBulkImportBtn');
+      const startBulkBtn = document.getElementById('startBulkImportBtn');
+      const bulkTextarea = document.getElementById('bulkImportTextarea');
+      const bulkStatus = document.getElementById('bulkImportStatusText');
+
+      if (openBulkBtn && bulkModal) {
+        openBulkBtn.onclick = () => { playAudioFx('pop'); bulkModal.classList.remove('hidden'); };
+        if (closeBulkBtn) closeBulkBtn.onclick = () => bulkModal.classList.add('hidden');
+        if (cancelBulkBtn) cancelBulkBtn.onclick = () => bulkModal.classList.add('hidden');
+
+        if (startBulkBtn && bulkTextarea) {
+          startBulkBtn.onclick = async () => {
+            const lines = bulkTextarea.value.split('\n').map(l => stripTrackingUrlParams(l)).filter(l => l.startsWith('http'));
+            if (lines.length === 0) {
+              if (bulkStatus) bulkStatus.textContent = 'לא נמצאו קישורים תקינים';
+              return;
+            }
+            startBulkBtn.disabled = true;
+            for (let i = 0; i < lines.length; i++) {
+              if (bulkStatus) bulkStatus.textContent = `סורק קישור ${i + 1} מתוך ${lines.length}...`;
+              try {
+                const res = await scanProductByUrl(lines[i]);
+                if (res && res.title) {
+                  state.products.unshift({
+                    id: 'prod_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+                    url: lines[i],
+                    title: res.title,
+                    store: res.store || 'אונליין',
+                    currentPrice: res.price,
+                    initialPrice: res.price,
+                    lowestPrice: res.price,
+                    image: res.image || '',
+                    category: res.category || 'other',
+                    lastChecked: new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }),
+                    history: [{ time: 'התחלה', price: res.price }]
+                  });
+                }
+              } catch (err) {}
+            }
+            saveState(false, true);
+            renderAll();
+            startBulkBtn.disabled = false;
+            bulkModal.classList.add('hidden');
+            bulkTextarea.value = '';
+            showToast('הסריקה המרוכזת הושלמה! 🚀', `נוספו ${lines.length} מוצרים חדשים למעקב.`, 'success');
+            playAudioFx('fanfare');
+            triggerHaptic('success');
+            launchConfetti();
+          };
+        }
+      }
+
+      // Clear Cart Simulator button
+      const clearCartBtn = document.getElementById('clearCartSimBtn');
+      if (clearCartBtn) {
+        clearCartBtn.onclick = () => {
+          if (state.selectedCartIds) state.selectedCartIds.clear();
+          playAudioFx('trash');
+          triggerHaptic('light');
+          updateCartSimulator();
+          renderProductsGrid();
+        };
+      }
+
+      // Add Folder / Collection prompt
+      const manageColBtn = document.getElementById('manageCollectionsBtn');
+      if (manageColBtn) {
+        manageColBtn.onclick = () => {
+          const name = prompt('הזן שם עבור התיקייה / הקולקציה החדשה:');
+          if (name && name.trim()) {
+            const clean = name.trim();
+            if (!state.collections) state.collections = [];
+            if (!state.collections.includes(clean)) {
+              state.collections.push(clean);
+              saveState();
+              renderCollectionsBar();
+              playAudioFx('pop');
+              showToast('התיקייה נוצרה! 📁', `תוכל לסנן מוצרים לפי "${clean}".`, 'success');
+            }
+          }
+        };
+      }
+
+      // Settings DND, Volume, Webhook, CSV & Print
+      const dndTgl = document.getElementById('settingsDndToggle');
+      if (dndTgl) {
+        dndTgl.checked = !!state.settings.dndEnabled;
+        dndTgl.onchange = () => { state.settings.dndEnabled = dndTgl.checked; saveState(); };
+      }
+      const dndS = document.getElementById('settingsDndStart');
+      if (dndS) {
+        dndS.value = state.settings.dndStart || '23:00';
+        dndS.onchange = () => { state.settings.dndStart = dndS.value; saveState(); };
+      }
+      const dndE = document.getElementById('settingsDndEnd');
+      if (dndE) {
+        dndE.value = state.settings.dndEnd || '07:30';
+        dndE.onchange = () => { state.settings.dndEnd = dndE.value; saveState(); };
+      }
+      const volSlider = document.getElementById('settingsSoundVolume');
+      const volLbl = document.getElementById('soundVolumeLabel');
+      if (volSlider) {
+        volSlider.value = state.settings.soundVolume !== undefined ? state.settings.soundVolume : 80;
+        if (volLbl) volLbl.textContent = `${volSlider.value}%`;
+        volSlider.oninput = () => {
+          state.settings.soundVolume = Number(volSlider.value);
+          if (volLbl) volLbl.textContent = `${volSlider.value}%`;
+          playAudioFx('tick');
+          saveState();
+        };
+      }
+      const webhookIn = document.getElementById('settingsWebhookUrl');
+      if (webhookIn) {
+        webhookIn.value = state.settings.webhookUrl || '';
+        webhookIn.onchange = () => { state.settings.webhookUrl = webhookIn.value.trim(); saveState(); };
+      }
+      const testWebBtn = document.getElementById('testWebhookBtn');
+      if (testWebBtn) {
+        testWebBtn.onclick = async () => {
+          if (!state.settings.webhookUrl) {
+            showToast('הזן כתובת Webhook', 'מלא את הכתובת תחילה.', 'warning');
+            return;
+          }
+          await sendWebhookAlert('בדיקת חיבור מ-PriceRadar! ⚡', 'התראות ירידת מחיר יישלחו לערוץ זה בהצלחה.');
+          showToast('הודעת בדיקה נשלחה 🚀', 'בדוק את ערוץ הדיסקורד / סלאק שלך.', 'success');
+        };
+      }
+      const expCsv = document.getElementById('exportCsvBtn');
+      if (expCsv) expCsv.onclick = () => exportWatchlistToCsv();
+      const printBtn = document.getElementById('printReportBtn');
+      if (printBtn) printBtn.onclick = () => printWatchlistReport();
+
       deduplicateAppDomIfNeeded();
       populate24HourSelects();
       initThemeSystem();
@@ -6252,6 +6906,36 @@
             sourceMethod: 'עריכת מוצר ואפשרויות',
             category: prod.category
           }, prod.id);
+        } else if (action === 'toggle_cart_sim') {
+          if (!state.selectedCartIds) state.selectedCartIds = new Set();
+          if (state.selectedCartIds.has(id)) {
+            state.selectedCartIds.delete(id);
+          } else {
+            state.selectedCartIds.add(id);
+          }
+          playAudioFx('tick');
+          triggerHaptic('light');
+          updateCartSimulator();
+          return;
+        } else if (action === 'mark_purchased') {
+          openConfirmModal(
+            'סימון מוצר כנרכש 🛍️',
+            `האם לסמן את "${prod.title}" כנרכש בהצלחה ולהעביר אותו לארכיון הרכישות?`,
+            () => {
+              prod.purchasePrice = prod.currentPrice;
+              prod.purchasedAt = new Date().toISOString();
+              state.products = state.products.filter(item => item.id !== id);
+              if (!Array.isArray(state.purchased)) state.purchased = [];
+              state.purchased.unshift(prod);
+              saveState(false, true);
+              renderAll();
+              playAudioFx('fanfare');
+              triggerHaptic('success');
+              launchConfetti();
+              showToast('מזל טוב על הקנייה! 🎉', `"${prod.title}" סומן כנרכש והועבר לארכיון.`, 'success');
+            }
+          );
+          return;
         } else if (action === 'toggle_pin') {
           prod.pinned = !prod.pinned;
           saveState(false, true);
@@ -7118,5 +7802,82 @@
   </script>
   <!-- Confetti Canvas -->
   <canvas id="confettiCanvas" class="fixed inset-0 pointer-events-none z-50 w-full h-full hidden"></canvas>
+
+  <!-- Floating Scroll-to-Top Button -->
+  <button id="scrollToTopBtn" type="button" title="חזור לראש הדף" class="hidden fixed bottom-20 left-5 sm:bottom-6 sm:left-6 z-40 w-11 h-11 rounded-2xl liquid-glass border border-cyan-400/40 text-cyan-200 hover:text-white hover:bg-cyan-500/20 shadow-xl flex items-center justify-center text-lg transition duration-300">
+    ↑
+  </button>
+
+  <!-- Floating Batch Actions Bar (Multi-select) -->
+  <div id="batchActionBar" class="hidden fixed bottom-16 sm:bottom-6 left-1/2 -translate-x-1/2 z-40 px-5 py-3 rounded-2xl bg-slate-950/95 border border-cyan-400/50 shadow-2xl flex items-center gap-3 backdrop-blur-xl">
+    <span id="batchSelectedCount" class="text-xs font-black text-cyan-300">נבחרו 0 מוצרים</span>
+    <div class="h-4 w-[1px] bg-white/20"></div>
+    <button id="batchCheckBtn" type="button" class="px-3 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 text-xs font-extrabold transition">🔄 בדוק הכל</button>
+    <button id="batchArchiveBtn" type="button" class="px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 text-xs font-extrabold transition">🛍️ סמן כנרכשו</button>
+    <button id="batchDeleteBtn" type="button" class="px-3 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 text-xs font-extrabold transition">🗑️ מחק</button>
+    <button id="batchCancelBtn" type="button" class="text-slate-400 hover:text-white text-xs px-1">✕</button>
+  </div>
+
+
+  <!-- Bulk URL Import Modal -->
+  <div id="bulkImportModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+    <div class="liquid-glass rounded-3xl max-w-lg w-full p-5 sm:p-6 space-y-4 border border-purple-400/40">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-2xl">📥</span>
+          <h3 class="text-base font-black text-white">יבוא קישורים מרוכז (Bulk Import)</h3>
+        </div>
+        <button id="closeBulkImportModalBtn" type="button" class="text-slate-400 hover:text-white text-base">✕</button>
+      </div>
+      <p class="text-xs text-slate-300">
+        הדבק מספר קישורים למוצרים (קישור אחד בכל שורה). האפליקציה תסרוק אותם בזה אחר זה ותוסיף אותם למעקב:
+      </p>
+      <textarea id="bulkImportTextarea" rows="6" placeholder="https://ksp.co.il/...
+https://www.amazon.com/...
+https://myrabbit.co.il/..." class="w-full p-3 rounded-2xl liquid-glass-input text-xs text-white font-mono dir-ltr outline-none"></textarea>
+      <div class="flex items-center justify-between pt-1">
+        <span id="bulkImportStatusText" class="text-xs text-cyan-300 font-bold"></span>
+        <div class="flex items-center gap-2">
+          <button id="cancelBulkImportBtn" type="button" class="px-4 py-2 rounded-xl liquid-glass-soft text-slate-300 text-xs font-bold">ביטול</button>
+          <button id="startBulkImportBtn" type="button" class="px-5 py-2 rounded-xl btn-gradient-primary text-slate-950 font-black text-xs shadow-md">התחל סריקה מרוכזת 🚀</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Changelog & What's New Modal -->
+  <div id="changelogModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+    <div class="liquid-glass rounded-3xl max-w-md w-full p-5 sm:p-6 space-y-4 border border-cyan-400/40 max-h-[85vh] overflow-y-auto">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-2xl">✨</span>
+          <h3 class="text-base font-black text-white">מה חדש ב-PriceRadar Pro?</h3>
+        </div>
+        <button id="closeChangelogModalBtn" type="button" class="text-slate-400 hover:text-white text-base">✕</button>
+      </div>
+      <div class="space-y-3 text-xs text-slate-200 leading-relaxed">
+        <div class="p-3 rounded-2xl liquid-glass-soft border border-emerald-400/30">
+          <span class="font-extrabold text-emerald-300 block mb-1">🛒 שופינג חכם וזיהוי הונאות</span>
+          <p>• מחשבון פטור ממע"מ אילת (-17%) למוצרי חשמל.</p>
+          <p>• זיהוי הקפצות מחיר מלאכותיות (Fake Discounts).</p>
+          <p>• מנקה קישורים אוטומטי מפרמטרי מעקב (UTM/Facebook).</p>
+        </div>
+        <div class="p-3 rounded-2xl liquid-glass-soft border border-cyan-400/30">
+          <span class="font-extrabold text-cyan-300 block mb-1">⚡ מחוות וביצועים</span>
+          <p>• לחיצה כפולה (Double-Tap) לבדיקת מחיר מהירה של מוצר.</p>
+          <p>• כפתור צף לחזרה לראש הדף ומחוות משיכה לרענון.</p>
+          <p>• קיצורי מקלדת (Ctrl+F, Ctrl+N, R, Esc).</p>
+        </div>
+        <div class="p-3 rounded-2xl liquid-glass-soft border border-purple-400/30">
+          <span class="font-extrabold text-purple-300 block mb-1">📁 ארגון וגיימיפיקציה</span>
+          <p>• יצירת תיקיוֹת מותאמות אישית (קולקציות).</p>
+          <p>• ארכיון מוצרים שנרכשו ומעקב חיסכון מצטבר.</p>
+          <p>• יבוא קישורים מרוכז בבת אחת.</p>
+        </div>
+      </div>
+      <button id="confirmChangelogBtn" type="button" class="w-full py-2.5 rounded-2xl btn-gradient-primary text-slate-950 font-black text-xs">הבנתי, תודה!</button>
+    </div>
+  </div>
+
 </body>
 </html>
