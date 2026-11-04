@@ -2884,7 +2884,7 @@
       triggerHaptic('medium');
       const backupData = {
         app: 'PriceRadar',
-        version: APP_VERSION,
+        version: window.__APP_VERSION__ || "4.0.0",
         exportedAt: new Date().toISOString(),
         productsCount: state.products.length,
         settings: state.settings,
@@ -5566,7 +5566,7 @@
 
         function renderAll() {
       renderStatsAndHeader();
-      renderCollectionsBar();
+      // collections retired in v3.8+
       renderProductsGrid();
       renderAlertsLog();
       renderSettingsValues();
@@ -5593,7 +5593,7 @@
       document.getElementById('headerDailyTime').textContent = state.settings.dailyTime || '09:00';
       document.getElementById('tabCountProducts').textContent = String(total);
       document.getElementById('tabCountAlerts').textContent = String(state.alerts.length);
-      document.getElementById('soundIconOn').textContent = state.settings.soundEnabled ? '🔔' : '🔕';
+      const sIcon = document.getElementById('soundIconOn'); if (sIcon) sIcon.textContent = state.settings.soundEnabled ? '🔔' : '🔕';
 
       const cloudBadge = document.getElementById('cloudSyncBadge');
       if (cloudBadge) {
@@ -7295,16 +7295,6 @@
       document.getElementById('sendDailyReportQuickBtn').addEventListener('click', () => generateAndSendDailyReport(true));
       document.getElementById('triggerDailySummaryBtn').addEventListener('click', () => generateAndSendDailyReport(true));
 
-      document.getElementById('soundToggleBtn').addEventListener('click', () => {
-        state.settings.soundEnabled = !state.settings.soundEnabled;
-        saveState();
-        renderStatsAndHeader();
-        showToast(
-          state.settings.soundEnabled ? 'צליל התראות פעיל 🔔' : 'צליל התראות מושתק 🔕',
-          state.settings.soundEnabled ? 'תשמע צליל בכל ירידת מחיר.' : 'התראות יוצגו ללא צליל.',
-          'info'
-        );
-      });
 
       document.getElementById('clearAlertsBtn').addEventListener('click', () => {
         state.alerts = [];
@@ -7826,47 +7816,6 @@
   <button id="scrollToTopBtn" type="button" title="חזור לראש הדף" class="hidden fixed bottom-20 left-5 sm:bottom-6 sm:left-6 z-40 w-11 h-11 rounded-2xl liquid-glass border border-cyan-400/40 text-cyan-200 hover:text-white hover:bg-cyan-500/20 shadow-xl flex items-center justify-center text-lg transition duration-300">
     ↑
   </button>
-
-  
-    </div>
-  </div>
-
-  <!-- Changelog & What's New Modal -->
-  <div id="changelogModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
-    <div class="liquid-glass rounded-3xl max-w-md w-full p-5 sm:p-6 space-y-4 border border-cyan-400/40 max-h-[85vh] overflow-y-auto">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <span class="text-2xl">✨</span>
-          <h3 class="text-base font-black text-white">מה חדש ב-PriceRadar Pro?</h3>
-        </div>
-        <button id="closeChangelogModalBtn" type="button" class="text-slate-400 hover:text-white text-base">✕</button>
-      </div>
-      <div class="space-y-3 text-xs text-slate-200 leading-relaxed">
-        <div class="p-3 rounded-2xl liquid-glass-soft border border-emerald-400/30">
-          <span class="font-extrabold text-emerald-300 block mb-1">🛒 שופינג חכם וזיהוי הונאות</span>
-          <p>• מחשבון פטור ממע"מ אילת (-17%) למוצרי חשמל.</p>
-          <p>• זיהוי הקפצות מחיר מלאכותיות (Fake Discounts).</p>
-          <p>• מנקה קישורים אוטומטי מפרמטרי מעקב (UTM/Facebook).</p>
-        </div>
-        <div class="p-3 rounded-2xl liquid-glass-soft border border-cyan-400/30">
-          <span class="font-extrabold text-cyan-300 block mb-1">⚡ מחוות וביצועים</span>
-          <p>• לחיצה כפולה (Double-Tap) לבדיקת מחיר מהירה של מוצר.</p>
-          <p>• כפתור צף לחזרה לראש הדף ומחוות משיכה לרענון.</p>
-          <p>• קיצורי מקלדת (Ctrl+F, Ctrl+N, R, Esc).</p>
-        </div>
-        <div class="p-3 rounded-2xl liquid-glass-soft border border-purple-400/30">
-          <span class="font-extrabold text-purple-300 block mb-1">📁 ארגון וגיימיפיקציה</span>
-          <p>• יצירת תיקיוֹת מותאמות אישית (קולקציות).</p>
-          <p>• ארכיון מוצרים שנרכשו ומעקב חיסכון מצטבר.</p>
-          <p>• יבוא קישורים מרוכז בבת אחת.</p>
-        </div>
-      </div>
-      <button id="confirmChangelogBtn" type="button" class="w-full py-2.5 rounded-2xl btn-gradient-primary text-slate-950 font-black text-xs">הבנתי, תודה!</button>
-    </div>
-  </div>
-
-
-  <!-- Bulk URL Import Modal -->
   <div id="bulkImportModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
     <div class="liquid-glass rounded-3xl max-w-lg w-full p-5 sm:p-6 space-y-4 border border-purple-400/40">
       <div class="flex items-center justify-between">
